@@ -9,6 +9,7 @@ import com.example.playerdatasync.MessageManager;
 import com.example.playerdatasync.DatabaseManager;
 import com.example.playerdatasync.PlayerDataListener;
 import com.example.playerdatasync.SyncCommand;
+import com.example.playerdatasync.UpdateChecker;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -86,6 +87,7 @@ public class PlayerDataSync extends JavaPlugin {
         if (getCommand("sync") != null) {
             getCommand("sync").setExecutor(new SyncCommand(this));
         }
+        new UpdateChecker(this, 123166).check();
     }
 
     @Override
