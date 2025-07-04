@@ -1,6 +1,8 @@
 # PlayerDataSync
 
 A simple Bukkit/Spigot plugin for Minecraft 1.21+ that synchronizes player data using either a MySQL or SQLite database. This project is built with Maven.
+Player inventories, experience, health and more are stored in the configured
+database whenever they leave the server and restored when they join again.
 
 ## Building
 
@@ -38,7 +40,12 @@ sync:
   health: true
   hunger: true
   position: true
+autosave:
+  interval: 5
 ```
+
+`autosave.interval` controls how often (in minutes) the plugin saves all online
+players to the database. Set it to `0` to disable automatic saves.
 
 Update the database values to match your environment. Set any of the `sync` options to
 `false` if you want to skip syncing that particular data type.

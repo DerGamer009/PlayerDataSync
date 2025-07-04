@@ -18,3 +18,6 @@ sync:
   health: true
   hunger: true
   position: true
+
+autosave:
+  interval: 5 # minutes between automatic saves, 0 to disable
