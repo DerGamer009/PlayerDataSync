@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
+import com.example.playerdatasync.MessageManager;
 
 import com.example.playerdatasync.DatabaseManager;
 import com.example.playerdatasync.PlayerDataListener;
@@ -28,10 +29,14 @@ public class PlayerDataSync extends JavaPlugin {
     private DatabaseManager databaseManager;
     private int autosaveInterval;
     private BukkitTask autosaveTask;
+    private MessageManager messageManager;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        messageManager = new MessageManager(this);
+        String lang = getConfig().getString("language", "en");
+        messageManager.load(lang);
         databaseType = getConfig().getString("database.type", "mysql");
         try {
             if (databaseType.equalsIgnoreCase("mysql")) {
@@ -109,6 +114,10 @@ public class PlayerDataSync extends JavaPlugin {
 
     public Connection getConnection() {
         return connection;
+    }
+
+    public MessageManager getMessageManager() {
+        return messageManager;
     }
 
     public boolean isSyncCoordinates() {

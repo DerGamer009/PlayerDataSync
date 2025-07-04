@@ -21,3 +21,5 @@ sync:
 
 autosave:
   interval: 5 # minutes between automatic saves, 0 to disable
+
+language: en
