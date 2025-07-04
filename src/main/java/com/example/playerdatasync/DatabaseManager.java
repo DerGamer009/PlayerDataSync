@@ -84,15 +84,19 @@ public class DatabaseManager {
                 if (rs.next()) {
                     if (plugin.isSyncCoordinates() || plugin.isSyncPosition()) {
                         String worldName = rs.getString("world");
-                        World world = Bukkit.getWorld(worldName);
-                        if (world != null) {
-                            Location loc = new Location(world,
-                                    rs.getDouble("x"),
-                                    rs.getDouble("y"),
-                                    rs.getDouble("z"),
-                                    rs.getFloat("yaw"),
-                                    rs.getFloat("pitch"));
-                            Bukkit.getScheduler().runTask(plugin, () -> player.teleport(loc));
+                        if (worldName != null && !worldName.isEmpty()) {
+                            World world = Bukkit.getWorld(worldName);
+                            if (world != null) {
+                                Location loc = new Location(world,
+                                        rs.getDouble("x"),
+                                        rs.getDouble("y"),
+                                        rs.getDouble("z"),
+                                        rs.getFloat("yaw"),
+                                        rs.getFloat("pitch"));
+                                Bukkit.getScheduler().runTask(plugin, () -> player.teleport(loc));
+                            } else {
+                                plugin.getLogger().warning("World " + worldName + " not found when loading data for " + player.getName());
+                            }
                         }
                     }
                     if (plugin.isSyncXp()) {
