@@ -1,0 +1,20 @@
+database:
+  type: mysql # or sqlite
+  mysql:
+    host: localhost
+    port: 3306
+    database: minecraft
+    user: root
+    password: password
+  sqlite:
+    file: plugins/PlayerDataSync/playerdata.db
+
+sync:
+  coordinates: true
+  xp: true
+  gamemode: true
+  enderchest: true
+  inventory: true
+  health: true
+  hunger: true
+  position: true
