@@ -1,6 +1,12 @@
 package com.example.playerdatasync;
 
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
+
+import com.example.playerdatasync.DatabaseManager;
+import com.example.playerdatasync.PlayerDataListener;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -17,6 +23,10 @@ public class PlayerDataSync extends JavaPlugin {
     private boolean syncHealth;
     private boolean syncHunger;
     private boolean syncPosition;
+
+    private DatabaseManager databaseManager;
+    private int autosaveInterval;
+    private BukkitTask autosaveTask;
 
     @Override
     public void onEnable() {
@@ -52,10 +62,33 @@ public class PlayerDataSync extends JavaPlugin {
         syncHealth = getConfig().getBoolean("sync.health", true);
         syncHunger = getConfig().getBoolean("sync.hunger", true);
         syncPosition = getConfig().getBoolean("sync.position", true);
+
+        autosaveInterval = getConfig().getInt("autosave.interval", 5);
+
+        if (autosaveInterval > 0) {
+            long ticks = autosaveInterval * 1200L;
+            autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    databaseManager.savePlayer(player);
+                }
+            }, ticks, ticks);
+        }
+
+        databaseManager = new DatabaseManager(this);
+        databaseManager.initialize();
+        getServer().getPluginManager().registerEvents(new PlayerDataListener(this, databaseManager), this);
     }
 
     @Override
     public void onDisable() {
+        if (autosaveTask != null) {
+            autosaveTask.cancel();
+        }
+        if (databaseManager != null) {
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                databaseManager.savePlayer(player);
+            }
+        }
         if (connection != null) {
             try {
                 connection.close();
