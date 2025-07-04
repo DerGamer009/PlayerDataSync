@@ -199,4 +199,38 @@ public class PlayerDataSync extends JavaPlugin {
         getConfig().set("sync.position", value);
         saveConfig();
     }
+
+    public void reloadPlugin() {
+        reloadConfig();
+
+        String lang = getConfig().getString("language", "en");
+        messageManager.load(lang);
+
+        syncCoordinates = getConfig().getBoolean("sync.coordinates", true);
+        syncXp = getConfig().getBoolean("sync.xp", true);
+        syncGamemode = getConfig().getBoolean("sync.gamemode", true);
+        syncEnderchest = getConfig().getBoolean("sync.enderchest", true);
+        syncInventory = getConfig().getBoolean("sync.inventory", true);
+        syncHealth = getConfig().getBoolean("sync.health", true);
+        syncHunger = getConfig().getBoolean("sync.hunger", true);
+        syncPosition = getConfig().getBoolean("sync.position", true);
+
+        int newInterval = getConfig().getInt("autosave.interval", 5);
+        if (newInterval != autosaveInterval) {
+            autosaveInterval = newInterval;
+            if (autosaveTask != null) {
+                autosaveTask.cancel();
+            }
+            if (autosaveInterval > 0) {
+                long ticks = autosaveInterval * 1200L;
+                autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        databaseManager.savePlayer(player);
+                    }
+                }, ticks, ticks);
+            } else {
+                autosaveTask = null;
+            }
+        }
+    }
 }
