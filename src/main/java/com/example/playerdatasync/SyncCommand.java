@@ -26,6 +26,13 @@ public class SyncCommand implements CommandExecutor {
             return true;
         }
 
+        if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
+            if (!hasPerm(sender, "reload")) return true;
+            plugin.reloadPlugin();
+            sender.sendMessage(plugin.getMessageManager().get("prefix") + " " + plugin.getMessageManager().get("reloaded"));
+            return true;
+        }
+
         if (args.length == 2) {
             String option = args[0].toLowerCase();
             String val = args[1].toLowerCase();

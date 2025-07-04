@@ -28,3 +28,5 @@ permissions:
     default: op
   playerdatasync.admin.position:
     default: op
+  playerdatasync.admin.reload:
+    default: op
