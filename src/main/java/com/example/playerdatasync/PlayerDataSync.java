@@ -7,6 +7,7 @@ import org.bukkit.scheduler.BukkitTask;
 
 import com.example.playerdatasync.DatabaseManager;
 import com.example.playerdatasync.PlayerDataListener;
+import com.example.playerdatasync.SyncCommand;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -77,6 +78,9 @@ public class PlayerDataSync extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         databaseManager.initialize();
         getServer().getPluginManager().registerEvents(new PlayerDataListener(this, databaseManager), this);
+        if (getCommand("sync") != null) {
+            getCommand("sync").setExecutor(new SyncCommand(this));
+        }
     }
 
     @Override
@@ -137,5 +141,53 @@ public class PlayerDataSync extends JavaPlugin {
 
     public boolean isSyncPosition() {
         return syncPosition;
+    }
+
+    public void setSyncCoordinates(boolean value) {
+        this.syncCoordinates = value;
+        getConfig().set("sync.coordinates", value);
+        saveConfig();
+    }
+
+    public void setSyncXp(boolean value) {
+        this.syncXp = value;
+        getConfig().set("sync.xp", value);
+        saveConfig();
+    }
+
+    public void setSyncGamemode(boolean value) {
+        this.syncGamemode = value;
+        getConfig().set("sync.gamemode", value);
+        saveConfig();
+    }
+
+    public void setSyncEnderchest(boolean value) {
+        this.syncEnderchest = value;
+        getConfig().set("sync.enderchest", value);
+        saveConfig();
+    }
+
+    public void setSyncInventory(boolean value) {
+        this.syncInventory = value;
+        getConfig().set("sync.inventory", value);
+        saveConfig();
+    }
+
+    public void setSyncHealth(boolean value) {
+        this.syncHealth = value;
+        getConfig().set("sync.health", value);
+        saveConfig();
+    }
+
+    public void setSyncHunger(boolean value) {
+        this.syncHunger = value;
+        getConfig().set("sync.hunger", value);
+        saveConfig();
+    }
+
+    public void setSyncPosition(boolean value) {
+        this.syncPosition = value;
+        getConfig().set("sync.position", value);
+        saveConfig();
     }
 }

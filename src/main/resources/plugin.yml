@@ -3,3 +3,28 @@ main: com.example.playerdatasync.PlayerDataSync
 version: 1.0
 api-version: "1.21"
 author: DerGamer09
+commands:
+  sync:
+    description: View or change sync options
+    usage: /<command> [<option> <true|false>]
+    permission: playerdatasync.admin
+permissions:
+  playerdatasync.admin.*:
+    description: Allows all PlayerDataSync admin commands
+    default: op
+  playerdatasync.admin.coordinates:
+    default: op
+  playerdatasync.admin.xp:
+    default: op
+  playerdatasync.admin.gamemode:
+    default: op
+  playerdatasync.admin.enderchest:
+    default: op
+  playerdatasync.admin.inventory:
+    default: op
+  playerdatasync.admin.health:
+    default: op
+  playerdatasync.admin.hunger:
+    default: op
+  playerdatasync.admin.position:
+    default: op
