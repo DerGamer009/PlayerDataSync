@@ -42,7 +42,13 @@ sync:
   position: true
 autosave:
   interval: 5
+language: en
+metrics: true
 ```
+
+`metrics` controls whether anonymous usage statistics are sent to
+[bStats](https://bstats.org/). Set it to `false` if you prefer to
+opt out of metrics collection.
 
 `autosave.interval` controls how often (in minutes) the plugin saves all online
 players to the database. Set it to `0` to disable automatic saves.
