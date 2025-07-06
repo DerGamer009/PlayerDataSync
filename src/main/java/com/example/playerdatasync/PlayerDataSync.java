@@ -10,6 +10,7 @@ import com.example.playerdatasync.DatabaseManager;
 import com.example.playerdatasync.PlayerDataListener;
 import com.example.playerdatasync.SyncCommand;
 import com.example.playerdatasync.UpdateChecker;
+import org.bstats.bukkit.Metrics;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -31,6 +32,7 @@ public class PlayerDataSync extends JavaPlugin {
     private int autosaveInterval;
     private BukkitTask autosaveTask;
     private MessageManager messageManager;
+    private Metrics metrics;
 
     @Override
     public void onEnable() {
@@ -38,6 +40,14 @@ public class PlayerDataSync extends JavaPlugin {
         messageManager = new MessageManager(this);
         String lang = getConfig().getString("language", "en");
         messageManager.load(lang);
+
+        if (getConfig().getBoolean("metrics", true)) {
+            if (metrics == null) {
+                metrics = new Metrics(this, 25037);
+            }
+        } else {
+            metrics = null;
+        }
         databaseType = getConfig().getString("database.type", "mysql");
         try {
             if (databaseType.equalsIgnoreCase("mysql")) {
@@ -207,6 +217,14 @@ public class PlayerDataSync extends JavaPlugin {
 
         String lang = getConfig().getString("language", "en");
         messageManager.load(lang);
+
+        if (getConfig().getBoolean("metrics", true)) {
+            if (metrics == null) {
+                metrics = new Metrics(this, 25037);
+            }
+        } else {
+            metrics = null;
+        }
 
         syncCoordinates = getConfig().getBoolean("sync.coordinates", true);
         syncXp = getConfig().getBoolean("sync.xp", true);
