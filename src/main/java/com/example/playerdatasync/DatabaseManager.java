@@ -29,17 +29,25 @@ public class DatabaseManager {
                 "enderchest TEXT," +
                 "inventory TEXT," +
                 "health DOUBLE," +
-                "hunger INT" +
+                "hunger INT," +
+                "saturation FLOAT" +
                 ")";
         try (Statement st = connection.createStatement()) {
             st.executeUpdate(sql);
+            // Ensure the saturation column exists for older installations
+            DatabaseMetaData meta = connection.getMetaData();
+            try (ResultSet rs = meta.getColumns(null, null, "player_data", "saturation")) {
+                if (!rs.next()) {
+                    st.executeUpdate("ALTER TABLE player_data ADD COLUMN saturation FLOAT");
+                }
+            }
         } catch (SQLException e) {
             plugin.getLogger().severe("Could not create table: " + e.getMessage());
         }
     }
 
     public void savePlayer(Player player) {
-        String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, health, hunger) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, health, hunger, saturation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, player.getUniqueId().toString());
             if (plugin.isSyncCoordinates() || plugin.isSyncPosition()) {
@@ -70,6 +78,7 @@ public class DatabaseManager {
             }
             ps.setDouble(12, plugin.isSyncHealth() ? player.getHealth() : player.getMaxHealth());
             ps.setInt(13, plugin.isSyncHunger() ? player.getFoodLevel() : 20);
+            ps.setFloat(14, plugin.isSyncHunger() ? player.getSaturation() : 5);
             ps.executeUpdate();
         } catch (SQLException e) {
             plugin.getLogger().severe("Could not save data for " + player.getName() + ": " + e.getMessage());
@@ -138,7 +147,11 @@ public class DatabaseManager {
                     }
                     if (plugin.isSyncHunger()) {
                         int hunger = rs.getInt("hunger");
-                        Bukkit.getScheduler().runTask(plugin, () -> player.setFoodLevel(hunger));
+                        float saturation = rs.getFloat("saturation");
+                        Bukkit.getScheduler().runTask(plugin, () -> {
+                            player.setFoodLevel(hunger);
+                            player.setSaturation(saturation);
+                        });
                     }
                 }
             }
