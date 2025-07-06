@@ -19,14 +19,18 @@ public class PlayerDataListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        player.sendMessage(plugin.getMessageManager().get("prefix") + " " + plugin.getMessageManager().get("loading"));
+        if (player.hasPermission("playerdatasync.message.show.loading")) {
+            player.sendMessage(plugin.getMessageManager().get("prefix") + " " + plugin.getMessageManager().get("loading"));
+        }
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> dbManager.loadPlayer(player));
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        player.sendMessage(plugin.getMessageManager().get("prefix") + " " + plugin.getMessageManager().get("saving"));
+        if (player.hasPermission("playerdatasync.message.show.saving")) {
+            player.sendMessage(plugin.getMessageManager().get("prefix") + " " + plugin.getMessageManager().get("saving"));
+        }
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> dbManager.savePlayer(player));
     }
 }

@@ -30,3 +30,9 @@ permissions:
     default: op
   playerdatasync.admin.reload:
     default: op
+  playerdatasync.message.show.loading:
+    description: Allows player to see loading messages
+    default: true
+  playerdatasync.message.show.saving:
+    description: Allows player to see saving messages
+    default: true
