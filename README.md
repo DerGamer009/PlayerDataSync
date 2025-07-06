@@ -14,6 +14,10 @@ mvn package
 
 The resulting jar can be found in `target/`.
 
+The build process uses the Maven Shade plugin to bundle required
+dependencies (such as bStats) directly into the final jar, so no
+additional libraries need to be installed on the server.
+
 ## Configuration
 
 `config.yml` contains the database connection settings and options to control which
