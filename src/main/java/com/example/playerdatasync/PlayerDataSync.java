@@ -19,6 +19,9 @@ import java.sql.SQLException;
 public class PlayerDataSync extends JavaPlugin {
     private Connection connection;
     private String databaseType;
+    private String databaseUrl;
+    private String databaseUser;
+    private String databasePassword;
     private boolean syncCoordinates;
     private boolean syncXp;
     private boolean syncGamemode;
@@ -54,15 +57,17 @@ public class PlayerDataSync extends JavaPlugin {
                 String host = getConfig().getString("database.mysql.host", "localhost");
                 int port = getConfig().getInt("database.mysql.port", 3306);
                 String database = getConfig().getString("database.mysql.database", "minecraft");
-                String user = getConfig().getString("database.mysql.user", "root");
-                String password = getConfig().getString("database.mysql.password", "");
-                String url = String.format("jdbc:mysql://%s:%d/%s", host, port, database);
-                connection = DriverManager.getConnection(url, user, password);
+                databaseUser = getConfig().getString("database.mysql.user", "root");
+                databasePassword = getConfig().getString("database.mysql.password", "");
+                databaseUrl = String.format("jdbc:mysql://%s:%d/%s", host, port, database);
+                connection = DriverManager.getConnection(databaseUrl, databaseUser, databasePassword);
                 getLogger().info("Connected to MySQL database");
             } else {
                 String file = getConfig().getString("database.sqlite.file", "plugins/PlayerDataSync/playerdata.db");
-                String url = "jdbc:sqlite:" + file;
-                connection = DriverManager.getConnection(url);
+                databaseUrl = "jdbc:sqlite:" + file;
+                databaseUser = null;
+                databasePassword = null;
+                connection = DriverManager.getConnection(databaseUrl);
                 getLogger().info("Connected to SQLite database");
             }
         } catch (SQLException e) {
@@ -124,7 +129,22 @@ public class PlayerDataSync extends JavaPlugin {
         }
     }
 
-    public Connection getConnection() {
+    private Connection createConnection() throws SQLException {
+        if (databaseType.equalsIgnoreCase("mysql")) {
+            return DriverManager.getConnection(databaseUrl, databaseUser, databasePassword);
+        }
+        return DriverManager.getConnection(databaseUrl);
+    }
+
+    public synchronized Connection getConnection() {
+        try {
+            if (connection == null || connection.isClosed() || !connection.isValid(2)) {
+                connection = createConnection();
+                getLogger().info("Reconnected to database");
+            }
+        } catch (SQLException e) {
+            getLogger().severe("Could not establish database connection: " + e.getMessage());
+        }
         return connection;
     }
 
