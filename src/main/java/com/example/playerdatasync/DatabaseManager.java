@@ -11,11 +11,9 @@ import java.sql.*;
 
 public class DatabaseManager {
     private final PlayerDataSync plugin;
-    private final Connection connection;
 
     public DatabaseManager(PlayerDataSync plugin) {
         this.plugin = plugin;
-        this.connection = plugin.getConnection();
     }
 
     public void initialize() {
@@ -32,6 +30,11 @@ public class DatabaseManager {
                 "hunger INT," +
                 "saturation FLOAT" +
                 ")";
+        Connection connection = plugin.getConnection();
+        if (connection == null) {
+            plugin.getLogger().severe("Database connection unavailable");
+            return;
+        }
         try (Statement st = connection.createStatement()) {
             st.executeUpdate(sql);
             // Ensure the saturation column exists for older installations
@@ -48,6 +51,11 @@ public class DatabaseManager {
 
     public void savePlayer(Player player) {
         String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, health, hunger, saturation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        Connection connection = plugin.getConnection();
+        if (connection == null) {
+            plugin.getLogger().severe("Database connection unavailable");
+            return;
+        }
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, player.getUniqueId().toString());
             if (plugin.isSyncCoordinates() || plugin.isSyncPosition()) {
@@ -87,6 +95,11 @@ public class DatabaseManager {
 
     public void loadPlayer(Player player) {
         String sql = "SELECT * FROM player_data WHERE uuid = ?";
+        Connection connection = plugin.getConnection();
+        if (connection == null) {
+            plugin.getLogger().severe("Database connection unavailable");
+            return;
+        }
         try (PreparedStatement ps = connection.prepareStatement(sql)) {
             ps.setString(1, player.getUniqueId().toString());
             try (ResultSet rs = ps.executeQuery()) {
