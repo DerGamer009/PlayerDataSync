@@ -37,8 +37,13 @@ public class DatabaseManager {
         }
         try (Statement st = connection.createStatement()) {
             st.executeUpdate(sql);
-            // Ensure the saturation column exists for older installations
+            // Ensure columns exist for older installations
             DatabaseMetaData meta = connection.getMetaData();
+            try (ResultSet rs = meta.getColumns(null, null, "player_data", "hunger")) {
+                if (!rs.next()) {
+                    st.executeUpdate("ALTER TABLE player_data ADD COLUMN hunger INT");
+                }
+            }
             try (ResultSet rs = meta.getColumns(null, null, "player_data", "saturation")) {
                 if (!rs.next()) {
                     st.executeUpdate("ALTER TABLE player_data ADD COLUMN saturation FLOAT");
@@ -123,7 +128,7 @@ public class DatabaseManager {
                     }
                     if (plugin.isSyncXp()) {
                         int xp = rs.getInt("xp");
-                        Bukkit.getScheduler().runTask(plugin, () -> player.setTotalExperience(xp));
+                        Bukkit.getScheduler().runTask(plugin, () -> applyExperience(player, xp));
                     }
                     if (plugin.isSyncGamemode()) {
                         String gm = rs.getString("gamemode");
@@ -171,5 +176,12 @@ public class DatabaseManager {
         } catch (SQLException e) {
             plugin.getLogger().severe("Could not load data for " + player.getName() + ": " + e.getMessage());
         }
+    }
+
+    private void applyExperience(Player player, int total) {
+        player.setExp(0f);
+        player.setLevel(0);
+        player.setTotalExperience(0);
+        player.giveExp(total);
     }
 }
