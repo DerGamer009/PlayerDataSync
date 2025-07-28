@@ -31,6 +31,10 @@ public class PlayerDataListener implements Listener {
         if (player.hasPermission("playerdatasync.message.show.saving")) {
             player.sendMessage(plugin.getMessageManager().get("prefix") + " " + plugin.getMessageManager().get("saving"));
         }
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> dbManager.savePlayer(player));
+        // Save data synchronously so the database is updated before the player
+        // joins another server. Using an async task here can lead to race
+        // conditions when switching servers quickly via BungeeCord or similar
+        // proxies, causing recent changes not to be stored in time.
+        dbManager.savePlayer(player);
     }
 }
