@@ -30,6 +30,7 @@ public class PlayerDataSync extends JavaPlugin {
     private boolean syncHealth;
     private boolean syncHunger;
     private boolean syncPosition;
+    private boolean syncAchievements;
 
     private DatabaseManager databaseManager;
     private int autosaveInterval;
@@ -84,6 +85,8 @@ public class PlayerDataSync extends JavaPlugin {
         syncHealth = getConfig().getBoolean("sync.health", true);
         syncHunger = getConfig().getBoolean("sync.hunger", true);
         syncPosition = getConfig().getBoolean("sync.position", true);
+        syncAchievements = getConfig().getBoolean("sync.achievements", true);
+        syncAchievements = getConfig().getBoolean("sync.achievements", true);
 
         autosaveInterval = getConfig().getInt("autosave.interval", 5);
 
@@ -184,6 +187,10 @@ public class PlayerDataSync extends JavaPlugin {
         return syncPosition;
     }
 
+    public boolean isSyncAchievements() {
+        return syncAchievements;
+    }
+
     public void setSyncCoordinates(boolean value) {
         this.syncCoordinates = value;
         getConfig().set("sync.coordinates", value);
@@ -232,6 +239,12 @@ public class PlayerDataSync extends JavaPlugin {
         saveConfig();
     }
 
+    public void setSyncAchievements(boolean value) {
+        this.syncAchievements = value;
+        getConfig().set("sync.achievements", value);
+        saveConfig();
+    }
+
     public void reloadPlugin() {
         reloadConfig();
 
@@ -254,6 +267,7 @@ public class PlayerDataSync extends JavaPlugin {
         syncHealth = getConfig().getBoolean("sync.health", true);
         syncHunger = getConfig().getBoolean("sync.hunger", true);
         syncPosition = getConfig().getBoolean("sync.position", true);
+        syncAchievements = getConfig().getBoolean("sync.achievements", true);
 
         int newInterval = getConfig().getInt("autosave.interval", 5);
         if (newInterval != autosaveInterval) {

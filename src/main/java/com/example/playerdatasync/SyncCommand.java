@@ -23,6 +23,7 @@ public class SyncCommand implements CommandExecutor {
             sender.sendMessage("health: " + plugin.isSyncHealth());
             sender.sendMessage("hunger: " + plugin.isSyncHunger());
             sender.sendMessage("position: " + plugin.isSyncPosition());
+            sender.sendMessage("achievements: " + plugin.isSyncAchievements());
             return true;
         }
 
@@ -65,6 +66,9 @@ public class SyncCommand implements CommandExecutor {
             } else if (option.equals("position")) {
                 if (!hasPerm(sender, "position")) return true;
                 plugin.setSyncPosition(enabled);
+            } else if (option.equals("achievements")) {
+                if (!hasPerm(sender, "achievements")) return true;
+                plugin.setSyncAchievements(enabled);
             } else {
                 sender.sendMessage("Unknown option: " + option);
                 return true;
