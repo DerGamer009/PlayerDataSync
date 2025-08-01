@@ -44,6 +44,7 @@ sync:
   health: true
   hunger: true
   position: true
+  achievements: true
 autosave:
   interval: 5
 language: en
@@ -59,3 +60,6 @@ players to the database. Set it to `0` to disable automatic saves.
 
 Update the database values to match your environment. Set any of the `sync` options to
 `false` if you want to skip syncing that particular data type.
+
+Messages support color codes using the `&` character. For example,
+`&e` will display text in yellow.

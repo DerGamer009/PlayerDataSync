@@ -6,6 +6,9 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.NamespacedKey;
+import org.bukkit.advancement.Advancement;
+import org.bukkit.advancement.AdvancementProgress;
 
 import java.sql.*;
 
@@ -28,7 +31,8 @@ public class DatabaseManager {
                 "inventory TEXT," +
                 "health DOUBLE," +
                 "hunger INT," +
-                "saturation FLOAT" +
+                "saturation FLOAT," +
+                "advancements TEXT" +
                 ")";
         Connection connection = plugin.getConnection();
         if (connection == null) {
@@ -49,13 +53,18 @@ public class DatabaseManager {
                     st.executeUpdate("ALTER TABLE player_data ADD COLUMN saturation FLOAT");
                 }
             }
+            try (ResultSet rs = meta.getColumns(null, null, "player_data", "advancements")) {
+                if (!rs.next()) {
+                    st.executeUpdate("ALTER TABLE player_data ADD COLUMN advancements TEXT");
+                }
+            }
         } catch (SQLException e) {
             plugin.getLogger().severe("Could not create table: " + e.getMessage());
         }
     }
 
     public void savePlayer(Player player) {
-        String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, health, hunger, saturation) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, health, hunger, saturation, advancements) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
         Connection connection = plugin.getConnection();
         if (connection == null) {
             plugin.getLogger().severe("Database connection unavailable");
@@ -92,6 +101,7 @@ public class DatabaseManager {
             ps.setDouble(12, plugin.isSyncHealth() ? player.getHealth() : player.getMaxHealth());
             ps.setInt(13, plugin.isSyncHunger() ? player.getFoodLevel() : 20);
             ps.setFloat(14, plugin.isSyncHunger() ? player.getSaturation() : 5);
+            ps.setString(15, plugin.isSyncAchievements() ? serializeAdvancements(player) : null);
             ps.executeUpdate();
         } catch (SQLException e) {
             plugin.getLogger().severe("Could not save data for " + player.getName() + ": " + e.getMessage());
@@ -171,6 +181,12 @@ public class DatabaseManager {
                             player.setSaturation(saturation);
                         });
                     }
+                    if (plugin.isSyncAchievements()) {
+                        String advData = rs.getString("advancements");
+                        if (advData != null) {
+                            Bukkit.getScheduler().runTask(plugin, () -> loadAdvancements(player, advData));
+                        }
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -183,5 +199,32 @@ public class DatabaseManager {
         player.setLevel(0);
         player.setTotalExperience(0);
         player.giveExp(total);
+    }
+
+    private String serializeAdvancements(Player player) {
+        StringBuilder sb = new StringBuilder();
+        for (Advancement adv : Bukkit.getServer().advancementIterator()) {
+            AdvancementProgress progress = player.getAdvancementProgress(adv);
+            if (progress.isDone()) {
+                if (sb.length() > 0) sb.append(',');
+                sb.append(adv.getKey());
+            }
+        }
+        return sb.toString();
+    }
+
+    private void loadAdvancements(Player player, String data) {
+        if (data == null || data.isEmpty()) return;
+        String[] keys = data.split(",");
+        for (String k : keys) {
+            NamespacedKey key = NamespacedKey.fromString(k);
+            if (key == null) continue;
+            Advancement adv = Bukkit.getAdvancement(key);
+            if (adv == null) continue;
+            AdvancementProgress prog = player.getAdvancementProgress(adv);
+            for (String criterion : prog.getRemainingCriteria()) {
+                prog.awardCriteria(criterion);
+            }
+        }
     }
 }
