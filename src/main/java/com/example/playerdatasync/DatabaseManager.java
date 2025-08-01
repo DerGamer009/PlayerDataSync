@@ -11,6 +11,7 @@ import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 
 import java.sql.*;
+import java.util.Iterator;
 
 public class DatabaseManager {
     private final PlayerDataSync plugin;
@@ -203,7 +204,8 @@ public class DatabaseManager {
 
     private String serializeAdvancements(Player player) {
         StringBuilder sb = new StringBuilder();
-        for (Advancement adv : Bukkit.getServer().advancementIterator()) {
+        for (Iterator<Advancement> it = Bukkit.getServer().advancementIterator(); it.hasNext(); ) {
+            Advancement adv = it.next();
             AdvancementProgress progress = player.getAdvancementProgress(adv);
             if (progress.isDone()) {
                 if (sb.length() > 0) sb.append(',');
