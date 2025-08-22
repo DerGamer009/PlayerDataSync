@@ -43,6 +43,7 @@ public class PlayerDataSync extends JavaPlugin {
     private boolean syncEconomy;
 
     private DatabaseManager databaseManager;
+    private ConfigManager configManager;
     private int autosaveInterval;
     private BukkitTask autosaveTask;
     private MessageManager messageManager;
@@ -51,8 +52,9 @@ public class PlayerDataSync extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        configManager = new ConfigManager(this);
         messageManager = new MessageManager(this);
-        String lang = getConfig().getString("language", "en");
+        String lang = getConfig().getString("messages.language", "en");
         messageManager.load(lang);
 
         if (getConfig().getBoolean("metrics", true)) {
@@ -87,16 +89,7 @@ public class PlayerDataSync extends JavaPlugin {
             return;
         }
 
-        syncCoordinates = getConfig().getBoolean("sync.coordinates", true);
-        syncXp = getConfig().getBoolean("sync.xp", true);
-        syncGamemode = getConfig().getBoolean("sync.gamemode", true);
-        syncEnderchest = getConfig().getBoolean("sync.enderchest", true);
-        syncInventory = getConfig().getBoolean("sync.inventory", true);
-        syncHealth = getConfig().getBoolean("sync.health", true);
-        syncHunger = getConfig().getBoolean("sync.hunger", true);
-        syncPosition = getConfig().getBoolean("sync.position", true);
-        syncAchievements = getConfig().getBoolean("sync.achievements", true);
-        syncAchievements = getConfig().getBoolean("sync.achievements", true);
+        loadSyncSettings();
 
         autosaveInterval = getConfig().getInt("autosave.interval", 5);
 
@@ -113,7 +106,9 @@ public class PlayerDataSync extends JavaPlugin {
         databaseManager.initialize();
         getServer().getPluginManager().registerEvents(new PlayerDataListener(this, databaseManager), this);
         if (getCommand("sync") != null) {
-            getCommand("sync").setExecutor(new SyncCommand(this));
+            SyncCommand syncCommand = new SyncCommand(this);
+            getCommand("sync").setExecutor(syncCommand);
+            getCommand("sync").setTabCompleter(syncCommand);
         }
         new UpdateChecker(this, 123166).check();
     }
@@ -255,6 +250,28 @@ public class PlayerDataSync extends JavaPlugin {
         saveConfig();
     }
 
+    private void loadSyncSettings() {
+        // Basic sync options
+        syncCoordinates = getConfig().getBoolean("sync.coordinates", true);
+        syncXp = getConfig().getBoolean("sync.xp", true);
+        syncGamemode = getConfig().getBoolean("sync.gamemode", true);
+        syncEnderchest = getConfig().getBoolean("sync.enderchest", true);
+        syncInventory = getConfig().getBoolean("sync.inventory", true);
+        syncHealth = getConfig().getBoolean("sync.health", true);
+        syncHunger = getConfig().getBoolean("sync.hunger", true);
+        syncPosition = getConfig().getBoolean("sync.position", true);
+        syncAchievements = getConfig().getBoolean("sync.achievements", true);
+        
+        // Extended sync options
+        syncArmor = getConfig().getBoolean("sync.armor", true);
+        syncOffhand = getConfig().getBoolean("sync.offhand", true);
+        syncEffects = getConfig().getBoolean("sync.effects", true);
+        syncStatistics = getConfig().getBoolean("sync.statistics", true);
+        syncAttributes = getConfig().getBoolean("sync.attributes", true);
+        syncPermissions = getConfig().getBoolean("sync.permissions", false);
+        syncEconomy = getConfig().getBoolean("sync.economy", false);
+    }
+
     public void reloadPlugin() {
         reloadConfig();
 
@@ -269,15 +286,7 @@ public class PlayerDataSync extends JavaPlugin {
             metrics = null;
         }
 
-        syncCoordinates = getConfig().getBoolean("sync.coordinates", true);
-        syncXp = getConfig().getBoolean("sync.xp", true);
-        syncGamemode = getConfig().getBoolean("sync.gamemode", true);
-        syncEnderchest = getConfig().getBoolean("sync.enderchest", true);
-        syncInventory = getConfig().getBoolean("sync.inventory", true);
-        syncHealth = getConfig().getBoolean("sync.health", true);
-        syncHunger = getConfig().getBoolean("sync.hunger", true);
-        syncPosition = getConfig().getBoolean("sync.position", true);
-        syncAchievements = getConfig().getBoolean("sync.achievements", true);
+        loadSyncSettings();
 
         int newInterval = getConfig().getInt("autosave.interval", 5);
         if (newInterval != autosaveInterval) {
@@ -297,4 +306,60 @@ public class PlayerDataSync extends JavaPlugin {
             }
         }
     }
+
+    // Getter methods for extended sync options
+    public boolean isSyncArmor() { return syncArmor; }
+    public boolean isSyncOffhand() { return syncOffhand; }
+    public boolean isSyncEffects() { return syncEffects; }
+    public boolean isSyncStatistics() { return syncStatistics; }
+    public boolean isSyncAttributes() { return syncAttributes; }
+    public boolean isSyncPermissions() { return syncPermissions; }
+    public boolean isSyncEconomy() { return syncEconomy; }
+    
+    // Setter methods for extended sync options
+    public void setSyncArmor(boolean value) { 
+        this.syncArmor = value; 
+        getConfig().set("sync.armor", value); 
+        saveConfig(); 
+    }
+    
+    public void setSyncOffhand(boolean value) { 
+        this.syncOffhand = value; 
+        getConfig().set("sync.offhand", value); 
+        saveConfig(); 
+    }
+    
+    public void setSyncEffects(boolean value) { 
+        this.syncEffects = value; 
+        getConfig().set("sync.effects", value); 
+        saveConfig(); 
+    }
+    
+    public void setSyncStatistics(boolean value) { 
+        this.syncStatistics = value; 
+        getConfig().set("sync.statistics", value); 
+        saveConfig(); 
+    }
+    
+    public void setSyncAttributes(boolean value) { 
+        this.syncAttributes = value; 
+        getConfig().set("sync.attributes", value); 
+        saveConfig(); 
+    }
+    
+    public void setSyncPermissions(boolean value) { 
+        this.syncPermissions = value; 
+        getConfig().set("sync.permissions", value); 
+        saveConfig(); 
+    }
+    
+    public void setSyncEconomy(boolean value) { 
+        this.syncEconomy = value; 
+        getConfig().set("sync.economy", value); 
+        saveConfig(); 
+    }
+    
+    // Getter methods for components
+    public ConfigManager getConfigManager() { return configManager; }
+    public DatabaseManager getDatabaseManager() { return databaseManager; }
 }
