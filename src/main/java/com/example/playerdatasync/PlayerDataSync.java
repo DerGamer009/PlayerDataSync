@@ -22,6 +22,7 @@ public class PlayerDataSync extends JavaPlugin {
     private String databaseUrl;
     private String databaseUser;
     private String databasePassword;
+    // Basic sync options
     private boolean syncCoordinates;
     private boolean syncXp;
     private boolean syncGamemode;
@@ -31,6 +32,15 @@ public class PlayerDataSync extends JavaPlugin {
     private boolean syncHunger;
     private boolean syncPosition;
     private boolean syncAchievements;
+    
+    // Extended sync options
+    private boolean syncArmor;
+    private boolean syncOffhand;
+    private boolean syncEffects;
+    private boolean syncStatistics;
+    private boolean syncAttributes;
+    private boolean syncPermissions;
+    private boolean syncEconomy;
 
     private DatabaseManager databaseManager;
     private int autosaveInterval;
