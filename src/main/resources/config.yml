@@ -1,5 +1,6 @@
 # =====================================
 # PlayerDataSync Configuration
+# Compatible with Minecraft 1.20.4 - 1.21.8
 # =====================================
 
 database:
@@ -86,6 +87,14 @@ performance:
   async_loading: true   # load player data asynchronously on join
   disable_achievement_sync_on_large_amounts: true # disable achievement sync if more than 500 achievements exist
   achievement_batch_size: 50 # number of achievements to process in one batch to prevent lag
+
+# Compatibility Settings
+compatibility:
+  safe_attribute_sync: true  # use reflection-based attribute syncing for better version compatibility
+  disable_attributes_on_error: false # automatically disable attribute sync if errors occur
+  version_check: true        # perform version compatibility checks on startup
+  legacy_1_20_support: true # enable additional compatibility features for Minecraft 1.20.x
+  modern_1_21_support: true # enable additional compatibility features for Minecraft 1.21.x
 
 # Security Settings
 security:

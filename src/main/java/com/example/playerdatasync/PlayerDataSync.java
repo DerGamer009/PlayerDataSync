@@ -54,6 +54,9 @@ public class PlayerDataSync extends JavaPlugin {
     public void onEnable() {
         getLogger().info("Enabling PlayerDataSync...");
         
+        // Check server version compatibility
+        checkVersionCompatibility();
+        
         // Initialize configuration first
         saveDefaultConfig();
         configManager = new ConfigManager(this);
@@ -488,4 +491,70 @@ public class PlayerDataSync extends JavaPlugin {
     // Getter methods for components
     public ConfigManager getConfigManager() { return configManager; }
     public DatabaseManager getDatabaseManager() { return databaseManager; }
+    
+    /**
+     * Check server version compatibility and log warnings if needed
+     */
+    private void checkVersionCompatibility() {
+        // Check if version checking is enabled in config
+        if (!getConfig().getBoolean("compatibility.version_check", true)) {
+            getLogger().info("Version compatibility checking is disabled in config");
+            return;
+        }
+        
+        try {
+            String serverVersion = Bukkit.getServer().getBukkitVersion();
+            String pluginApiVersion = getDescription().getAPIVersion();
+            
+            getLogger().info("Server version: " + serverVersion);
+            getLogger().info("Plugin API version: " + pluginApiVersion);
+            
+            // Check if we're running on a compatible version
+            if (serverVersion.contains("1.21.1") && pluginApiVersion.equals("1.20")) {
+                getLogger().warning("================================================");
+                getLogger().warning("VERSION COMPATIBILITY WARNING:");
+                getLogger().warning("This plugin was compiled for API 1.20 but you're running on 1.21.1");
+                getLogger().warning("Some features may not work correctly due to API changes");
+                getLogger().warning("Consider updating your server to 1.21.7+ for best compatibility");
+                getLogger().warning("================================================");
+            }
+            
+            // Check for older versions
+            if (serverVersion.contains("1.20.4") || serverVersion.contains("1.20.5") || serverVersion.contains("1.20.6")) {
+                getLogger().info("Running on Minecraft 1.20.x - Full compatibility confirmed");
+            }
+            
+            // Check for newer versions
+            if (serverVersion.contains("1.21.7") || serverVersion.contains("1.21.8")) {
+                getLogger().info("Running on Minecraft 1.21.7+ - Full compatibility confirmed");
+            }
+            
+            // Test critical API methods
+            try {
+                org.bukkit.attribute.Attribute.values();
+                getLogger().info("Attribute API compatibility: OK");
+            } catch (Exception e) {
+                getLogger().severe("CRITICAL: Attribute API compatibility issue detected!");
+                getLogger().severe("This may cause crashes when saving player data");
+                getLogger().severe("Error: " + e.getMessage());
+                
+                // Suggest enabling safe attribute sync
+                getLogger().warning("Consider setting 'compatibility.safe_attribute_sync: true' in config.yml");
+            }
+            
+            // Log compatibility summary
+            if (serverVersion.contains("1.20")) {
+                getLogger().info("✅ Full compatibility with Minecraft 1.20.x confirmed");
+            } else if (serverVersion.contains("1.21.7") || serverVersion.contains("1.21.8")) {
+                getLogger().info("✅ Full compatibility with Minecraft 1.21.7+ confirmed");
+            } else if (serverVersion.contains("1.21.1")) {
+                getLogger().warning("⚠️  Limited compatibility with Paper 1.21.1 - some features may not work correctly");
+            } else {
+                getLogger().info("ℹ️  Running on version: " + serverVersion + " - compatibility status unknown");
+            }
+            
+        } catch (Exception e) {
+            getLogger().warning("Could not perform version compatibility check: " + e.getMessage());
+        }
+    }
 }

@@ -452,25 +452,78 @@ public class DatabaseManager {
     }
     
     /**
-     * Serialize player attributes
+     * Serialize player attributes with version compatibility handling
      */
     private String serializeAttributes(Player player) {
         try {
             StringBuilder sb = new StringBuilder();
-            for (org.bukkit.attribute.Attribute attr : org.bukkit.attribute.Attribute.values()) {
+            
+            // Check if safe attribute sync is enabled in config
+            boolean safeAttributeSync = plugin.getConfig().getBoolean("compatibility.safe_attribute_sync", true);
+            
+            if (safeAttributeSync) {
+                // Use reflection to safely get Attribute enum values for better compatibility
                 try {
-                    org.bukkit.attribute.AttributeInstance instance = player.getAttribute(attr);
-                    if (instance != null) {
-                        if (sb.length() > 0) sb.append(";");
-                        sb.append(attr.name()).append(",").append(instance.getValue());
+                    Class<?> attributeClass = Class.forName("org.bukkit.attribute.Attribute");
+                    Object[] attributes = (Object[]) attributeClass.getMethod("values").invoke(null);
+                    
+                    for (Object attrObj : attributes) {
+                        try {
+                            String attrName = (String) attrObj.getClass().getMethod("name").invoke(attrObj);
+                            org.bukkit.attribute.AttributeInstance instance = player.getAttribute((org.bukkit.attribute.Attribute) attrObj);
+                            
+                            if (instance != null) {
+                                if (sb.length() > 0) sb.append(";");
+                                sb.append(attrName).append(",").append(instance.getValue());
+                            }
+                        } catch (Exception e) {
+                            // Some attributes might not be applicable, skip them
+                            plugin.getLogger().fine("Skipping attribute due to compatibility issue: " + e.getMessage());
+                        }
                     }
                 } catch (Exception e) {
-                    // Some attributes might not be applicable, skip them
+                    // Fallback to direct method call if reflection fails
+                    plugin.getLogger().warning("Reflection failed for attributes, using fallback method: " + e.getMessage());
+                    
+                    for (org.bukkit.attribute.Attribute attr : org.bukkit.attribute.Attribute.values()) {
+                        try {
+                            org.bukkit.attribute.AttributeInstance instance = player.getAttribute(attr);
+                            if (instance != null) {
+                                if (sb.length() > 0) sb.append(";");
+                                sb.append(attr.name()).append(",").append(instance.getValue());
+                            }
+                        } catch (Exception ex) {
+                            // Some attributes might not be applicable, skip them
+                            plugin.getLogger().fine("Skipping attribute " + attr.name() + ": " + ex.getMessage());
+                        }
+                    }
+                }
+            } else {
+                // Use direct method call (may cause issues on incompatible versions)
+                for (org.bukkit.attribute.Attribute attr : org.bukkit.attribute.Attribute.values()) {
+                    try {
+                        org.bukkit.attribute.AttributeInstance instance = player.getAttribute(attr);
+                        if (instance != null) {
+                            if (sb.length() > 0) sb.append(";");
+                            sb.append(attr.name()).append(",").append(instance.getValue());
+                        }
+                    } catch (Exception ex) {
+                        // Some attributes might not be applicable, skip them
+                        plugin.getLogger().fine("Skipping attribute " + attr.name() + ": " + ex.getMessage());
+                    }
                 }
             }
+            
             return sb.toString();
         } catch (Exception e) {
             plugin.getLogger().warning("Error serializing attributes for " + player.getName() + ": " + e.getMessage());
+            
+            // Check if we should disable attributes on error
+            if (plugin.getConfig().getBoolean("compatibility.disable_attributes_on_error", false)) {
+                plugin.getLogger().warning("Disabling attribute sync due to error. Set 'compatibility.disable_attributes_on_error: false' to prevent this.");
+                plugin.setSyncAttributes(false);
+            }
+            
             return null;
         }
     }

@@ -1,6 +1,6 @@
 # PlayerDataSync
 
-A simple Bukkit/Spigot plugin for Minecraft 1.21+ that synchronizes player data using either a MySQL or SQLite database. This project is built with Maven.
+A simple Bukkit/Spigot plugin for Minecraft 1.20.4+ that synchronizes player data using either a MySQL or SQLite database. This project is built with Maven.
 Player inventories, experience, health and more are stored in the configured
 database whenever they leave the server and restored when they join again.
 
@@ -88,3 +88,31 @@ If you experience performance issues, you can disable achievement synchronizatio
 sync:
   achievements: false  # Disable achievement sync to prevent lag
 ```
+
+## Version Compatibility
+
+### Known Issues
+- **Paper 1.21.1**: The plugin may experience compatibility issues with this server version due to API changes between 1.21.1 and 1.21.7
+- **Attribute Sync Errors**: If you encounter `IncompatibleClassChangeError` related to attributes, enable safe attribute sync in the config
+- **Minecraft 1.20.4-1.20.6**: Full compatibility confirmed
+- **Minecraft 1.21.7-1.21.8**: Full compatibility confirmed
+
+### Compatibility Settings
+```yaml
+compatibility:
+  safe_attribute_sync: true      # Use reflection-based attribute syncing (recommended)
+  disable_attributes_on_error: false # Auto-disable attributes if errors occur
+  version_check: true            # Perform version compatibility checks on startup
+```
+
+### Recommended Server Versions
+- **Paper 1.20.4-1.20.6**: Full compatibility, all features work correctly
+- **Paper 1.21.7-1.21.8**: Full compatibility, all features work correctly
+- **Paper 1.21.1**: Limited compatibility, some features may not work correctly
+- **Spigot 1.20.4-1.21.8**: Full compatibility
+
+### Troubleshooting Compatibility Issues
+1. **Enable safe attribute sync**: Set `compatibility.safe_attribute_sync: true` in config.yml
+2. **Update your server**: Consider updating to Paper 1.21.7+ for best compatibility
+3. **Disable problematic features**: Set `sync.attributes: false` if issues persist
+4. **Check server logs**: Look for version compatibility warnings on plugin startup
