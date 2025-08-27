@@ -44,7 +44,7 @@ sync:
   health: true
   hunger: true
   position: true
-  achievements: true
+  achievements: true  # ⚠️ WARNING: May cause lag with 500+ achievements
 autosave:
   interval: 5
 language: en
@@ -63,3 +63,28 @@ Update the database values to match your environment. Set any of the `sync` opti
 
 Messages support color codes using the `&` character. For example,
 `&e` will display text in yellow.
+
+## Performance Considerations
+
+### Achievement Synchronization
+If you have a large number of achievements (500+), the achievement sync feature may cause server lag when players join. The plugin automatically detects large amounts and:
+
+- **Disables sync** if more than 500 achievements exist (configurable)
+- **Processes in batches** of 50 achievements to prevent lag
+- **Loads asynchronously** for large amounts to avoid blocking the main thread
+
+### Configuration for Large Servers
+```yaml
+performance:
+  disable_achievement_sync_on_large_amounts: true  # Auto-disable for 500+ achievements
+  achievement_batch_size: 50                       # Process achievements in batches
+  connection_pooling: true                         # Use connection pooling
+  async_loading: true                              # Load data asynchronously
+```
+
+### Disabling Achievement Sync
+If you experience performance issues, you can disable achievement synchronization entirely:
+```yaml
+sync:
+  achievements: false  # Disable achievement sync to prevent lag
+```

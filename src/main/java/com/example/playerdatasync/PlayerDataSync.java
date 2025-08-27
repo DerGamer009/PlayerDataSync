@@ -18,6 +18,7 @@ import java.sql.SQLException;
 
 public class PlayerDataSync extends JavaPlugin {
     private Connection connection;
+    private ConnectionPool connectionPool;
     private String databaseType;
     private String databaseUrl;
     private String databaseUser;
@@ -51,11 +52,25 @@ public class PlayerDataSync extends JavaPlugin {
 
     @Override
     public void onEnable() {
+        getLogger().info("Enabling PlayerDataSync...");
+        
+        // Initialize configuration first
         saveDefaultConfig();
         configManager = new ConfigManager(this);
+        
+        // Initialize message manager
         messageManager = new MessageManager(this);
         String lang = getConfig().getString("messages.language", "en");
-        messageManager.load(lang);
+        try {
+            messageManager.load(lang);
+        } catch (Exception e) {
+            getLogger().warning("Failed to load messages for language " + lang + ", falling back to English");
+            try {
+                messageManager.load("en");
+            } catch (Exception e2) {
+                getLogger().severe("Failed to load any message files: " + e2.getMessage());
+            }
+        }
 
         if (getConfig().getBoolean("metrics", true)) {
             if (metrics == null) {
@@ -64,6 +79,7 @@ public class PlayerDataSync extends JavaPlugin {
         } else {
             metrics = null;
         }
+        // Initialize database connection
         databaseType = getConfig().getString("database.type", "mysql");
         try {
             if (databaseType.equalsIgnoreCase("mysql")) {
@@ -72,19 +88,41 @@ public class PlayerDataSync extends JavaPlugin {
                 String database = getConfig().getString("database.mysql.database", "minecraft");
                 databaseUser = getConfig().getString("database.mysql.user", "root");
                 databasePassword = getConfig().getString("database.mysql.password", "");
-                databaseUrl = String.format("jdbc:mysql://%s:%d/%s", host, port, database);
+                
+                // Add connection parameters for better reliability
+                databaseUrl = String.format("jdbc:mysql://%s:%d/%s?useSSL=%s&autoReconnect=true&failOverReadOnly=false&maxReconnects=3", 
+                    host, port, database, getConfig().getBoolean("database.mysql.ssl", false));
+                
+                // Create initial connection for testing
                 connection = DriverManager.getConnection(databaseUrl, databaseUser, databasePassword);
-                getLogger().info("Connected to MySQL database");
-            } else {
+                getLogger().info("Connected to MySQL database at " + host + ":" + port + "/" + database);
+                
+                // Initialize connection pool if enabled
+                if (getConfig().getBoolean("performance.connection_pooling", true)) {
+                    int maxConnections = getConfig().getInt("database.mysql.max_connections", 10);
+                    connectionPool = new ConnectionPool(this, databaseUrl, databaseUser, databasePassword, maxConnections);
+                    connectionPool.initialize();
+                }
+            } else if (databaseType.equalsIgnoreCase("sqlite")) {
                 String file = getConfig().getString("database.sqlite.file", "plugins/PlayerDataSync/playerdata.db");
+                // Ensure directory exists
+                java.io.File dbFile = new java.io.File(file);
+                if (!dbFile.getParentFile().exists()) {
+                    dbFile.getParentFile().mkdirs();
+                }
                 databaseUrl = "jdbc:sqlite:" + file;
                 databaseUser = null;
                 databasePassword = null;
                 connection = DriverManager.getConnection(databaseUrl);
-                getLogger().info("Connected to SQLite database");
+                getLogger().info("Connected to SQLite database at " + file);
+            } else {
+                getLogger().severe("Unsupported database type: " + databaseType + ". Supported types: mysql, sqlite");
+                getServer().getPluginManager().disablePlugin(this);
+                return;
             }
         } catch (SQLException e) {
-            getLogger().severe("Could not connect to database: " + e.getMessage());
+            getLogger().severe("Could not connect to " + databaseType + " database: " + e.getMessage());
+            getLogger().severe("Please check your database configuration and ensure the database server is running");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
@@ -96,8 +134,26 @@ public class PlayerDataSync extends JavaPlugin {
         if (autosaveInterval > 0) {
             long ticks = autosaveInterval * 1200L;
             autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    databaseManager.savePlayer(player);
+                try {
+                    int savedCount = 0;
+                    long startTime = System.currentTimeMillis();
+                    
+                    for (Player player : Bukkit.getOnlinePlayers()) {
+                        try {
+                            databaseManager.savePlayer(player);
+                            savedCount++;
+                        } catch (Exception e) {
+                            getLogger().warning("Failed to autosave data for " + player.getName() + ": " + e.getMessage());
+                        }
+                    }
+                    
+                    long endTime = System.currentTimeMillis();
+                    if (savedCount > 0) {
+                        getLogger().info("Autosaved data for " + savedCount + " players in " + 
+                            (endTime - startTime) + "ms");
+                    }
+                } catch (Exception e) {
+                    getLogger().severe("Error during autosave: " + e.getMessage());
                 }
             }, ticks, ticks);
         }
@@ -111,18 +167,53 @@ public class PlayerDataSync extends JavaPlugin {
             getCommand("sync").setTabCompleter(syncCommand);
         }
         new UpdateChecker(this, 123166).check();
+        
+        getLogger().info("PlayerDataSync enabled successfully!");
     }
 
     @Override
     public void onDisable() {
+        getLogger().info("Disabling PlayerDataSync...");
+        
+        // Cancel autosave task
         if (autosaveTask != null) {
             autosaveTask.cancel();
+            autosaveTask = null;
+            getLogger().info("Autosave task cancelled");
         }
+        
+        // Save all online players before shutdown
         if (databaseManager != null) {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                databaseManager.savePlayer(player);
+            try {
+                int savedCount = 0;
+                long startTime = System.currentTimeMillis();
+                
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    try {
+                        databaseManager.savePlayer(player);
+                        savedCount++;
+                    } catch (Exception e) {
+                        getLogger().severe("Failed to save data for " + player.getName() + " during shutdown: " + e.getMessage());
+                    }
+                }
+                
+                long endTime = System.currentTimeMillis();
+                if (savedCount > 0) {
+                    getLogger().info("Saved data for " + savedCount + " players during shutdown in " + 
+                        (endTime - startTime) + "ms");
+                }
+            } catch (Exception e) {
+                getLogger().severe("Error saving players during shutdown: " + e.getMessage());
             }
         }
+        
+        // Shutdown connection pool
+        if (connectionPool != null) {
+            connectionPool.shutdown();
+            connectionPool = null;
+        }
+        
+        // Close database connection
         if (connection != null) {
             try {
                 connection.close();
@@ -135,6 +226,8 @@ public class PlayerDataSync extends JavaPlugin {
                 getLogger().severe("Error closing database connection: " + e.getMessage());
             }
         }
+        
+        getLogger().info("PlayerDataSync disabled successfully");
     }
 
     private Connection createConnection() throws SQLException {
@@ -146,6 +239,12 @@ public class PlayerDataSync extends JavaPlugin {
 
     public synchronized Connection getConnection() {
         try {
+            // Use connection pool if available
+            if (connectionPool != null) {
+                return connectionPool.getConnection();
+            }
+            
+            // Fallback to single connection
             if (connection == null || connection.isClosed() || !connection.isValid(2)) {
                 connection = createConnection();
                 getLogger().info("Reconnected to database");
@@ -154,6 +253,15 @@ public class PlayerDataSync extends JavaPlugin {
             getLogger().severe("Could not establish database connection: " + e.getMessage());
         }
         return connection;
+    }
+    
+    /**
+     * Return a connection to the pool (if pooling is enabled)
+     */
+    public void returnConnection(Connection conn) {
+        if (connectionPool != null && conn != null) {
+            connectionPool.returnConnection(conn);
+        }
     }
 
     public MessageManager getMessageManager() {
@@ -293,16 +401,34 @@ public class PlayerDataSync extends JavaPlugin {
             autosaveInterval = newInterval;
             if (autosaveTask != null) {
                 autosaveTask.cancel();
+                autosaveTask = null;
             }
             if (autosaveInterval > 0) {
                 long ticks = autosaveInterval * 1200L;
                 autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        databaseManager.savePlayer(player);
+                    try {
+                        int savedCount = 0;
+                        long startTime = System.currentTimeMillis();
+                        
+                        for (Player player : Bukkit.getOnlinePlayers()) {
+                            try {
+                                databaseManager.savePlayer(player);
+                                savedCount++;
+                            } catch (Exception e) {
+                                getLogger().warning("Failed to autosave data for " + player.getName() + ": " + e.getMessage());
+                            }
+                        }
+                        
+                        long endTime = System.currentTimeMillis();
+                        if (savedCount > 0) {
+                            getLogger().info("Autosaved data for " + savedCount + " players in " + 
+                                (endTime - startTime) + "ms");
+                        }
+                    } catch (Exception e) {
+                        getLogger().severe("Error during autosave: " + e.getMessage());
                     }
                 }, ticks, ticks);
-            } else {
-                autosaveTask = null;
+                getLogger().info("Autosave task restarted with interval: " + autosaveInterval + " minutes");
             }
         }
     }

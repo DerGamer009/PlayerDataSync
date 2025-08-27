@@ -49,7 +49,7 @@ sync:
   effects: true         # Active potion effects
   
   # Progress and Achievements
-  achievements: true    # Player advancements/achievements
+  achievements: true    # Player advancements/achievements (WARNING: May cause lag with 1000+ achievements)
   statistics: true      # Player statistics (blocks broken, distance traveled, etc.)
   
   # Advanced Features
@@ -84,6 +84,8 @@ performance:
   cache_size: 100       # number of player data entries to cache
   connection_pooling: true # use connection pooling for better performance
   async_loading: true   # load player data asynchronously on join
+  disable_achievement_sync_on_large_amounts: true # disable achievement sync if more than 500 achievements exist
+  achievement_batch_size: 50 # number of achievements to process in one batch to prevent lag
 
 # Security Settings
 security:
