@@ -483,9 +483,7 @@ public class DatabaseManager {
         
         try {
             String[] keys = data.split(",");
-            int loaded = 0;
-            int failed = 0;
-            int totalKeys = keys.length;
+            final int totalKeys = keys.length;
             
             // Log the number of achievements to be loaded
             if (totalKeys > 100) {
@@ -501,6 +499,9 @@ public class DatabaseManager {
                 
                 // Process batch asynchronously to prevent server lag
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    int batchLoaded = 0;
+                    int batchFailed = 0;
+                    
                     for (int j = batchStart; j < batchEnd; j++) {
                         String k = keys[j];
                         if (k.trim().isEmpty()) continue;
@@ -508,13 +509,13 @@ public class DatabaseManager {
                         try {
                             NamespacedKey key = NamespacedKey.fromString(k.trim());
                             if (key == null) {
-                                failed++;
+                                batchFailed++;
                                 continue;
                             }
                             
                             Advancement adv = Bukkit.getAdvancement(key);
                             if (adv == null) {
-                                failed++;
+                                batchFailed++;
                                 continue;
                             }
                             
@@ -523,10 +524,10 @@ public class DatabaseManager {
                                 for (String criterion : prog.getRemainingCriteria()) {
                                     prog.awardCriteria(criterion);
                                 }
-                                loaded++;
+                                batchLoaded++;
                             }
                         } catch (Exception e) {
-                            failed++;
+                            batchFailed++;
                             plugin.getLogger().warning("Failed to load advancement '" + k + "' for " + player.getName() + ": " + e.getMessage());
                         }
                     }
@@ -534,7 +535,7 @@ public class DatabaseManager {
                     // Log progress for large batches
                     if (totalKeys > 100 && batchEnd >= totalKeys) {
                         plugin.getLogger().info("Finished loading achievements for " + player.getName() + 
-                            ": " + loaded + " loaded, " + failed + " failed");
+                            ": " + batchLoaded + " loaded, " + batchFailed + " failed");
                     }
                 }, (i / BATCH_SIZE) * 2L); // Spread batches over time to prevent lag
             }
