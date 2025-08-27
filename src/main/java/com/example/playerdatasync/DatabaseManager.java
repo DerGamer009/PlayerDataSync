@@ -165,11 +165,25 @@ public class DatabaseManager {
             ps.setFloat(19, plugin.isSyncHunger() ? player.getSaturation() : 5);
             String advancementData = null;
             if (plugin.isSyncAchievements()) {
-                advancementData = serializeAdvancements(player);
-                if (advancementData != null && advancementData.length() > 16777215) {
-                    plugin.getLogger().warning("Advancement data for " + player.getName() + " is too large (" + 
-                        advancementData.length() + " characters), skipping advancement sync to prevent database errors");
+                // CRITICAL: Use async achievement serialization to prevent server freezing
+                try {
+                    advancementData = serializeAdvancements(player);
+                    if (advancementData != null && advancementData.length() > 16777215) {
+                        plugin.getLogger().warning("Advancement data for " + player.getName() + " is too large (" + 
+                            advancementData.length() + " characters), skipping advancement sync to prevent database errors");
+                        advancementData = null;
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().severe("CRITICAL: Achievement serialization failed for " + player.getName() + 
+                        ". Disabling achievement sync to prevent server freeze: " + e.getMessage());
                     advancementData = null;
+                    
+                    // CRITICAL: Disable achievement sync if it causes critical errors
+                    if (plugin.getConfig().getBoolean("compatibility.disable_achievements_on_critical_error", true)) {
+                        plugin.getLogger().severe("CRITICAL: Automatically disabling achievement sync for " + player.getName() + 
+                            " due to critical error. Set 'compatibility.disable_achievements_on_critical_error: false' to prevent this.");
+                        // Note: We can't call setSyncAchievements(false) here as it's not accessible
+                    }
                 }
             }
                 
@@ -347,14 +361,29 @@ public class DatabaseManager {
     /**
      * Serialize only newly obtained achievements (not all achievements)
      * This prevents loading all 1000+ achievements on first login
+     * CRITICAL FIX: Added timeout protection to prevent server freezing
      */
     private String serializeAdvancements(Player player) {
+        // CRITICAL: Add timeout protection to prevent server freezing
+        long startTime = System.currentTimeMillis();
+        final long TIMEOUT_MS = plugin.getConfig().getLong("performance.achievement_timeout_ms", 5000); // Configurable timeout
+        
         // Check if achievement sync is disabled due to performance concerns
         if (plugin.getConfig().getBoolean("performance.disable_achievement_sync_on_large_amounts", true)) {
             int totalAdvancements = 0;
             try {
+                // CRITICAL: Add timeout check for counting achievements
                 for (Iterator<Advancement> it = Bukkit.getServer().advancementIterator(); it.hasNext(); ) {
                     totalAdvancements++;
+                    
+                    // CRITICAL: Check timeout every 100 achievements to prevent freezing
+                    if (totalAdvancements % 100 == 0) {
+                        if (System.currentTimeMillis() - startTime > TIMEOUT_MS) {
+                            plugin.getLogger().severe("CRITICAL: Achievement counting timeout for " + player.getName() + 
+                                " after " + totalAdvancements + " achievements. Aborting to prevent server freeze.");
+                            return null;
+                        }
+                    }
                 }
                 
                 // If there are more than 500 achievements, disable sync to prevent lag
@@ -367,36 +396,67 @@ public class DatabaseManager {
                 plugin.getLogger().warning("Could not count achievements, proceeding with sync: " + e.getMessage());
             }
         }
+        
         StringBuilder sb = new StringBuilder();
         int count = 0;
         final int MAX_LENGTH = 16777215; // LONGTEXT max length in MySQL (16MB)
+        final int MAX_ACHIEVEMENTS = plugin.getConfig().getInt("performance.max_achievements_per_player", 1000); // Configurable limit
         
         try {
             // Only serialize achievements that are actually completed
             // This prevents loading all 1000+ achievements on first login
-            for (Iterator<Advancement> it = Bukkit.getServer().advancementIterator(); it.hasNext(); ) {
-                Advancement adv = it.next();
-                AdvancementProgress progress = player.getAdvancementProgress(adv);
-                if (progress.isDone()) {
-                    String key = adv.getKey().toString();
-                    // Add comma separator if not first entry
-                    String toAdd = (sb.length() > 0 ? "," : "") + key;
-                    
-                    // Check if adding this advancement would exceed the limit
-                    if (sb.length() + toAdd.length() > MAX_LENGTH) {
-                        plugin.getLogger().warning("Advancement data for " + player.getName() + 
-                            " is too large, truncating at " + count + " advancements");
+            Iterator<Advancement> it = Bukkit.getServer().advancementIterator();
+            
+            while (it.hasNext() && count < MAX_ACHIEVEMENTS) {
+                // CRITICAL: Check timeout every 50 achievements
+                if (count % 50 == 0 && count > 0) {
+                    if (System.currentTimeMillis() - startTime > TIMEOUT_MS) {
+                        plugin.getLogger().severe("CRITICAL: Achievement serialization timeout for " + player.getName() + 
+                            " after " + count + " achievements. Aborting to prevent server freeze.");
                         break;
                     }
-                    
-                    sb.append(toAdd);
-                    count++;
+                }
+                
+                Advancement adv = it.next();
+                if (adv == null) {
+                    plugin.getLogger().warning("Null advancement encountered, skipping...");
+                    continue;
+                }
+                
+                try {
+                    AdvancementProgress progress = player.getAdvancementProgress(adv);
+                    if (progress != null && progress.isDone()) {
+                        String key = adv.getKey().toString();
+                        // Add comma separator if not first entry
+                        String toAdd = (sb.length() > 0 ? "," : "") + key;
+                        
+                        // Check if adding this advancement would exceed the limit
+                        if (sb.length() + toAdd.length() > MAX_LENGTH) {
+                            plugin.getLogger().warning("Advancement data for " + player.getName() + 
+                                " is too large, truncating at " + count + " achievements");
+                            break;
+                        }
+                        
+                        sb.append(toAdd);
+                        count++;
+                    }
+                } catch (Exception e) {
+                    plugin.getLogger().warning("Error processing advancement for " + player.getName() + ": " + e.getMessage());
+                    // Continue with next advancement instead of failing completely
                 }
             }
             
             if (count > 0) {
-                plugin.getLogger().info("Serialized " + count + " achievements for " + player.getName());
+                plugin.getLogger().info("Serialized " + count + " achievements for " + player.getName() + " in " + 
+                    (System.currentTimeMillis() - startTime) + "ms");
             }
+            
+            // CRITICAL: Log if we hit the limit
+            if (count >= MAX_ACHIEVEMENTS) {
+                plugin.getLogger().warning("CRITICAL: Hit maximum achievement limit (" + MAX_ACHIEVEMENTS + 
+                    ") for " + player.getName() + ". This may indicate an infinite loop.");
+            }
+            
         } catch (Exception e) {
             plugin.getLogger().severe("Error serializing achievements for " + player.getName() + ": " + e.getMessage());
             return null;

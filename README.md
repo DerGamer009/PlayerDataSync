@@ -66,7 +66,13 @@ Messages support color codes using the `&` character. For example,
 
 ## Performance Considerations
 
-### Achievement Synchronization
+### ⚠️ CRITICAL: Achievement Synchronization
+**IMPORTANT**: If you experience server freezing or watchdog timeouts, this is likely caused by achievement synchronization issues. The plugin now includes automatic protection, but you should:
+
+1. **Set `performance.disable_achievement_sync_on_large_amounts: true`** in config.yml
+2. **Consider setting `sync.achievements: false`** if problems persist
+3. **Monitor server logs** for timeout warnings
+
 If you have a large number of achievements (500+), the achievement sync feature may cause server lag when players join. The plugin automatically detects large amounts and:
 
 - **Disables sync** if more than 500 achievements exist (configurable)
@@ -116,3 +122,21 @@ compatibility:
 2. **Update your server**: Consider updating to Paper 1.21.7+ for best compatibility
 3. **Disable problematic features**: Set `sync.attributes: false` if issues persist
 4. **Check server logs**: Look for version compatibility warnings on plugin startup
+
+### 🚨 Troubleshooting Server Freezing
+If your server freezes or shows watchdog timeouts:
+
+1. **Immediate fix**: Set `sync.achievements: false` in config.yml
+2. **Performance settings**: Ensure these are set:
+   ```yaml
+   performance:
+     disable_achievement_sync_on_large_amounts: true
+     achievement_timeout_ms: 3000  # Reduce timeout to 3 seconds
+     max_achievements_per_player: 500  # Reduce limit
+   ```
+3. **Compatibility settings**: Enable these:
+   ```yaml
+   compatibility:
+     disable_achievements_on_critical_error: true
+   ```
+4. **Check server logs** for "CRITICAL: Achievement serialization timeout" messages

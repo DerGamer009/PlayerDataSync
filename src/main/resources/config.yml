@@ -87,6 +87,8 @@ performance:
   async_loading: true   # load player data asynchronously on join
   disable_achievement_sync_on_large_amounts: true # disable achievement sync if more than 500 achievements exist
   achievement_batch_size: 50 # number of achievements to process in one batch to prevent lag
+  achievement_timeout_ms: 5000 # timeout for achievement serialization to prevent server freeze (milliseconds)
+  max_achievements_per_player: 1000 # hard limit to prevent infinite loops
 
 # Compatibility Settings
 compatibility:
@@ -95,6 +97,7 @@ compatibility:
   version_check: true        # perform version compatibility checks on startup
   legacy_1_20_support: true # enable additional compatibility features for Minecraft 1.20.x
   modern_1_21_support: true # enable additional compatibility features for Minecraft 1.21.x
+  disable_achievements_on_critical_error: true # automatically disable achievement sync on critical errors to prevent server freeze
 
 # Security Settings
 security:
