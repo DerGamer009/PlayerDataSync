@@ -165,9 +165,17 @@ public class DatabaseManager {
             ps.setFloat(19, plugin.isSyncHunger() ? player.getSaturation() : 5);
             String advancementData = null;
             if (plugin.isSyncAchievements()) {
-                // CRITICAL: Use async achievement serialization to prevent server freezing
+                // PERFORMANCE: Use timeout-based achievement serialization to prevent slow saves
                 try {
+                    long achievementStartTime = System.currentTimeMillis();
                     advancementData = serializeAdvancements(player);
+                    
+                    long achievementTime = System.currentTimeMillis() - achievementStartTime;
+                    if (achievementTime > 2000) { // More than 2 seconds
+                        plugin.getLogger().warning("Slow achievement serialization for " + player.getName() + 
+                            ": " + achievementTime + "ms. Consider disabling achievement sync for better performance.");
+                    }
+                    
                     if (advancementData != null && advancementData.length() > 16777215) {
                         plugin.getLogger().warning("Advancement data for " + player.getName() + " is too large (" + 
                             advancementData.length() + " characters), skipping advancement sync to prevent database errors");
@@ -186,8 +194,11 @@ public class DatabaseManager {
                     }
                 }
             }
+            ps.setString(20, advancementData); // FIXED: Set parameter 20 (advancements)
+            // Note: last_save uses NOW() in SQL, so no parameter needed
+            ps.setString(21, plugin.getConfig().getString("server.id", "default")); // FIXED: Set parameter 21 (server_id)
                 
-                ps.executeUpdate();
+            ps.executeUpdate();
             }
         } catch (SQLException e) {
             // Handle specific data truncation errors
@@ -371,19 +382,28 @@ public class DatabaseManager {
         // Check if achievement sync is disabled due to performance concerns
         if (plugin.getConfig().getBoolean("performance.disable_achievement_sync_on_large_amounts", true)) {
             int totalAdvancements = 0;
+            final int MAX_COUNT_ATTEMPTS = 1000; // Hard limit to prevent infinite loops
             try {
-                // CRITICAL: Add timeout check for counting achievements
-                for (Iterator<Advancement> it = Bukkit.getServer().advancementIterator(); it.hasNext(); ) {
+                // CRITICAL: Add timeout check for counting achievements with hard limit
+                Iterator<Advancement> it = Bukkit.getServer().advancementIterator();
+                while (it.hasNext() && totalAdvancements < MAX_COUNT_ATTEMPTS) {
                     totalAdvancements++;
                     
-                    // CRITICAL: Check timeout every 100 achievements to prevent freezing
-                    if (totalAdvancements % 100 == 0) {
+                    // CRITICAL: Check timeout every 50 achievements to prevent freezing
+                    if (totalAdvancements % 50 == 0) {
                         if (System.currentTimeMillis() - startTime > TIMEOUT_MS) {
                             plugin.getLogger().severe("CRITICAL: Achievement counting timeout for " + player.getName() + 
                                 " after " + totalAdvancements + " achievements. Aborting to prevent server freeze.");
                             return null;
                         }
                     }
+                }
+                
+                // If we hit the hard limit, something is wrong
+                if (totalAdvancements >= MAX_COUNT_ATTEMPTS) {
+                    plugin.getLogger().severe("CRITICAL: Achievement counting hit hard limit (" + MAX_COUNT_ATTEMPTS + 
+                        ") for " + player.getName() + ". This indicates an infinite loop. Disabling achievement sync.");
+                    return null;
                 }
                 
                 // If there are more than 500 achievements, disable sync to prevent lag
@@ -406,15 +426,26 @@ public class DatabaseManager {
             // Only serialize achievements that are actually completed
             // This prevents loading all 1000+ achievements on first login
             Iterator<Advancement> it = Bukkit.getServer().advancementIterator();
+            int processedCount = 0; // Track total processed (including non-completed)
+            final int MAX_PROCESSED = 2000; // Hard limit to prevent infinite loops
             
-            while (it.hasNext() && count < MAX_ACHIEVEMENTS) {
-                // CRITICAL: Check timeout every 50 achievements
-                if (count % 50 == 0 && count > 0) {
+            while (it.hasNext() && count < MAX_ACHIEVEMENTS && processedCount < MAX_PROCESSED) {
+                processedCount++;
+                
+                // CRITICAL: Check timeout every 25 achievements
+                if (count % 25 == 0 && count > 0) {
                     if (System.currentTimeMillis() - startTime > TIMEOUT_MS) {
                         plugin.getLogger().severe("CRITICAL: Achievement serialization timeout for " + player.getName() + 
                             " after " + count + " achievements. Aborting to prevent server freeze.");
                         break;
                     }
+                }
+                
+                // CRITICAL: Check if we've processed too many total advancements
+                if (processedCount >= MAX_PROCESSED) {
+                    plugin.getLogger().severe("CRITICAL: Achievement processing hit hard limit (" + MAX_PROCESSED + 
+                        ") for " + player.getName() + ". This indicates an infinite loop. Aborting.");
+                    break;
                 }
                 
                 Advancement adv = it.next();

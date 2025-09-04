@@ -24,31 +24,149 @@ additional libraries need to be installed on the server.
 player data should be synchronized:
 
 ```yaml
+# =====================================
+# PlayerDataSync Configuration
+# Compatible with Minecraft 1.20.4 - 1.21.8
+# =====================================
+
+# Server Configuration
+server:
+  id: default  # Unique identifier for this server instance
+
 database:
-  type: mysql # or sqlite
+  type: mysql # Available options: mysql, sqlite, postgresql
+  
+  # MySQL Database Configuration
   mysql:
     host: localhost
     port: 3306
     database: minecraft
     user: root
     password: password
+    ssl: false
+    connection_timeout: 5000 # milliseconds
+    max_connections: 10
+    
+  # SQLite Database Configuration  
   sqlite:
     file: plugins/PlayerDataSync/playerdata.db
+    
+  # PostgreSQL Database Configuration (experimental)
+  postgresql:
+    host: localhost
+    port: 5432
+    database: minecraft
+    user: postgres
+    password: password
+    ssl: false
 
+# Player Data Synchronization Settings
 sync:
-  coordinates: true
-  xp: true
-  gamemode: true
-  enderchest: true
-  inventory: true
-  health: true
-  hunger: true
-  position: true
-  achievements: true  # ⚠️ WARNING: May cause lag with 500+ achievements
+  # Basic Player Data
+  coordinates: true      # Player's current coordinates
+  position: true         # Player's position (world, x, y, z, yaw, pitch)
+  xp: true              # Experience points and levels
+  gamemode: true        # Current gamemode
+  
+  # Inventory and Storage
+  inventory: true       # Main inventory contents
+  enderchest: true      # Ender chest contents
+  armor: true           # Equipped armor pieces
+  offhand: true         # Offhand item
+  
+  # Player Status
+  health: true          # Current health
+  hunger: true          # Hunger and saturation
+  effects: true         # Active potion effects
+  
+  # Progress and Achievements
+  achievements: true    # Player advancements/achievements (WARNING: May cause lag with 1000+ achievements)
+  statistics: true      # Player statistics (blocks broken, distance traveled, etc.)
+  
+  # Advanced Features
+  attributes: true      # Player attributes (max health, speed, etc.)
+  permissions: false    # Sync permissions (requires LuckPerms integration)
+  economy: false        # Sync economy balance (requires Vault)
+
+# Automatic Save Configuration
 autosave:
-  interval: 5
-language: en
-metrics: true
+  enabled: true
+  interval: 5           # minutes between automatic saves, 0 to disable
+  on_world_change: true # save when player changes world
+  on_death: true        # save when player dies
+  async: true           # perform saves asynchronously
+
+# Data Management
+data_management:
+  cleanup:
+    enabled: false      # automatically clean old player data
+    days_inactive: 90   # remove data for players inactive for X days
+  backup:
+    enabled: true       # create backups of player data
+    interval: 1440      # backup interval in minutes (1440 = daily)
+    keep_backups: 7     # number of backups to keep
+  validation:
+    enabled: true       # validate data before saving/loading
+    strict_mode: false  # strict validation (may cause issues with custom items)
+
+# Performance Settings
+performance:
+  batch_size: 50        # number of players to process in one batch
+  cache_size: 100       # number of player data entries to cache
+  connection_pooling: true # use connection pooling for better performance
+  async_loading: true   # load player data asynchronously on join
+  disable_achievement_sync_on_large_amounts: true # disable achievement sync if more than 500 achievements exist
+  achievement_batch_size: 50 # number of achievements to process in one batch to prevent lag
+  achievement_timeout_ms: 5000 # timeout for achievement serialization to prevent server freeze (milliseconds)
+  max_achievements_per_player: 1000 # hard limit to prevent infinite loops
+
+# Compatibility Settings
+compatibility:
+  safe_attribute_sync: true  # use reflection-based attribute syncing for better version compatibility
+  disable_attributes_on_error: false # automatically disable attribute sync if errors occur
+  version_check: true        # perform version compatibility checks on startup
+  legacy_1_20_support: true # enable additional compatibility features for Minecraft 1.20.x
+  modern_1_21_support: true # enable additional compatibility features for Minecraft 1.21.x
+  disable_achievements_on_critical_error: true # automatically disable achievement sync on critical errors to prevent server freeze
+
+# Security Settings
+security:
+  encrypt_data: false   # encrypt sensitive data in database
+  hash_uuids: false     # hash player UUIDs for privacy
+  audit_log: true       # log all data operations
+
+# Integration Settings
+integrations:
+  bungeecord: false     # enable BungeeCord support
+  luckperms: false      # enable LuckPerms integration
+  vault: false          # enable Vault integration for economy
+  placeholderapi: false # enable PlaceholderAPI support
+
+# Message Configuration
+messages:
+  enabled: true         # enable player messages
+  language: en          # default language (en, de, fr, es, etc.)
+  prefix: "&8[&bPDS&8]" # message prefix
+  colors: true          # enable color codes in messages
+  
+# Logging and Debugging
+logging:
+  level: INFO           # Log level: DEBUG, INFO, WARN, ERROR
+  log_database: false   # log database operations
+  log_performance: false # log performance metrics
+  debug_mode: false     # enable debug mode for troubleshooting
+
+# Update Checker
+update_checker:
+  enabled: true         # check for plugin updates
+  notify_ops: true      # notify operators about updates
+  auto_download: false  # automatically download updates (not recommended)
+
+# Metrics and Analytics
+metrics:
+  bstats: true          # Enable bStats metrics collection
+  custom_metrics: true  # Enable custom plugin metrics
+
 ```
 
 `metrics` controls whether anonymous usage statistics are sent to

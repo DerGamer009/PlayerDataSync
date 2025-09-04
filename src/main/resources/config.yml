@@ -3,6 +3,10 @@
 # Compatible with Minecraft 1.20.4 - 1.21.8
 # =====================================
 
+# Server Configuration
+server:
+  id: default  # Unique identifier for this server instance
+
 database:
   type: mysql # Available options: mysql, sqlite, postgresql
   
