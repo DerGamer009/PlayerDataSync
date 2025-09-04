@@ -134,96 +134,96 @@ public class DatabaseManager {
             }
             
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, player.getUniqueId().toString());
-            if (plugin.isSyncCoordinates() || plugin.isSyncPosition()) {
-                Location loc = player.getLocation();
-                ps.setString(2, loc.getWorld().getName());
-                ps.setDouble(3, loc.getX());
-                ps.setDouble(4, loc.getY());
-                ps.setDouble(5, loc.getZ());
-                ps.setFloat(6, loc.getYaw());
-                ps.setFloat(7, loc.getPitch());
-            } else {
-                ps.setString(2, null);
-                ps.setDouble(3, 0);
-                ps.setDouble(4, 0);
-                ps.setDouble(5, 0);
-                ps.setFloat(6, 0);
-                ps.setFloat(7, 0);
-            }
-            ps.setInt(8, plugin.isSyncXp() ? player.getTotalExperience() : 0);
-            ps.setString(9, plugin.isSyncGamemode() ? player.getGameMode().name() : null);
-            try {
-                ps.setString(10, plugin.isSyncEnderchest() ? InventoryUtils.itemStackArrayToBase64(player.getEnderChest().getContents()) : null);
-                ps.setString(11, plugin.isSyncInventory() ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getContents()) : null);
-                ps.setString(12, plugin.isSyncArmor() ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getArmorContents()) : null);
-                ps.setString(13, plugin.isSyncOffhand() ? InventoryUtils.itemStackToBase64(player.getInventory().getItemInOffHand()) : null);
-                ps.setString(14, plugin.isSyncEffects() ? serializeEffects(player) : null);
-                ps.setString(15, plugin.isSyncStatistics() ? serializeStatistics(player) : null);
-                ps.setString(16, plugin.isSyncAttributes() ? serializeAttributes(player) : null);
-            } catch (Exception e) {
-                plugin.getLogger().severe("Error serializing data for " + player.getName() + ": " + e.getMessage());
-                ps.setString(10, null);
-                ps.setString(11, null);
-                ps.setString(12, null);
-                ps.setString(13, null);
-                ps.setString(14, null);
-                ps.setString(15, null);
-                ps.setString(16, null);
-            }
-            ps.setDouble(17, plugin.isSyncHealth() ? player.getHealth() : player.getMaxHealth());
-            ps.setInt(18, plugin.isSyncHunger() ? player.getFoodLevel() : 20);
-            ps.setFloat(19, plugin.isSyncHunger() ? player.getSaturation() : 5);
-            String advancementData = null;
-            if (plugin.isSyncAchievements()) {
-                // PERFORMANCE: Use timeout-based achievement serialization to prevent slow saves
+                ps.setString(1, player.getUniqueId().toString());
+                if (plugin.isSyncCoordinates() || plugin.isSyncPosition()) {
+                    Location loc = player.getLocation();
+                    ps.setString(2, loc.getWorld().getName());
+                    ps.setDouble(3, loc.getX());
+                    ps.setDouble(4, loc.getY());
+                    ps.setDouble(5, loc.getZ());
+                    ps.setFloat(6, loc.getYaw());
+                    ps.setFloat(7, loc.getPitch());
+                } else {
+                    ps.setString(2, null);
+                    ps.setDouble(3, 0);
+                    ps.setDouble(4, 0);
+                    ps.setDouble(5, 0);
+                    ps.setFloat(6, 0);
+                    ps.setFloat(7, 0);
+                }
+                ps.setInt(8, plugin.isSyncXp() ? player.getTotalExperience() : 0);
+                ps.setString(9, plugin.isSyncGamemode() ? player.getGameMode().name() : null);
                 try {
-                    long achievementStartTime = System.currentTimeMillis();
-                    advancementData = serializeAdvancements(player);
-                    
-                    long achievementTime = System.currentTimeMillis() - achievementStartTime;
-                    if (achievementTime > 2000) { // More than 2 seconds
-                        plugin.getLogger().warning("Slow achievement serialization for " + player.getName() + 
-                            ": " + achievementTime + "ms. Consider disabling achievement sync for better performance.");
-                    }
-                    
-                    if (advancementData != null && advancementData.length() > 16777215) {
-                        plugin.getLogger().warning("Advancement data for " + player.getName() + " is too large (" + 
-                            advancementData.length() + " characters), skipping advancement sync to prevent database errors");
-                        advancementData = null;
-                    }
+                    ps.setString(10, plugin.isSyncEnderchest() ? InventoryUtils.itemStackArrayToBase64(player.getEnderChest().getContents()) : null);
+                    ps.setString(11, plugin.isSyncInventory() ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getContents()) : null);
+                    ps.setString(12, plugin.isSyncArmor() ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getArmorContents()) : null);
+                    ps.setString(13, plugin.isSyncOffhand() ? InventoryUtils.itemStackToBase64(player.getInventory().getItemInOffHand()) : null);
+                    ps.setString(14, plugin.isSyncEffects() ? serializeEffects(player) : null);
+                    ps.setString(15, plugin.isSyncStatistics() ? serializeStatistics(player) : null);
+                    ps.setString(16, plugin.isSyncAttributes() ? serializeAttributes(player) : null);
                 } catch (Exception e) {
-                    plugin.getLogger().severe("CRITICAL: Achievement serialization failed for " + player.getName() + 
-                        ". Disabling achievement sync to prevent server freeze: " + e.getMessage());
-                    advancementData = null;
-                    
-                    // CRITICAL: Disable achievement sync if it causes critical errors
-                    if (plugin.getConfig().getBoolean("compatibility.disable_achievements_on_critical_error", true)) {
-                        plugin.getLogger().severe("CRITICAL: Automatically disabling achievement sync for " + player.getName() + 
-                            " due to critical error. Set 'compatibility.disable_achievements_on_critical_error: false' to prevent this.");
-                        // Note: We can't call setSyncAchievements(false) here as it's not accessible
+                    plugin.getLogger().severe("Error serializing data for " + player.getName() + ": " + e.getMessage());
+                    ps.setString(10, null);
+                    ps.setString(11, null);
+                    ps.setString(12, null);
+                    ps.setString(13, null);
+                    ps.setString(14, null);
+                    ps.setString(15, null);
+                    ps.setString(16, null);
+                }
+                ps.setDouble(17, plugin.isSyncHealth() ? player.getHealth() : player.getMaxHealth());
+                ps.setInt(18, plugin.isSyncHunger() ? player.getFoodLevel() : 20);
+                ps.setFloat(19, plugin.isSyncHunger() ? player.getSaturation() : 5);
+                String advancementData = null;
+                if (plugin.isSyncAchievements()) {
+                    // PERFORMANCE: Use timeout-based achievement serialization to prevent slow saves
+                    try {
+                        long achievementStartTime = System.currentTimeMillis();
+                        advancementData = serializeAdvancements(player);
+                        
+                        long achievementTime = System.currentTimeMillis() - achievementStartTime;
+                        if (achievementTime > 2000) { // More than 2 seconds
+                            plugin.getLogger().warning("Slow achievement serialization for " + player.getName() + 
+                                ": " + achievementTime + "ms. Consider disabling achievement sync for better performance.");
+                        }
+                        
+                        if (advancementData != null && advancementData.length() > 16777215) {
+                            plugin.getLogger().warning("Advancement data for " + player.getName() + " is too large (" + 
+                                advancementData.length() + " characters), skipping advancement sync to prevent database errors");
+                            advancementData = null;
+                        }
+                    } catch (Exception e) {
+                        plugin.getLogger().severe("CRITICAL: Achievement serialization failed for " + player.getName() + 
+                            ". Disabling achievement sync to prevent server freeze: " + e.getMessage());
+                        advancementData = null;
+                        
+                        // CRITICAL: Disable achievement sync if it causes critical errors
+                        if (plugin.getConfig().getBoolean("compatibility.disable_achievements_on_critical_error", true)) {
+                            plugin.getLogger().severe("CRITICAL: Automatically disabling achievement sync for " + player.getName() + 
+                                " due to critical error. Set 'compatibility.disable_achievements_on_critical_error: false' to prevent this.");
+                            // Note: We can't call setSyncAchievements(false) here as it's not accessible
+                        }
                     }
                 }
-            }
-            ps.setString(20, advancementData); // FIXED: Set parameter 20 (advancements)
-            // Note: last_save uses NOW() in SQL, so no parameter needed
-            ps.setString(21, plugin.getConfig().getString("server.id", "default")); // FIXED: Set parameter 21 (server_id)
+                ps.setString(20, advancementData); // FIXED: Set parameter 20 (advancements)
+                // Note: last_save uses NOW() in SQL, so no parameter needed
+                ps.setString(21, plugin.getConfig().getString("server.id", "default")); // FIXED: Set parameter 21 (server_id)
                 
-            ps.executeUpdate();
-            
-            // Update performance metrics
-            long saveTime = System.currentTimeMillis() - startTime;
-            totalSaveTime += saveTime;
-            saveCount++;
-            
-            // Log slow saves
-            if (saveTime > 1000) { // More than 1 second
-                plugin.getLogger().warning("Slow save detected for " + player.getName() + ": " + saveTime + "ms");
-            }
-            
-            // Log performance statistics periodically
-            logPerformanceStats();
-            
+                ps.executeUpdate();
+                
+                // Update performance metrics
+                long saveTime = System.currentTimeMillis() - startTime;
+                totalSaveTime += saveTime;
+                saveCount++;
+                
+                // Log slow saves
+                if (saveTime > 1000) { // More than 1 second
+                    plugin.getLogger().warning("Slow save detected for " + player.getName() + ": " + saveTime + "ms");
+                }
+                
+                // Log performance statistics periodically
+                logPerformanceStats();
+                
             } catch (SQLException e) {
                 // Handle specific data truncation errors
                 if (e.getMessage().contains("Data too long for column")) {
@@ -235,6 +235,9 @@ public class DatabaseManager {
             } finally {
                 plugin.returnConnection(connection);
             }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Unexpected error saving player " + player.getName() + ": " + e.getMessage());
+        }
     }
 
     public void loadPlayer(Player player) {
@@ -250,151 +253,154 @@ public class DatabaseManager {
             }
             
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
-            ps.setString(1, player.getUniqueId().toString());
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    if (plugin.isSyncCoordinates() || plugin.isSyncPosition()) {
-                        String worldName = rs.getString("world");
-                        if (worldName != null && !worldName.isEmpty()) {
-                            World world = Bukkit.getWorld(worldName);
-                            if (world != null) {
-                                Location loc = new Location(world,
-                                        rs.getDouble("x"),
-                                        rs.getDouble("y"),
-                                        rs.getDouble("z"),
-                                        rs.getFloat("yaw"),
-                                        rs.getFloat("pitch"));
-                                Bukkit.getScheduler().runTask(plugin, () -> player.teleport(loc));
-                            } else {
-                                plugin.getLogger().warning("World " + worldName + " not found when loading data for " + player.getName());
+                ps.setString(1, player.getUniqueId().toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        if (plugin.isSyncCoordinates() || plugin.isSyncPosition()) {
+                            String worldName = rs.getString("world");
+                            if (worldName != null && !worldName.isEmpty()) {
+                                World world = Bukkit.getWorld(worldName);
+                                if (world != null) {
+                                    Location loc = new Location(world,
+                                            rs.getDouble("x"),
+                                            rs.getDouble("y"),
+                                            rs.getDouble("z"),
+                                            rs.getFloat("yaw"),
+                                            rs.getFloat("pitch"));
+                                    Bukkit.getScheduler().runTask(plugin, () -> player.teleport(loc));
+                                } else {
+                                    plugin.getLogger().warning("World " + worldName + " not found when loading data for " + player.getName());
+                                }
                             }
                         }
-                    }
-                    if (plugin.isSyncXp()) {
-                        int xp = rs.getInt("xp");
-                        Bukkit.getScheduler().runTask(plugin, () -> applyExperience(player, xp));
-                    }
-                    if (plugin.isSyncGamemode()) {
-                        String gm = rs.getString("gamemode");
-                        if (gm != null) {
-                            GameMode mode = GameMode.valueOf(gm);
-                            Bukkit.getScheduler().runTask(plugin, () -> player.setGameMode(mode));
+                        if (plugin.isSyncXp()) {
+                            int xp = rs.getInt("xp");
+                            Bukkit.getScheduler().runTask(plugin, () -> applyExperience(player, xp));
                         }
-                    }
-                    if (plugin.isSyncEnderchest()) {
-                        String data = rs.getString("enderchest");
-                        if (data != null) {
-                            try {
-                                ItemStack[] items = InventoryUtils.itemStackArrayFromBase64(data);
-                                Bukkit.getScheduler().runTask(plugin, () -> player.getEnderChest().setContents(items));
-                            } catch (Exception e) {
-                                plugin.getLogger().severe("Error deserializing enderchest for " + player.getName() + ": " + e.getMessage());
+                        if (plugin.isSyncGamemode()) {
+                            String gm = rs.getString("gamemode");
+                            if (gm != null) {
+                                GameMode mode = GameMode.valueOf(gm);
+                                Bukkit.getScheduler().runTask(plugin, () -> player.setGameMode(mode));
                             }
                         }
-                    }
-                    if (plugin.isSyncInventory()) {
-                        String data = rs.getString("inventory");
-                        if (data != null) {
-                            try {
-                                ItemStack[] items = InventoryUtils.itemStackArrayFromBase64(data);
-                                Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setContents(items));
-                            } catch (Exception e) {
-                                plugin.getLogger().severe("Error deserializing inventory for " + player.getName() + ": " + e.getMessage());
+                        if (plugin.isSyncEnderchest()) {
+                            String data = rs.getString("enderchest");
+                            if (data != null) {
+                                try {
+                                    ItemStack[] items = InventoryUtils.itemStackArrayFromBase64(data);
+                                    Bukkit.getScheduler().runTask(plugin, () -> player.getEnderChest().setContents(items));
+                                } catch (Exception e) {
+                                    plugin.getLogger().severe("Error deserializing enderchest for " + player.getName() + ": " + e.getMessage());
+                                }
                             }
                         }
-                    }
-                    if (plugin.isSyncHealth()) {
-                        double health = rs.getDouble("health");
-                        Bukkit.getScheduler().runTask(plugin, () -> player.setHealth(Math.min(health, player.getMaxHealth())));
-                    }
-                    if (plugin.isSyncHunger()) {
-                        int hunger = rs.getInt("hunger");
-                        float saturation = rs.getFloat("saturation");
-                        Bukkit.getScheduler().runTask(plugin, () -> {
-                            player.setFoodLevel(hunger);
-                            player.setSaturation(saturation);
-                        });
-                    }
-                    if (plugin.isSyncArmor()) {
-                        String armorData = rs.getString("armor");
-                        if (armorData != null) {
-                            try {
-                                ItemStack[] armor = InventoryUtils.itemStackArrayFromBase64(armorData);
-                                Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setArmorContents(armor));
-                            } catch (Exception e) {
-                                plugin.getLogger().severe("Error deserializing armor for " + player.getName() + ": " + e.getMessage());
+                        if (plugin.isSyncInventory()) {
+                            String data = rs.getString("inventory");
+                            if (data != null) {
+                                try {
+                                    ItemStack[] items = InventoryUtils.itemStackArrayFromBase64(data);
+                                    Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setContents(items));
+                                } catch (Exception e) {
+                                    plugin.getLogger().severe("Error deserializing inventory for " + player.getName() + ": " + e.getMessage());
+                                }
                             }
                         }
-                    }
-                    if (plugin.isSyncOffhand()) {
-                        String offhandData = rs.getString("offhand");
-                        if (offhandData != null) {
-                            try {
-                                ItemStack offhand = InventoryUtils.itemStackFromBase64(offhandData);
-                                Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setItemInOffHand(offhand));
-                            } catch (Exception e) {
-                                plugin.getLogger().severe("Error deserializing offhand for " + player.getName() + ": " + e.getMessage());
+                        if (plugin.isSyncHealth()) {
+                            double health = rs.getDouble("health");
+                            Bukkit.getScheduler().runTask(plugin, () -> player.setHealth(Math.min(health, player.getMaxHealth())));
+                        }
+                        if (plugin.isSyncHunger()) {
+                            int hunger = rs.getInt("hunger");
+                            float saturation = rs.getFloat("saturation");
+                            Bukkit.getScheduler().runTask(plugin, () -> {
+                                player.setFoodLevel(hunger);
+                                player.setSaturation(saturation);
+                            });
+                        }
+                        if (plugin.isSyncArmor()) {
+                            String armorData = rs.getString("armor");
+                            if (armorData != null) {
+                                try {
+                                    ItemStack[] armor = InventoryUtils.itemStackArrayFromBase64(armorData);
+                                    Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setArmorContents(armor));
+                                } catch (Exception e) {
+                                    plugin.getLogger().severe("Error deserializing armor for " + player.getName() + ": " + e.getMessage());
+                                }
                             }
                         }
-                    }
-                    if (plugin.isSyncEffects()) {
-                        String effectsData = rs.getString("effects");
-                        if (effectsData != null) {
-                            Bukkit.getScheduler().runTask(plugin, () -> loadEffects(player, effectsData));
+                        if (plugin.isSyncOffhand()) {
+                            String offhandData = rs.getString("offhand");
+                            if (offhandData != null) {
+                                try {
+                                    ItemStack offhand = InventoryUtils.itemStackFromBase64(offhandData);
+                                    Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setItemInOffHand(offhand));
+                                } catch (Exception e) {
+                                    plugin.getLogger().severe("Error deserializing offhand for " + player.getName() + ": " + e.getMessage());
+                                }
+                            }
                         }
-                    }
-                    if (plugin.isSyncStatistics()) {
-                        String statsData = rs.getString("statistics");
-                        if (statsData != null) {
-                            Bukkit.getScheduler().runTask(plugin, () -> loadStatistics(player, statsData));
+                        if (plugin.isSyncEffects()) {
+                            String effectsData = rs.getString("effects");
+                            if (effectsData != null) {
+                                Bukkit.getScheduler().runTask(plugin, () -> loadEffects(player, effectsData));
+                            }
                         }
-                    }
-                    if (plugin.isSyncAttributes()) {
-                        String attributesData = rs.getString("attributes");
-                        if (attributesData != null) {
-                            Bukkit.getScheduler().runTask(plugin, () -> loadAttributes(player, attributesData));
+                        if (plugin.isSyncStatistics()) {
+                            String statsData = rs.getString("statistics");
+                            if (statsData != null) {
+                                Bukkit.getScheduler().runTask(plugin, () -> loadStatistics(player, statsData));
+                            }
                         }
-                    }
-                    if (plugin.isSyncAchievements()) {
-                        String advData = rs.getString("advancements");
-                        if (advData != null && !advData.isEmpty()) {
-                            // Check if there are too many achievements to prevent lag
-                            String[] achievementKeys = advData.split(",");
-                            if (achievementKeys.length > 200) {
-                                plugin.getLogger().warning("Large amount of achievements detected for " + player.getName() + 
-                                    " (" + achievementKeys.length + "). Loading in background to prevent server lag.");
-                                // Load achievements asynchronously in background
-                                Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                                    try {
-                                        loadAdvancements(player, advData);
-                                    } catch (Exception e) {
-                                        plugin.getLogger().severe("Error loading achievements for " + player.getName() + ": " + e.getMessage());
-                                    }
-                                });
-                            } else {
-                                // Load achievements normally for smaller amounts
-                                Bukkit.getScheduler().runTask(plugin, () -> loadAdvancements(player, advData));
+                        if (plugin.isSyncAttributes()) {
+                            String attributesData = rs.getString("attributes");
+                            if (attributesData != null) {
+                                Bukkit.getScheduler().runTask(plugin, () -> loadAttributes(player, attributesData));
+                            }
+                        }
+                        if (plugin.isSyncAchievements()) {
+                            String advData = rs.getString("advancements");
+                            if (advData != null && !advData.isEmpty()) {
+                                // Check if there are too many achievements to prevent lag
+                                String[] achievementKeys = advData.split(",");
+                                if (achievementKeys.length > 200) {
+                                    plugin.getLogger().warning("Large amount of achievements detected for " + player.getName() + 
+                                        " (" + achievementKeys.length + "). Loading in background to prevent server lag.");
+                                    // Load achievements asynchronously in background
+                                    Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                                        try {
+                                            loadAdvancements(player, advData);
+                                        } catch (Exception e) {
+                                            plugin.getLogger().severe("Error loading achievements for " + player.getName() + ": " + e.getMessage());
+                                        }
+                                    });
+                                } else {
+                                    // Load achievements normally for smaller amounts
+                                    Bukkit.getScheduler().runTask(plugin, () -> loadAdvancements(player, advData));
+                                }
                             }
                         }
                     }
                 }
-            }
-            
-            // Update performance metrics
-            long loadTime = System.currentTimeMillis() - startTime;
-            totalLoadTime += loadTime;
-            loadCount++;
-            
-            // Log slow loads
-            if (loadTime > 2000) { // More than 2 seconds
-                plugin.getLogger().warning("Slow load detected for " + player.getName() + ": " + loadTime + "ms");
-            }
-            
+                
+                // Update performance metrics
+                long loadTime = System.currentTimeMillis() - startTime;
+                totalLoadTime += loadTime;
+                loadCount++;
+                
+                // Log slow loads
+                if (loadTime > 2000) { // More than 2 seconds
+                    plugin.getLogger().warning("Slow load detected for " + player.getName() + ": " + loadTime + "ms");
+                }
+                
             } catch (SQLException e) {
                 plugin.getLogger().severe("Could not load data for " + player.getName() + ": " + e.getMessage());
             } finally {
                 plugin.returnConnection(connection);
             }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Unexpected error loading player " + player.getName() + ": " + e.getMessage());
+        }
     }
 
     private void applyExperience(Player player, int total) {
