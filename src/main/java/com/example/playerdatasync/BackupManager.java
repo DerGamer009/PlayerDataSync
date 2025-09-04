@@ -68,7 +68,7 @@ public class BackupManager {
     public CompletableFuture<BackupResult> createBackup(String type) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String timestamp = dateFormat.format(new Date());
+                String timestamp = dateFormat.format(new java.util.Date());
                 String backupName = "backup_" + type + "_" + timestamp;
                 File backupDir = new File(plugin.getDataFolder(), "backups");
                 
@@ -116,7 +116,7 @@ public class BackupManager {
             // Create SQL dump
             StringBuilder sqlDump = new StringBuilder();
             sqlDump.append("-- PlayerDataSync Database Backup\n");
-            sqlDump.append("-- Created: ").append(new Date()).append("\n\n");
+            sqlDump.append("-- Created: ").append(new java.util.Date()).append("\n\n");
             
             // Get table structure
             DatabaseMetaData metaData = connection.getMetaData();
@@ -264,7 +264,7 @@ public class BackupManager {
             backups.add(new BackupInfo(
                 backupFile.getName(),
                 backupFile.length(),
-                new Date(backupFile.lastModified())
+                new java.util.Date(backupFile.lastModified())
             ));
         }
         
@@ -321,9 +321,9 @@ public class BackupManager {
     public static class BackupInfo {
         private final String fileName;
         private final long fileSize;
-        private final Date createdDate;
+        private final java.util.Date createdDate;
         
-        public BackupInfo(String fileName, long fileSize, Date createdDate) {
+        public BackupInfo(String fileName, long fileSize, java.util.Date createdDate) {
             this.fileName = fileName;
             this.fileSize = fileSize;
             this.createdDate = createdDate;
@@ -331,7 +331,7 @@ public class BackupManager {
         
         public String getFileName() { return fileName; }
         public long getFileSize() { return fileSize; }
-        public Date getCreatedDate() { return createdDate; }
+        public java.util.Date getCreatedDate() { return createdDate; }
         
         public String getFormattedSize() {
             if (fileSize < 1024) return fileSize + " B";
