@@ -28,7 +28,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
     
     // Available sub-commands
     private static final List<String> SUB_COMMANDS = Arrays.asList(
-        "reload", "status", "save", "help", "cache", "validate"
+        "reload", "status", "save", "help", "cache", "validate", "backup", "restore"
     );
     
     public SyncCommand(PlayerDataSync plugin) {
@@ -62,6 +62,12 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
                 
             case "validate":
                 return handleValidate(sender, args);
+                
+            case "backup":
+                return handleBackup(sender, args);
+                
+            case "restore":
+                return handleRestore(sender, args);
                 
             default:
                 // Try to parse as sync option
@@ -186,15 +192,18 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
         if (!hasPermission(sender, "playerdatasync.admin")) return true;
         
         if (args.length > 1 && args[1].equalsIgnoreCase("clear")) {
-            // Clear cache (if implemented)
-            sender.sendMessage(messageManager.get("prefix") + " " + messageManager.get("cache_cleared"));
+            // Clear performance stats
+            plugin.getDatabaseManager().resetPerformanceStats();
+            sender.sendMessage(messageManager.get("prefix") + " " + "Performance statistics cleared.");
         } else {
-            // Show cache stats (if implemented)
-            sender.sendMessage(messageManager.get("prefix") + " " + 
-                messageManager.get("cache_stats")
-                    .replace("{hits}", "0")
-                    .replace("{misses}", "0")
-                    .replace("{size}", "0"));
+            // Show performance stats
+            String stats = plugin.getDatabaseManager().getPerformanceStats();
+            sender.sendMessage(messageManager.get("prefix") + " " + "Performance Stats: " + stats);
+            
+            // Show connection pool stats if available
+            if (plugin.getConnectionPool() != null) {
+                sender.sendMessage(messageManager.get("prefix") + " " + "Connection Pool: " + plugin.getConnectionPool().getStats());
+            }
         }
         return true;
     }
@@ -208,6 +217,72 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
         // Perform data validation (placeholder)
         sender.sendMessage(messageManager.get("prefix") + " Data validation completed.");
         return true;
+    }
+    
+    /**
+     * Handle backup command
+     */
+    private boolean handleBackup(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "playerdatasync.admin.backup")) return true;
+        
+        String backupType = args.length > 1 ? args[1] : "manual";
+        
+        sender.sendMessage(messageManager.get("prefix") + " Creating backup...");
+        
+        plugin.getBackupManager().createBackup(backupType).thenAccept(result -> {
+            if (result.isSuccess()) {
+                sender.sendMessage(messageManager.get("prefix") + " Backup created: " + result.getFileName() + 
+                    " (" + formatFileSize(result.getFileSize()) + ")");
+            } else {
+                sender.sendMessage(messageManager.get("prefix") + " Backup failed!");
+            }
+        });
+        
+        return true;
+    }
+    
+    /**
+     * Handle restore command
+     */
+    private boolean handleRestore(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "playerdatasync.admin.restore")) return true;
+        
+        if (args.length < 2) {
+            // List available backups
+            List<BackupManager.BackupInfo> backups = plugin.getBackupManager().listBackups();
+            if (backups.isEmpty()) {
+                sender.sendMessage(messageManager.get("prefix") + " No backups available.");
+            } else {
+                sender.sendMessage(messageManager.get("prefix") + " Available backups:");
+                for (BackupManager.BackupInfo backup : backups) {
+                    sender.sendMessage("§7- §f" + backup.getFileName() + " §8(" + backup.getFormattedSize() + 
+                        ", " + backup.getCreatedDate() + ")");
+                }
+            }
+            return true;
+        }
+        
+        String backupName = args[1];
+        sender.sendMessage(messageManager.get("prefix") + " Restoring from backup: " + backupName);
+        
+        plugin.getBackupManager().restoreFromBackup(backupName).thenAccept(success -> {
+            if (success) {
+                sender.sendMessage(messageManager.get("prefix") + " Restore completed successfully!");
+            } else {
+                sender.sendMessage(messageManager.get("prefix") + " Restore failed!");
+            }
+        });
+        
+        return true;
+    }
+    
+    /**
+     * Format file size for display
+     */
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
+        return String.format("%.1f MB", bytes / (1024.0 * 1024.0));
     }
     
     /**
@@ -245,8 +320,10 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage(messageManager.get("help_sync_reload"));
         sender.sendMessage(messageManager.get("help_sync_save"));
         sender.sendMessage("§b/sync status [player] §8- §7Check sync status");
-        sender.sendMessage("§b/sync cache [clear] §8- §7Manage cache");
-        sender.sendMessage("§b/sync validate §8- §7Validate data");
+        sender.sendMessage("§b/sync cache [clear] §8- §7Manage cache and performance stats");
+        sender.sendMessage("§b/sync validate §8- §7Validate data integrity");
+        sender.sendMessage("§b/sync backup [type] §8- §7Create manual backup");
+        sender.sendMessage("§b/sync restore [backup] §8- §7Restore from backup");
         sender.sendMessage("§b/sync help §8- §7Show this help");
         sender.sendMessage(messageManager.get("help_footer"));
         return true;
@@ -364,6 +441,20 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
             if (firstArg.equals("cache")) {
                 return Arrays.asList("clear", "stats").stream()
                     .filter(s -> s.startsWith(args[1].toLowerCase()))
+                    .collect(Collectors.toList());
+            }
+            
+            if (firstArg.equals("backup")) {
+                return Arrays.asList("manual", "automatic", "scheduled").stream()
+                    .filter(s -> s.startsWith(args[1].toLowerCase()))
+                    .collect(Collectors.toList());
+            }
+            
+            if (firstArg.equals("restore")) {
+                // List available backup files
+                return plugin.getBackupManager().listBackups().stream()
+                    .map(BackupManager.BackupInfo::getFileName)
+                    .filter(name -> name.toLowerCase().startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
             }
         }

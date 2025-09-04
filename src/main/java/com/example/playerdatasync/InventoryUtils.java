@@ -16,15 +16,18 @@ import java.util.Base64;
 public class InventoryUtils {
     
     /**
-     * Convert ItemStack array to Base64 string
+     * Convert ItemStack array to Base64 string with validation
      */
     public static String itemStackArrayToBase64(ItemStack[] items) throws IOException {
         if (items == null) return "";
         
+        // Validate and sanitize items before serialization
+        ItemStack[] sanitizedItems = sanitizeItemStackArray(items);
+        
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         try (BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream)) {
-            dataOutput.writeInt(items.length);
-            for (ItemStack item : items) {
+            dataOutput.writeInt(sanitizedItems.length);
+            for (ItemStack item : sanitizedItems) {
                 dataOutput.writeObject(item);
             }
         }
@@ -32,7 +35,7 @@ public class InventoryUtils {
     }
 
     /**
-     * Convert Base64 string to ItemStack array
+     * Convert Base64 string to ItemStack array with validation
      */
     public static ItemStack[] itemStackArrayFromBase64(String data) throws IOException, ClassNotFoundException {
         if (data == null || data.isEmpty()) return new ItemStack[0];
@@ -46,6 +49,13 @@ public class InventoryUtils {
                 items[i] = (ItemStack) dataInput.readObject();
             }
         }
+        
+        // Validate deserialized items
+        if (!validateItemStackArray(items)) {
+            // If validation fails, sanitize the items
+            return sanitizeItemStackArray(items);
+        }
+        
         return items;
     }
     

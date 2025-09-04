@@ -87,6 +87,8 @@ data_management:
 performance:
   batch_size: 50        # number of players to process in one batch
   cache_size: 100       # number of player data entries to cache
+  cache_ttl: 300000     # cache time-to-live in milliseconds (5 minutes)
+  cache_compression: true # enable cache compression for memory optimization
   connection_pooling: true # use connection pooling for better performance
   async_loading: true   # load player data asynchronously on join
   disable_achievement_sync_on_large_amounts: true # disable achievement sync if more than 500 achievements exist
@@ -135,6 +137,7 @@ update_checker:
   enabled: true         # check for plugin updates
   notify_ops: true      # notify operators about updates
   auto_download: false  # automatically download updates (not recommended)
+  timeout: 10000        # connection timeout in milliseconds
 
 # Metrics and Analytics
 metrics:

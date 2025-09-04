@@ -45,6 +45,7 @@ public class PlayerDataSync extends JavaPlugin {
 
     private DatabaseManager databaseManager;
     private ConfigManager configManager;
+    private BackupManager backupManager;
     private int autosaveInterval;
     private BukkitTask autosaveTask;
     private MessageManager messageManager;
@@ -163,6 +164,11 @@ public class PlayerDataSync extends JavaPlugin {
 
         databaseManager = new DatabaseManager(this);
         databaseManager.initialize();
+        
+        // Initialize backup manager
+        backupManager = new BackupManager(this);
+        backupManager.startAutomaticBackups();
+        
         getServer().getPluginManager().registerEvents(new PlayerDataListener(this, databaseManager), this);
         if (getCommand("sync") != null) {
             SyncCommand syncCommand = new SyncCommand(this);
@@ -208,6 +214,12 @@ public class PlayerDataSync extends JavaPlugin {
             } catch (Exception e) {
                 getLogger().severe("Error saving players during shutdown: " + e.getMessage());
             }
+        }
+        
+        // Stop backup manager
+        if (backupManager != null) {
+            backupManager.stopAutomaticBackups();
+            backupManager = null;
         }
         
         // Shutdown connection pool
@@ -491,6 +503,8 @@ public class PlayerDataSync extends JavaPlugin {
     // Getter methods for components
     public ConfigManager getConfigManager() { return configManager; }
     public DatabaseManager getDatabaseManager() { return databaseManager; }
+    public BackupManager getBackupManager() { return backupManager; }
+    public ConnectionPool getConnectionPool() { return connectionPool; }
     
     /**
      * Check server version compatibility and log warnings if needed

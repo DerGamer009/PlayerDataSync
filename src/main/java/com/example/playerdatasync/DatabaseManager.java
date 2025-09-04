@@ -15,9 +15,19 @@ import java.util.Iterator;
 
 public class DatabaseManager {
     private final PlayerDataSync plugin;
+    private final PlayerDataCache cache;
+    
+    // Performance monitoring
+    private long totalSaveTime = 0;
+    private long totalLoadTime = 0;
+    private int saveCount = 0;
+    private int loadCount = 0;
+    private long lastPerformanceLog = 0;
+    private final long PERFORMANCE_LOG_INTERVAL = 300000; // 5 minutes
 
     public DatabaseManager(PlayerDataSync plugin) {
         this.plugin = plugin;
+        this.cache = new PlayerDataCache(plugin);
     }
 
     public void initialize() {
@@ -112,6 +122,7 @@ public class DatabaseManager {
     }
 
     public void savePlayer(Player player) {
+        long startTime = System.currentTimeMillis();
         String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, armor, offhand, effects, statistics, attributes, health, hunger, saturation, advancements, last_save, server_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?)";
         
         Connection connection = null;
@@ -199,21 +210,35 @@ public class DatabaseManager {
             ps.setString(21, plugin.getConfig().getString("server.id", "default")); // FIXED: Set parameter 21 (server_id)
                 
             ps.executeUpdate();
+            
+            // Update performance metrics
+            long saveTime = System.currentTimeMillis() - startTime;
+            totalSaveTime += saveTime;
+            saveCount++;
+            
+            // Log slow saves
+            if (saveTime > 1000) { // More than 1 second
+                plugin.getLogger().warning("Slow save detected for " + player.getName() + ": " + saveTime + "ms");
             }
-        } catch (SQLException e) {
-            // Handle specific data truncation errors
-            if (e.getMessage().contains("Data too long for column")) {
-                plugin.getLogger().severe("Data truncation error for " + player.getName() + 
-                    ": " + e.getMessage() + ". Consider disabling achievement sync or check your database column sizes.");
-            } else {
-                plugin.getLogger().severe("Could not save data for " + player.getName() + ": " + e.getMessage());
+            
+            // Log performance statistics periodically
+            logPerformanceStats();
+            
+            } catch (SQLException e) {
+                // Handle specific data truncation errors
+                if (e.getMessage().contains("Data too long for column")) {
+                    plugin.getLogger().severe("Data truncation error for " + player.getName() + 
+                        ": " + e.getMessage() + ". Consider disabling achievement sync or check your database column sizes.");
+                } else {
+                    plugin.getLogger().severe("Could not save data for " + player.getName() + ": " + e.getMessage());
+                }
+            } finally {
+                plugin.returnConnection(connection);
             }
-        } finally {
-            plugin.returnConnection(connection);
-        }
     }
 
     public void loadPlayer(Player player) {
+        long startTime = System.currentTimeMillis();
         String sql = "SELECT * FROM player_data WHERE uuid = ?";
         
         Connection connection = null;
@@ -354,12 +379,22 @@ public class DatabaseManager {
                     }
                 }
             }
+            
+            // Update performance metrics
+            long loadTime = System.currentTimeMillis() - startTime;
+            totalLoadTime += loadTime;
+            loadCount++;
+            
+            // Log slow loads
+            if (loadTime > 2000) { // More than 2 seconds
+                plugin.getLogger().warning("Slow load detected for " + player.getName() + ": " + loadTime + "ms");
             }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Could not load data for " + player.getName() + ": " + e.getMessage());
-        } finally {
-            plugin.returnConnection(connection);
-        }
+            
+            } catch (SQLException e) {
+                plugin.getLogger().severe("Could not load data for " + player.getName() + ": " + e.getMessage());
+            } finally {
+                plugin.returnConnection(connection);
+            }
     }
 
     private void applyExperience(Player player, int total) {
@@ -786,5 +821,45 @@ public class DatabaseManager {
         } catch (Exception e) {
             plugin.getLogger().severe("Error loading attributes for " + player.getName() + ": " + e.getMessage());
         }
+    }
+    
+    /**
+     * Log performance statistics periodically
+     */
+    private void logPerformanceStats() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastPerformanceLog > PERFORMANCE_LOG_INTERVAL) {
+            lastPerformanceLog = currentTime;
+            
+            if (plugin.getConfigManager().isPerformanceLoggingEnabled()) {
+                double avgSaveTime = saveCount > 0 ? (double) totalSaveTime / saveCount : 0;
+                double avgLoadTime = loadCount > 0 ? (double) totalLoadTime / loadCount : 0;
+                
+                plugin.getLogger().info(String.format("Performance Stats - Saves: %d (avg: %.1fms), Loads: %d (avg: %.1fms)", 
+                    saveCount, avgSaveTime, loadCount, avgLoadTime));
+            }
+        }
+    }
+    
+    /**
+     * Get current performance statistics
+     */
+    public String getPerformanceStats() {
+        double avgSaveTime = saveCount > 0 ? (double) totalSaveTime / saveCount : 0;
+        double avgLoadTime = loadCount > 0 ? (double) totalLoadTime / loadCount : 0;
+        
+        return String.format("Saves: %d (avg: %.1fms), Loads: %d (avg: %.1fms)", 
+            saveCount, avgSaveTime, loadCount, avgLoadTime);
+    }
+    
+    /**
+     * Reset performance statistics
+     */
+    public void resetPerformanceStats() {
+        totalSaveTime = 0;
+        totalLoadTime = 0;
+        saveCount = 0;
+        loadCount = 0;
+        lastPerformanceLog = System.currentTimeMillis();
     }
 }

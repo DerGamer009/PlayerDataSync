@@ -30,7 +30,7 @@ public class ConnectionPool {
     }
 
     /**
-     * Get a connection from the pool
+     * Get a connection from the pool with improved error handling
      */
     public Connection getConnection() throws SQLException {
         if (shutdown) {
@@ -48,27 +48,35 @@ public class ConnectionPool {
             connection = createNewConnection();
             if (connection != null) {
                 connectionCount.incrementAndGet();
+                plugin.getLogger().fine("Created new database connection. Pool size: " + connectionCount.get());
                 return connection;
             }
         }
 
-        // Wait for a connection to become available
+        // Wait for a connection to become available with exponential backoff
         long startTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - startTime < 5000) { // 5 second timeout
+        long waitTime = 10; // Start with 10ms
+        final long maxWaitTime = 100; // Max 100ms between attempts
+        final long totalTimeout = 10000; // 10 second total timeout
+        
+        while (System.currentTimeMillis() - startTime < totalTimeout) {
             connection = availableConnections.poll();
             if (connection != null && isConnectionValid(connection)) {
                 return connection;
             }
             
             try {
-                Thread.sleep(50);
+                Thread.sleep(waitTime);
+                waitTime = Math.min(waitTime * 2, maxWaitTime); // Exponential backoff
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new SQLException("Interrupted while waiting for connection");
             }
         }
 
-        throw new SQLException("Unable to obtain database connection within timeout");
+        // Log pool statistics before throwing exception
+        plugin.getLogger().severe("Connection pool exhausted. " + getStats());
+        throw new SQLException("Unable to obtain database connection within timeout (" + totalTimeout + "ms)");
     }
 
     /**
