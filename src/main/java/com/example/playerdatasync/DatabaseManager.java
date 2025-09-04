@@ -423,7 +423,7 @@ public class DatabaseManager {
         // Check if achievement sync is disabled due to performance concerns
         if (plugin.getConfig().getBoolean("performance.disable_achievement_sync_on_large_amounts", true)) {
             int totalAdvancements = 0;
-            final int MAX_COUNT_ATTEMPTS = 1000; // Hard limit to prevent infinite loops
+            final int MAX_COUNT_ATTEMPTS = 2000; // Hard limit to prevent infinite loops (increased for Minecraft's 1000+ achievements)
             try {
                 // CRITICAL: Add timeout check for counting achievements with hard limit
                 Iterator<Advancement> it = Bukkit.getServer().advancementIterator();
@@ -447,8 +447,8 @@ public class DatabaseManager {
                     return null;
                 }
                 
-                // If there are more than 500 achievements, disable sync to prevent lag
-                if (totalAdvancements > 500) {
+                // If there are more than 1500 achievements, disable sync to prevent lag
+                if (totalAdvancements > 1500) {
                     plugin.getLogger().warning("Large amount of achievements detected (" + totalAdvancements + 
                         "). Achievement sync disabled for " + player.getName() + " to prevent server lag.");
                     return null;
@@ -461,14 +461,14 @@ public class DatabaseManager {
         StringBuilder sb = new StringBuilder();
         int count = 0;
         final int MAX_LENGTH = 16777215; // LONGTEXT max length in MySQL (16MB)
-        final int MAX_ACHIEVEMENTS = plugin.getConfig().getInt("performance.max_achievements_per_player", 1000); // Configurable limit
+        final int MAX_ACHIEVEMENTS = plugin.getConfig().getInt("performance.max_achievements_per_player", 2000); // Configurable limit (increased for Minecraft's 1000+ achievements)
         
         try {
             // Only serialize achievements that are actually completed
-            // This prevents loading all 1000+ achievements on first login
+            // This prevents loading all 2000+ achievements on first login
             Iterator<Advancement> it = Bukkit.getServer().advancementIterator();
             int processedCount = 0; // Track total processed (including non-completed)
-            final int MAX_PROCESSED = 2000; // Hard limit to prevent infinite loops
+            final int MAX_PROCESSED = 3000; // Hard limit to prevent infinite loops (increased for Minecraft's 1000+ achievements)
             
             while (it.hasNext() && count < MAX_ACHIEVEMENTS && processedCount < MAX_PROCESSED) {
                 processedCount++;
