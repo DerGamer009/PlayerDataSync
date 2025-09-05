@@ -59,8 +59,51 @@ public class PlayerDataSync extends JavaPlugin {
         checkVersionCompatibility();
         
         // Initialize configuration first
+        getLogger().info("Saving default configuration...");
         saveDefaultConfig();
+        
+        // Debug: Check if config file exists and has content
+        File configFile = new File(getDataFolder(), "config.yml");
+        if (configFile.exists()) {
+            getLogger().info("Config file exists. Size: " + configFile.length() + " bytes");
+            if (configFile.length() == 0) {
+                getLogger().warning("Config file is empty (0 bytes)! This indicates a problem with the JAR file or resource loading.");
+            }
+        } else {
+            getLogger().warning("Config file does not exist after saveDefaultConfig()!");
+            getLogger().warning("This usually means the config.yml resource is not properly embedded in the JAR file.");
+        }
+        
+        // Ensure config file exists and is not empty
+        if (getConfig().getKeys(false).isEmpty()) {
+            getLogger().warning("Configuration file is empty! Recreating from defaults...");
+            reloadConfig();
+            saveDefaultConfig();
+            
+            // Double-check that config is now loaded
+            if (getConfig().getKeys(false).isEmpty()) {
+                getLogger().severe("CRITICAL: Failed to load configuration! Plugin will be disabled.");
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
+        }
+        
         configManager = new ConfigManager(this);
+        
+        // If config is still empty after ConfigManager initialization, force initialize defaults
+        if (getConfig().getKeys(false).isEmpty()) {
+            getLogger().warning("Configuration still empty after ConfigManager init. Force initializing defaults...");
+            configManager.initializeDefaultConfig();
+            reloadConfig();
+            
+            // Final check - if still empty, create a minimal config manually
+            if (getConfig().getKeys(false).isEmpty()) {
+                getLogger().severe("CRITICAL: All configuration loading methods failed!");
+                getLogger().severe("Creating emergency minimal configuration...");
+                createEmergencyConfig();
+                reloadConfig();
+            }
+        }
         
         // Initialize message manager
         messageManager = new MessageManager(this);
@@ -569,6 +612,101 @@ public class PlayerDataSync extends JavaPlugin {
             
         } catch (Exception e) {
             getLogger().warning("Could not perform version compatibility check: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Create emergency minimal configuration when all other methods fail
+     */
+    private void createEmergencyConfig() {
+        try {
+            File configFile = new File(getDataFolder(), "config.yml");
+            if (!configFile.getParentFile().exists()) {
+                configFile.getParentFile().mkdirs();
+            }
+            
+            // Create minimal working configuration
+            String emergencyConfig = 
+                "config-version: 2\n" +
+                "server:\n" +
+                "  id: default\n" +
+                "database:\n" +
+                "  type: sqlite\n" +
+                "  sqlite:\n" +
+                "    file: plugins/PlayerDataSync/playerdata.db\n" +
+                "sync:\n" +
+                "  coordinates: true\n" +
+                "  position: true\n" +
+                "  xp: true\n" +
+                "  gamemode: true\n" +
+                "  inventory: true\n" +
+                "  enderchest: true\n" +
+                "  armor: true\n" +
+                "  offhand: true\n" +
+                "  health: true\n" +
+                "  hunger: true\n" +
+                "  effects: true\n" +
+                "  achievements: true\n" +
+                "  statistics: true\n" +
+                "  attributes: true\n" +
+                "  permissions: false\n" +
+                "  economy: false\n" +
+                "autosave:\n" +
+                "  enabled: true\n" +
+                "  interval: 5\n" +
+                "  on_world_change: true\n" +
+                "  on_death: true\n" +
+                "  async: true\n" +
+                "performance:\n" +
+                "  batch_size: 50\n" +
+                "  cache_size: 100\n" +
+                "  cache_ttl: 300000\n" +
+                "  cache_compression: true\n" +
+                "  connection_pooling: true\n" +
+                "  async_loading: true\n" +
+                "  disable_achievement_sync_on_large_amounts: true\n" +
+                "  achievement_batch_size: 50\n" +
+                "  achievement_timeout_ms: 5000\n" +
+                "  max_achievements_per_player: 2000\n" +
+                "compatibility:\n" +
+                "  safe_attribute_sync: true\n" +
+                "  disable_attributes_on_error: false\n" +
+                "  version_check: true\n" +
+                "  legacy_1_20_support: true\n" +
+                "  modern_1_21_support: true\n" +
+                "  disable_achievements_on_critical_error: true\n" +
+                "security:\n" +
+                "  encrypt_data: false\n" +
+                "  hash_uuids: false\n" +
+                "  audit_log: true\n" +
+                "logging:\n" +
+                "  level: INFO\n" +
+                "  log_database: false\n" +
+                "  log_performance: false\n" +
+                "  debug_mode: false\n" +
+                "update_checker:\n" +
+                "  enabled: true\n" +
+                "  notify_ops: true\n" +
+                "  auto_download: false\n" +
+                "  timeout: 10000\n" +
+                "metrics:\n" +
+                "  bstats: true\n" +
+                "  custom_metrics: true\n" +
+                "messages:\n" +
+                "  enabled: true\n" +
+                "  language: en\n" +
+                "  prefix: \"&8[&bPDS&8]\"\n" +
+                "  colors: true\n";
+            
+            try (FileWriter writer = new FileWriter(configFile)) {
+                writer.write(emergencyConfig);
+            }
+            
+            getLogger().info("Emergency configuration created successfully!");
+            
+        } catch (Exception e) {
+            getLogger().severe("Failed to create emergency configuration: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }

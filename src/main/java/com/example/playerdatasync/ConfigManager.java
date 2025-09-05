@@ -33,6 +33,13 @@ public class ConfigManager {
      * Validate and migrate configuration if needed
      */
     private void validateAndMigrateConfig() {
+        // Check if config is completely empty
+        if (config.getKeys(false).isEmpty()) {
+            plugin.getLogger().severe("Configuration file is completely empty! This indicates a serious problem.");
+            plugin.getLogger().severe("Please check if the plugin JAR file is corrupted or if there are permission issues.");
+            return;
+        }
+        
         int configVersion = config.getInt("config-version", 1);
         
         if (configVersion < CURRENT_CONFIG_VERSION) {
@@ -103,6 +110,105 @@ public class ConfigManager {
         addDefaultIfMissing("logging.log_database", false);
         addDefaultIfMissing("logging.log_performance", false);
         addDefaultIfMissing("logging.debug_mode", false);
+    }
+    
+    /**
+     * Initialize default configuration if completely missing
+     */
+    public void initializeDefaultConfig() {
+        plugin.getLogger().info("Initializing default configuration...");
+        
+        // Add all essential configuration sections
+        addDefaultIfMissing("config-version", CURRENT_CONFIG_VERSION);
+        
+        // Server configuration
+        addDefaultIfMissing("server.id", "default");
+        
+        // Database configuration
+        addDefaultIfMissing("database.type", "mysql");
+        addDefaultIfMissing("database.mysql.host", "localhost");
+        addDefaultIfMissing("database.mysql.port", 3306);
+        addDefaultIfMissing("database.mysql.database", "minecraft");
+        addDefaultIfMissing("database.mysql.user", "root");
+        addDefaultIfMissing("database.mysql.password", "password");
+        addDefaultIfMissing("database.mysql.ssl", false);
+        addDefaultIfMissing("database.mysql.connection_timeout", 5000);
+        addDefaultIfMissing("database.mysql.max_connections", 10);
+        addDefaultIfMissing("database.sqlite.file", "plugins/PlayerDataSync/playerdata.db");
+        
+        // Sync configuration
+        addDefaultIfMissing("sync.coordinates", true);
+        addDefaultIfMissing("sync.position", true);
+        addDefaultIfMissing("sync.xp", true);
+        addDefaultIfMissing("sync.gamemode", true);
+        addDefaultIfMissing("sync.inventory", true);
+        addDefaultIfMissing("sync.enderchest", true);
+        addDefaultIfMissing("sync.armor", true);
+        addDefaultIfMissing("sync.offhand", true);
+        addDefaultIfMissing("sync.health", true);
+        addDefaultIfMissing("sync.hunger", true);
+        addDefaultIfMissing("sync.effects", true);
+        addDefaultIfMissing("sync.achievements", true);
+        addDefaultIfMissing("sync.statistics", true);
+        addDefaultIfMissing("sync.attributes", true);
+        addDefaultIfMissing("sync.permissions", false);
+        addDefaultIfMissing("sync.economy", false);
+        
+        // Autosave configuration
+        addDefaultIfMissing("autosave.enabled", true);
+        addDefaultIfMissing("autosave.interval", 5);
+        addDefaultIfMissing("autosave.on_world_change", true);
+        addDefaultIfMissing("autosave.on_death", true);
+        addDefaultIfMissing("autosave.async", true);
+        
+        // Performance configuration
+        addDefaultIfMissing("performance.batch_size", 50);
+        addDefaultIfMissing("performance.cache_size", 100);
+        addDefaultIfMissing("performance.cache_ttl", 300000);
+        addDefaultIfMissing("performance.cache_compression", true);
+        addDefaultIfMissing("performance.connection_pooling", true);
+        addDefaultIfMissing("performance.async_loading", true);
+        addDefaultIfMissing("performance.disable_achievement_sync_on_large_amounts", true);
+        addDefaultIfMissing("performance.achievement_batch_size", 50);
+        addDefaultIfMissing("performance.achievement_timeout_ms", 5000);
+        addDefaultIfMissing("performance.max_achievements_per_player", 2000);
+        
+        // Compatibility configuration
+        addDefaultIfMissing("compatibility.safe_attribute_sync", true);
+        addDefaultIfMissing("compatibility.disable_attributes_on_error", false);
+        addDefaultIfMissing("compatibility.version_check", true);
+        addDefaultIfMissing("compatibility.legacy_1_20_support", true);
+        addDefaultIfMissing("compatibility.modern_1_21_support", true);
+        addDefaultIfMissing("compatibility.disable_achievements_on_critical_error", true);
+        
+        // Security configuration
+        addDefaultIfMissing("security.encrypt_data", false);
+        addDefaultIfMissing("security.hash_uuids", false);
+        addDefaultIfMissing("security.audit_log", true);
+        
+        // Logging configuration
+        addDefaultIfMissing("logging.level", "INFO");
+        addDefaultIfMissing("logging.log_database", false);
+        addDefaultIfMissing("logging.log_performance", false);
+        addDefaultIfMissing("logging.debug_mode", false);
+        
+        // Update checker configuration
+        addDefaultIfMissing("update_checker.enabled", true);
+        addDefaultIfMissing("update_checker.notify_ops", true);
+        addDefaultIfMissing("update_checker.auto_download", false);
+        addDefaultIfMissing("update_checker.timeout", 10000);
+        
+        // Metrics configuration
+        addDefaultIfMissing("metrics.bstats", true);
+        addDefaultIfMissing("metrics.custom_metrics", true);
+        
+        // Messages configuration
+        addDefaultIfMissing("messages.enabled", true);
+        addDefaultIfMissing("messages.language", "en");
+        addDefaultIfMissing("messages.prefix", "&8[&bPDS&8]");
+        addDefaultIfMissing("messages.colors", true);
+        
+        plugin.getLogger().info("Default configuration initialized successfully!");
     }
     
     /**
