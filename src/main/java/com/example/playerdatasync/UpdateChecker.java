@@ -11,15 +11,18 @@ import java.net.URL;
 public class UpdateChecker {
     private final JavaPlugin plugin;
     private final int resourceId;
+    private final MessageManager messageManager;
 
-    public UpdateChecker(JavaPlugin plugin, int resourceId) {
+    public UpdateChecker(JavaPlugin plugin, int resourceId, MessageManager messageManager) {
         this.plugin = plugin;
         this.resourceId = resourceId;
+        this.messageManager = messageManager;
     }
 
     public void check() {
         // Only check for updates if enabled in config
         if (!plugin.getConfig().getBoolean("update_checker.enabled", true)) {
+            plugin.getLogger().info(messageManager.get("update_check_disabled"));
             return;
         }
         
@@ -32,33 +35,33 @@ public class UpdateChecker {
 
                 int responseCode = connection.getResponseCode();
                 if (responseCode != 200) {
-                    plugin.getLogger().warning("Update check failed with HTTP " + responseCode);
+                    plugin.getLogger().warning(messageManager.get("update_check_failed", "HTTP " + responseCode));
                     return;
                 }
 
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
                     String latestVersion = reader.readLine();
                     if (latestVersion == null || latestVersion.isEmpty()) {
-                        plugin.getLogger().warning("Could not check for updates: empty response");
+                        plugin.getLogger().warning(messageManager.get("update_check_failed", "Empty response"));
                         return;
                     }
                     
                     String currentVersion = plugin.getDescription().getVersion();
                     if (currentVersion.equalsIgnoreCase(latestVersion)) {
                         if (plugin.getConfig().getBoolean("update_checker.notify_ops", true)) {
-                            plugin.getLogger().info("You are running the latest version (" + currentVersion + ")");
+                            plugin.getLogger().info(messageManager.get("update_current"));
                         }
                     } else {
-                        plugin.getLogger().info("A new version is available: " + latestVersion + " (current: " + currentVersion + ")");
-                        plugin.getLogger().info("Download at: https://www.spigotmc.org/resources/" + resourceId);
+                        plugin.getLogger().info(messageManager.get("update_available", latestVersion));
+                        plugin.getLogger().info(messageManager.get("update_download_url", "https://www.spigotmc.org/resources/" + resourceId));
                     }
                 }
             } catch (java.net.UnknownHostException e) {
-                plugin.getLogger().fine("Could not check for updates: No internet connection");
+                plugin.getLogger().fine(messageManager.get("update_check_no_internet"));
             } catch (java.net.SocketTimeoutException e) {
-                plugin.getLogger().warning("Update check timed out");
+                plugin.getLogger().warning(messageManager.get("update_check_timeout"));
             } catch (Exception e) {
-                plugin.getLogger().warning("Could not check for updates: " + e.getMessage());
+                plugin.getLogger().warning(messageManager.get("update_check_failed", e.getMessage()));
             }
         });
     }

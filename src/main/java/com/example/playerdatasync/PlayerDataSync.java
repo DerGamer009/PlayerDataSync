@@ -221,7 +221,7 @@ public class PlayerDataSync extends JavaPlugin {
             getCommand("sync").setExecutor(syncCommand);
             getCommand("sync").setTabCompleter(syncCommand);
         }
-        new UpdateChecker(this, 123166).check();
+        new UpdateChecker(this, 123166, messageManager).check();
         
         getLogger().info("PlayerDataSync enabled successfully!");
     }

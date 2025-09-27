@@ -98,6 +98,10 @@ integration_placeholderapi_enabled: "&aPlaceholderAPI integration enabled."
 update_available: "&aA new version is available: {version}"
 update_current: "&aYou are running the latest version."
 update_check_failed: "&cFailed to check for updates: {error}"
+update_check_disabled: "&eUpdate checking is disabled."
+update_check_timeout: "&eUpdate check timed out."
+update_check_no_internet: "&eNo internet connection for update check."
+update_download_url: "&7Download at: {url}"
 
 # Help Messages
 help_header: "&8&m----------&r &bPlayerDataSync Help &8&m----------"
