@@ -325,10 +325,6 @@ public class PlayerDataSync extends JavaPlugin {
         }
     }
 
-    public MessageManager getMessageManager() {
-        return messageManager;
-    }
-
     public boolean isSyncCoordinates() {
         return syncCoordinates;
     }
@@ -444,7 +440,8 @@ public class PlayerDataSync extends JavaPlugin {
     public void reloadPlugin() {
         reloadConfig();
 
-        String lang = getConfig().getString("language", "en");
+        // Always use messages.language path for reload
+        String lang = getConfig().getString("messages.language", "en");
         messageManager.load(lang);
 
         if (getConfig().getBoolean("metrics", true)) {
@@ -551,7 +548,8 @@ public class PlayerDataSync extends JavaPlugin {
     public DatabaseManager getDatabaseManager() { return databaseManager; }
     public BackupManager getBackupManager() { return backupManager; }
     public ConnectionPool getConnectionPool() { return connectionPool; }
-    
+    public MessageManager getMessageManager() { return messageManager; }
+
     /**
      * Check server version compatibility and log warnings if needed
      */

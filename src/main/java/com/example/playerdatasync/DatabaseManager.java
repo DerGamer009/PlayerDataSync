@@ -288,7 +288,7 @@ public class DatabaseManager {
                             String data = rs.getString("enderchest");
                             if (data != null) {
                                 try {
-                                    ItemStack[] items = InventoryUtils.itemStackArrayFromBase64(data);
+                                    ItemStack[] items = InventoryUtils.safeItemStackArrayFromBase64(data);
                                     Bukkit.getScheduler().runTask(plugin, () -> player.getEnderChest().setContents(items));
                                 } catch (Exception e) {
                                     plugin.getLogger().severe("Error deserializing enderchest for " + player.getName() + ": " + e.getMessage());
@@ -299,7 +299,7 @@ public class DatabaseManager {
                             String data = rs.getString("inventory");
                             if (data != null) {
                                 try {
-                                    ItemStack[] items = InventoryUtils.itemStackArrayFromBase64(data);
+                                    ItemStack[] items = InventoryUtils.safeItemStackArrayFromBase64(data);
                                     Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setContents(items));
                                 } catch (Exception e) {
                                     plugin.getLogger().severe("Error deserializing inventory for " + player.getName() + ": " + e.getMessage());
@@ -322,7 +322,7 @@ public class DatabaseManager {
                             String armorData = rs.getString("armor");
                             if (armorData != null) {
                                 try {
-                                    ItemStack[] armor = InventoryUtils.itemStackArrayFromBase64(armorData);
+                                    ItemStack[] armor = InventoryUtils.safeItemStackArrayFromBase64(armorData);
                                     Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setArmorContents(armor));
                                 } catch (Exception e) {
                                     plugin.getLogger().severe("Error deserializing armor for " + player.getName() + ": " + e.getMessage());
@@ -333,7 +333,7 @@ public class DatabaseManager {
                             String offhandData = rs.getString("offhand");
                             if (offhandData != null) {
                                 try {
-                                    ItemStack offhand = InventoryUtils.itemStackFromBase64(offhandData);
+                                    ItemStack offhand = InventoryUtils.safeItemStackFromBase64(offhandData);
                                     Bukkit.getScheduler().runTask(plugin, () -> player.getInventory().setItemInOffHand(offhand));
                                 } catch (Exception e) {
                                     plugin.getLogger().severe("Error deserializing offhand for " + player.getName() + ": " + e.getMessage());

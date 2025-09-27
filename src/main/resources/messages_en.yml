@@ -11,6 +11,8 @@ feature_disabled: "&cThis feature is currently disabled."
 
 # Data Synchronization Messages
 loading: "&aData is being synchronized..."
+loaded: "&aPlayer data loaded successfully."
+load_failed: "&cFailed to load player data."
 saving: "&eSaving player data..."
 sync_complete: "&aData synchronization completed successfully."
 sync_failed: "&cFailed to synchronize data: {error}"

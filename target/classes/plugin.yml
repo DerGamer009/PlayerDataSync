@@ -1,0 +1,184 @@
+name: PlayerDataSync
+main: com.example.playerdatasync.PlayerDataSync
+version: 1.1.6-SNAPSHOT
+api-version: "1.20"
+author: DerGamer09
+description: Advanced player data synchronization plugin for Minecraft servers
+website: https://github.com/DerGamer09/PlayerDataSync
+softdepend: [Vault, LuckPerms, PlaceholderAPI]
+
+commands:
+  sync:
+    description: View or change sync options
+    usage: /<command> [<option> <true|false>] | /<command> reload | /<command> status | /<command> save [player]
+    permission: playerdatasync.admin
+    aliases: [pds, playerdatasync]
+  
+  pdsstatus:
+    description: Check PlayerDataSync status and statistics
+    usage: /<command> [player]
+    permission: playerdatasync.status
+    aliases: [pdsstats]
+  
+  pdsbackup:
+    description: Manage player data backups
+    usage: /<command> create | /<command> restore <player> [backup_id] | /<command> list [player]
+    permission: playerdatasync.backup
+  
+  pdsimport:
+    description: Import player data from other plugins or formats
+    usage: /<command> <format> [options]
+    permission: playerdatasync.import
+  
+  pdsexport:
+    description: Export player data to various formats
+    usage: /<command> <format> [player] [options]
+    permission: playerdatasync.export
+
+permissions:
+  # Administrative permissions
+  playerdatasync.admin.*:
+    description: Allows all PlayerDataSync admin commands and features
+    default: op
+    children:
+      playerdatasync.admin.coordinates: true
+      playerdatasync.admin.position: true
+      playerdatasync.admin.xp: true
+      playerdatasync.admin.gamemode: true
+      playerdatasync.admin.enderchest: true
+      playerdatasync.admin.inventory: true
+      playerdatasync.admin.armor: true
+      playerdatasync.admin.offhand: true
+      playerdatasync.admin.health: true
+      playerdatasync.admin.hunger: true
+      playerdatasync.admin.effects: true
+      playerdatasync.admin.achievements: true
+      playerdatasync.admin.statistics: true
+      playerdatasync.admin.attributes: true
+      playerdatasync.admin.permissions: true
+      playerdatasync.admin.economy: true
+      playerdatasync.admin.reload: true
+      playerdatasync.admin.save: true
+      playerdatasync.backup: true
+      playerdatasync.import: true
+      playerdatasync.export: true
+      playerdatasync.status: true
+
+  # Individual sync feature permissions
+  playerdatasync.admin.coordinates:
+    description: Allows toggling coordinate synchronization
+    default: op
+  playerdatasync.admin.position:
+    description: Allows toggling position synchronization
+    default: op
+  playerdatasync.admin.xp:
+    description: Allows toggling experience synchronization
+    default: op
+  playerdatasync.admin.gamemode:
+    description: Allows toggling gamemode synchronization
+    default: op
+  playerdatasync.admin.enderchest:
+    description: Allows toggling enderchest synchronization
+    default: op
+  playerdatasync.admin.inventory:
+    description: Allows toggling inventory synchronization
+    default: op
+  playerdatasync.admin.armor:
+    description: Allows toggling armor synchronization
+    default: op
+  playerdatasync.admin.offhand:
+    description: Allows toggling offhand synchronization
+    default: op
+  playerdatasync.admin.health:
+    description: Allows toggling health synchronization
+    default: op
+  playerdatasync.admin.hunger:
+    description: Allows toggling hunger synchronization
+    default: op
+  playerdatasync.admin.effects:
+    description: Allows toggling potion effects synchronization
+    default: op
+  playerdatasync.admin.achievements:
+    description: Allows toggling achievements synchronization
+    default: op
+  playerdatasync.admin.statistics:
+    description: Allows toggling statistics synchronization
+    default: op
+  playerdatasync.admin.attributes:
+    description: Allows toggling attributes synchronization
+    default: op
+  playerdatasync.admin.permissions:
+    description: Allows toggling permissions synchronization
+    default: op
+  playerdatasync.admin.economy:
+    description: Allows toggling economy synchronization
+    default: op
+  playerdatasync.admin.reload:
+    description: Allows reloading the plugin configuration
+    default: op
+  playerdatasync.admin.save:
+    description: Allows manually saving player data
+    default: op
+
+  # Status and monitoring permissions
+  playerdatasync.status:
+    description: Allows checking plugin status and statistics
+    default: op
+  playerdatasync.status.others:
+    description: Allows checking other players' sync status
+    default: op
+
+  # Backup management permissions
+  playerdatasync.backup:
+    description: Allows managing player data backups
+    default: op
+  playerdatasync.backup.create:
+    description: Allows creating backups
+    default: op
+  playerdatasync.backup.restore:
+    description: Allows restoring from backups
+    default: op
+  playerdatasync.backup.others:
+    description: Allows managing other players' backups
+    default: op
+
+  # Import/Export permissions
+  playerdatasync.import:
+    description: Allows importing player data
+    default: op
+  playerdatasync.export:
+    description: Allows exporting player data
+    default: op
+
+  # Message permissions
+  playerdatasync.message.show.loading:
+    description: Allows player to see loading messages
+    default: true
+  playerdatasync.message.show.saving:
+    description: Allows player to see saving messages
+    default: true
+  playerdatasync.message.show.errors:
+    description: Allows player to see error messages
+    default: true
+  playerdatasync.message.show.sync:
+    description: Allows player to see sync notifications
+    default: false
+
+  # Bypass permissions
+  playerdatasync.bypass.sync:
+    description: Bypass automatic data synchronization
+    default: false
+  playerdatasync.bypass.autosave:
+    description: Bypass automatic saves
+    default: false
+  playerdatasync.bypass.validation:
+    description: Bypass data validation checks
+    default: false
+
+  # Integration permissions
+  playerdatasync.integration.vault:
+    description: Allow Vault economy integration
+    default: false
+  playerdatasync.integration.luckperms:
+    description: Allow LuckPerms integration
+    default: false

@@ -11,6 +11,8 @@ feature_disabled: "&cDiese Funktion ist derzeit deaktiviert."
 
 # Datensynchronisation Nachrichten
 loading: "&aDaten werden synchronisiert..."
+loaded: "&aSpielerdaten erfolgreich geladen."
+load_failed: "&cFehler beim Laden der Spielerdaten."
 saving: "&eSpeichere Spielerdaten..."
 sync_complete: "&aDatensynchronisation erfolgreich abgeschlossen."
 sync_failed: "&cFehler bei der Datensynchronisation: {error}"

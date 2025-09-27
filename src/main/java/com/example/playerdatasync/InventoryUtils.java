@@ -35,7 +35,7 @@ public class InventoryUtils {
     }
 
     /**
-     * Convert Base64 string to ItemStack array with validation
+     * Convert Base64 string to ItemStack array with validation and version compatibility
      */
     public static ItemStack[] itemStackArrayFromBase64(String data) throws IOException, ClassNotFoundException {
         if (data == null || data.isEmpty()) return new ItemStack[0];
@@ -46,7 +46,20 @@ public class InventoryUtils {
             int length = dataInput.readInt();
             items = new ItemStack[length];
             for (int i = 0; i < length; i++) {
-                items[i] = (ItemStack) dataInput.readObject();
+                try {
+                    items[i] = (ItemStack) dataInput.readObject();
+                } catch (Exception e) {
+                    // Handle version compatibility issues
+                    if (e.getMessage() != null && e.getMessage().contains("Newer version")) {
+                        // Log the version compatibility issue
+                        System.err.println("[PlayerDataSync] Version compatibility issue detected for item " + i + 
+                            ": " + e.getMessage() + ". Skipping corrupted item.");
+                        items[i] = null; // Set to null instead of crashing
+                    } else {
+                        // Re-throw other exceptions
+                        throw e;
+                    }
+                }
             }
         }
         
@@ -73,14 +86,27 @@ public class InventoryUtils {
     }
 
     /**
-     * Convert Base64 string to single ItemStack
+     * Convert Base64 string to single ItemStack with version compatibility
      */
     public static ItemStack itemStackFromBase64(String data) throws IOException, ClassNotFoundException {
         if (data == null || data.isEmpty()) return null;
         
         ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(data));
         try (BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream)) {
-            return (ItemStack) dataInput.readObject();
+            try {
+                return (ItemStack) dataInput.readObject();
+            } catch (Exception e) {
+                // Handle version compatibility issues
+                if (e.getMessage() != null && e.getMessage().contains("Newer version")) {
+                    // Log the version compatibility issue
+                    System.err.println("[PlayerDataSync] Version compatibility issue detected for single item: " + 
+                        e.getMessage() + ". Returning null.");
+                    return null; // Return null instead of crashing
+                } else {
+                    // Re-throw other exceptions
+                    throw e;
+                }
+            }
         }
     }
     
@@ -172,7 +198,7 @@ public class InventoryUtils {
     }
     
     /**
-     * Decompress ItemStack array data
+     * Decompress ItemStack array data with version compatibility
      */
     public static ItemStack[] decompressItemStackArray(String data) throws IOException, ClassNotFoundException {
         if (data == null || data.isEmpty()) return new ItemStack[0];
@@ -180,5 +206,35 @@ public class InventoryUtils {
         // For now, just use the standard deserialization
         // In the future, this could implement actual decompression
         return itemStackArrayFromBase64(data);
+    }
+    
+    /**
+     * Safely deserialize ItemStack array with comprehensive error handling
+     * Returns empty array if deserialization fails completely
+     */
+    public static ItemStack[] safeItemStackArrayFromBase64(String data) {
+        if (data == null || data.isEmpty()) return new ItemStack[0];
+        
+        try {
+            return itemStackArrayFromBase64(data);
+        } catch (Exception e) {
+            System.err.println("[PlayerDataSync] Failed to deserialize ItemStack array: " + e.getMessage());
+            return new ItemStack[0]; // Return empty array as fallback
+        }
+    }
+    
+    /**
+     * Safely deserialize single ItemStack with comprehensive error handling
+     * Returns null if deserialization fails
+     */
+    public static ItemStack safeItemStackFromBase64(String data) {
+        if (data == null || data.isEmpty()) return null;
+        
+        try {
+            return itemStackFromBase64(data);
+        } catch (Exception e) {
+            System.err.println("[PlayerDataSync] Failed to deserialize single ItemStack: " + e.getMessage());
+            return null; // Return null as fallback
+        }
     }
 }

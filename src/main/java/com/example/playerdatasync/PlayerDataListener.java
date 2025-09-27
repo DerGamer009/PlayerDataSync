@@ -12,17 +12,19 @@ import org.bukkit.event.player.PlayerQuitEvent;
 public class PlayerDataListener implements Listener {
     private final PlayerDataSync plugin;
     private final DatabaseManager dbManager;
+    private final MessageManager messageManager;
 
     public PlayerDataListener(PlayerDataSync plugin, DatabaseManager dbManager) {
         this.plugin = plugin;
         this.dbManager = dbManager;
+        this.messageManager = plugin.getMessageManager();
     }
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (player.hasPermission("playerdatasync.message.show.loading")) {
-            player.sendMessage(plugin.getMessageManager().get("prefix") + " " + plugin.getMessageManager().get("loading"));
+            player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("loading"));
         }
         
         // Delay loading slightly to ensure player is fully initialized
@@ -31,13 +33,13 @@ public class PlayerDataListener implements Listener {
                 dbManager.loadPlayer(player);
                 if (player.isOnline() && player.hasPermission("playerdatasync.message.show.loaded")) {
                     Bukkit.getScheduler().runTask(plugin, () -> 
-                        player.sendMessage(plugin.getMessageManager().get("prefix") + " " + plugin.getMessageManager().get("loaded")));
+                        player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("loaded")));
                 }
             } catch (Exception e) {
                 plugin.getLogger().severe("Error loading data for " + player.getName() + ": " + e.getMessage());
                 if (player.isOnline()) {
                     Bukkit.getScheduler().runTask(plugin, () -> 
-                        player.sendMessage(plugin.getMessageManager().get("prefix") + " " + plugin.getMessageManager().get("load_failed")));
+                        player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("load_failed")));
                 }
             }
         }, 20L); // 1 second delay
