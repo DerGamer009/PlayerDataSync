@@ -49,6 +49,7 @@ public class DatabaseManager {
                 "hunger INT," +
                 "saturation FLOAT," +
                 "advancements LONGTEXT," +
+                "economy DOUBLE DEFAULT 0.0," +
                 "last_save TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                 "server_id VARCHAR(50) DEFAULT 'default'" +
                 ")";
@@ -97,6 +98,7 @@ public class DatabaseManager {
                 addColumnIfNotExists(meta, st, "effects", "TEXT");
                 addColumnIfNotExists(meta, st, "statistics", "LONGTEXT");
                 addColumnIfNotExists(meta, st, "attributes", "TEXT");
+                addColumnIfNotExists(meta, st, "economy", "DOUBLE DEFAULT 0.0");
                 addColumnIfNotExists(meta, st, "last_save", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
                 addColumnIfNotExists(meta, st, "server_id", "VARCHAR(50) DEFAULT 'default'");
             }
@@ -123,7 +125,7 @@ public class DatabaseManager {
 
     public void savePlayer(Player player) {
         long startTime = System.currentTimeMillis();
-        String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, armor, offhand, effects, statistics, attributes, health, hunger, saturation, advancements, last_save, server_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?)";
+        String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, armor, offhand, effects, statistics, attributes, health, hunger, saturation, advancements, economy, last_save, server_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?)";
         
         Connection connection = null;
         try {
@@ -206,8 +208,16 @@ public class DatabaseManager {
                     }
                 }
                 ps.setString(20, advancementData); // FIXED: Set parameter 20 (advancements)
+                if (plugin.isSyncEconomy()) {
+                    double balance = getPlayerBalance(player);
+                    ps.setDouble(21, balance); // Set parameter 21 (economy)
+                    plugin.getLogger().info("DEBUG: Saving economy balance for " + player.getName() + ": " + balance);
+                } else {
+                    ps.setDouble(21, 0.0); // Set parameter 21 (economy)
+                    plugin.getLogger().info("DEBUG: Economy sync disabled, setting balance to 0.0 for " + player.getName());
+                }
                 // Note: last_save uses NOW() in SQL, so no parameter needed
-                ps.setString(21, plugin.getConfig().getString("server.id", "default")); // FIXED: Set parameter 21 (server_id)
+                ps.setString(22, plugin.getConfig().getString("server.id", "default")); // FIXED: Set parameter 22 (server_id)
                 
                 ps.executeUpdate();
                 
@@ -379,6 +389,13 @@ public class DatabaseManager {
                                     Bukkit.getScheduler().runTask(plugin, () -> loadAdvancements(player, advData));
                                 }
                             }
+                        }
+                        if (plugin.isSyncEconomy()) {
+                            double balance = rs.getDouble("economy");
+                            plugin.getLogger().info("DEBUG: Loading economy balance for " + player.getName() + ": " + balance);
+                            Bukkit.getScheduler().runTask(plugin, () -> setPlayerBalance(player, balance));
+                        } else {
+                            plugin.getLogger().info("DEBUG: Economy sync disabled, skipping balance load for " + player.getName());
                         }
                     }
                 }
@@ -867,5 +884,93 @@ public class DatabaseManager {
         saveCount = 0;
         loadCount = 0;
         lastPerformanceLog = System.currentTimeMillis();
+    }
+    
+    /**
+     * Get player balance using Vault API
+     */
+    private double getPlayerBalance(Player player) {
+        try {
+            // Check if Vault is available
+            if (plugin.getServer().getPluginManager().getPlugin("Vault") == null) {
+                plugin.getLogger().warning("Vault plugin not found! Economy sync requires Vault.");
+                return 0.0;
+            }
+            
+            // Get economy provider
+            net.milkbowl.vault.economy.Economy economy = plugin.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class).getProvider();
+            if (economy == null) {
+                plugin.getLogger().warning("No economy provider found! Economy sync requires an economy plugin.");
+                return 0.0;
+            }
+            
+            double balance = economy.getBalance(player);
+            plugin.getLogger().info("DEBUG: Retrieved balance for " + player.getName() + ": " + balance);
+            return balance;
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error getting player balance for " + player.getName() + ": " + e.getMessage());
+            return 0.0;
+        }
+    }
+    
+    /**
+     * Set player balance using Vault API
+     */
+    private void setPlayerBalance(Player player, double balance) {
+        plugin.getLogger().info("DEBUG: Attempting to set balance for " + player.getName() + " to " + balance);
+        
+        try {
+            // Check if Vault is available
+            if (plugin.getServer().getPluginManager().getPlugin("Vault") == null) {
+                plugin.getLogger().warning("Vault plugin not found! Economy sync requires Vault.");
+                return;
+            }
+            
+            // Get economy provider
+            net.milkbowl.vault.economy.Economy economy = plugin.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class).getProvider();
+            if (economy == null) {
+                plugin.getLogger().warning("No economy provider found! Economy sync requires an economy plugin.");
+                return;
+            }
+            
+            plugin.getLogger().info("DEBUG: Economy provider found: " + economy.getName());
+            
+            // Try to use setBalance method if available (some economy plugins support this)
+            try {
+                // Check if the economy provider has a setBalance method
+                java.lang.reflect.Method setBalanceMethod = economy.getClass().getMethod("setBalance", org.bukkit.OfflinePlayer.class, double.class);
+                setBalanceMethod.invoke(economy, player, balance);
+                plugin.getLogger().info("DEBUG: Set balance for " + player.getName() + " to " + balance + " using setBalance method");
+                return;
+            } catch (Exception e) {
+                plugin.getLogger().info("DEBUG: setBalance method not available, using deposit/withdraw approach");
+            }
+            
+            // Fallback: Calculate difference and adjust balance
+            double currentBalance = economy.getBalance(player);
+            double difference = balance - currentBalance;
+            
+            plugin.getLogger().info("DEBUG: Current balance: " + currentBalance + ", Target balance: " + balance + ", Difference: " + difference);
+            
+            if (Math.abs(difference) < 0.01) {
+                // Balance is already correct (within 1 cent tolerance)
+                plugin.getLogger().info("DEBUG: Balance is already correct (within tolerance)");
+                return;
+            }
+            
+            if (difference > 0) {
+                // Add money if saved balance is higher
+                economy.depositPlayer(player, difference);
+                plugin.getLogger().info("DEBUG: Added " + difference + " to " + player.getName() + "'s balance (now: " + balance + ")");
+            } else if (difference < 0) {
+                // Remove money if saved balance is lower
+                economy.withdrawPlayer(player, Math.abs(difference));
+                plugin.getLogger().info("DEBUG: Removed " + Math.abs(difference) + " from " + player.getName() + "'s balance (now: " + balance + ")");
+            }
+            
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error setting player balance for " + player.getName() + ": " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

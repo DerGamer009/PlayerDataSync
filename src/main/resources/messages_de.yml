@@ -103,6 +103,12 @@ update_check_timeout: "&eUpdate-Prüfung ist abgelaufen."
 update_check_no_internet: "&eKeine Internetverbindung für Update-Prüfung."
 update_download_url: "&7Download unter: {url}"
 
+# Server-Wechsel Nachrichten
+server_switch_save: "&eSpeichere Daten vor Server-Wechsel..."
+server_switch_saved: "&aDaten vor Server-Wechsel gespeichert."
+server_switch_load: "&aLade Daten nach Server-Wechsel..."
+server_switch_loaded: "&aDaten nach Server-Wechsel geladen."
+
 # Hilfe-Nachrichten
 help_header: "&8&m----------&r &bPlayerDataSync Hilfe &8&m----------"
 help_footer: "&8&m----------------------------------------"

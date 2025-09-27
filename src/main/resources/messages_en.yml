@@ -103,6 +103,12 @@ update_check_timeout: "&eUpdate check timed out."
 update_check_no_internet: "&eNo internet connection for update check."
 update_download_url: "&7Download at: {url}"
 
+# Server Switch Messages
+server_switch_save: "&eSaving data before server switch..."
+server_switch_saved: "&aData saved before server switch."
+server_switch_load: "&aLoading data after server switch..."
+server_switch_loaded: "&aData loaded after server switch."
+
 # Help Messages
 help_header: "&8&m----------&r &bPlayerDataSync Help &8&m----------"
 help_footer: "&8&m----------------------------------------"

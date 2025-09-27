@@ -3,11 +3,14 @@ package com.example.playerdatasync;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 
 public class PlayerDataListener implements Listener {
     private final PlayerDataSync plugin;
@@ -102,5 +105,57 @@ public class PlayerDataListener implements Listener {
                     " on death: " + e.getMessage());
             }
         });
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerKick(PlayerKickEvent event) {
+        // Save data when player is kicked (might be server switch)
+        if (!plugin.getConfig().getBoolean("autosave.on_kick", true)) return;
+        
+        Player player = event.getPlayer();
+        
+        plugin.getLogger().info("DEBUG: Player " + player.getName() + " was kicked, saving data");
+        
+        try {
+            long startTime = System.currentTimeMillis();
+            dbManager.savePlayer(player);
+            long endTime = System.currentTimeMillis();
+            
+            plugin.getLogger().info("DEBUG: Saved data for kicked player " + player.getName() + 
+                " in " + (endTime - startTime) + "ms");
+            
+        } catch (Exception e) {
+            plugin.getLogger().severe("Failed to save data for kicked player " + player.getName() + ": " + e.getMessage());
+        }
+    }
+    
+    @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
+        // Check if this is a server-to-server teleport (BungeeCord)
+        if (!plugin.getConfig().getBoolean("autosave.on_server_switch", true)) return;
+        
+        if (event.getCause() == PlayerTeleportEvent.TeleportCause.PLUGIN) {
+            Player player = event.getPlayer();
+            
+            // Check if the teleport is to a different server (BungeeCord behavior)
+            if (event.getTo() != null && event.getTo().getWorld() != null) {
+                String currentServer = plugin.getConfig().getString("server.id", "default");
+                
+                plugin.getLogger().info("DEBUG: Player " + player.getName() + " teleported via plugin, saving data");
+                
+                // Save data before teleport
+                try {
+                    long startTime = System.currentTimeMillis();
+                    dbManager.savePlayer(player);
+                    long endTime = System.currentTimeMillis();
+                    
+                    plugin.getLogger().info("DEBUG: Saved data for teleporting player " + player.getName() + 
+                        " in " + (endTime - startTime) + "ms");
+                    
+                } catch (Exception e) {
+                    plugin.getLogger().severe("Failed to save data for teleporting player " + player.getName() + ": " + e.getMessage());
+                }
+            }
+        }
     }
 }

@@ -5,7 +5,105 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.5-SNAPSHOT] - 2025-01-05
+## [1.1.7-SNAPSHOT] - 2025-01-05
+
+### Added
+- **Extended Version Support**: Full compatibility with Minecraft 1.20.4 to 1.21.9
+  - Comprehensive version detection and compatibility checking
+  - Maven build profiles for different Minecraft versions
+  - Enhanced startup version validation
+- **Enhanced Message System**: Improved localization support
+  - Added parameter support to MessageManager (`get(String key, String... params)`)
+  - Support for both indexed (`{0}`, `{1}`) and named (`{version}`, `{error}`, `{url}`) placeholders
+  - Dynamic message content with variable substitution
+- **Version Compatibility Fixes**: Robust ItemStack deserialization
+  - Safe deserialization methods (`safeItemStackArrayFromBase64`, `safeItemStackFromBase64`)
+  - Graceful handling of version-incompatible ItemStack data
+  - Individual item error handling to prevent complete deserialization failures
+  - Fallback mechanisms for corrupted or incompatible data
+- **Enhanced Update Checker**: Improved console messaging
+  - Localized update checker messages in German and English
+  - Better error handling with specific error messages
+  - Configurable update checking with proper console feedback
+  - Dynamic content in update notifications (version numbers, URLs)
+
+### Changed
+- **Java Version**: Upgraded from Java 17 to Java 21 for optimal performance
+- **Minecraft Version**: Updated default target to Minecraft 1.21
+- **Plugin Metadata**: Enhanced plugin.yml with proper `authors` array and `load: STARTUP`
+- **Version Compatibility**: Comprehensive support for 1.20.4 through 1.21.9
+- **Message Handling**: All hardcoded messages replaced with localized MessageManager calls
+- **Error Recovery**: Better handling of version compatibility issues
+
+### Fixed
+- **Critical Version Compatibility**: Fixed "Newer version! Server downgrades are not supported!" errors
+  - ItemStack deserialization now handles version mismatches gracefully
+  - Individual items that can't be deserialized are skipped instead of crashing
+  - Empty arrays returned as fallback for completely failed deserialization
+- **MessageManager Compilation**: Fixed "Method get cannot be applied to given types" errors
+  - Added overloaded `get` method with parameter support
+  - Proper parameter replacement for dynamic content
+  - Backward compatibility with existing `get(String key)` method
+- **Update Checker Messages**: Fixed missing console messages
+  - All update checker events now display proper localized messages
+  - Dynamic content (version numbers, URLs) properly integrated
+  - Better error reporting for different failure scenarios
+- **Database Loading**: Enhanced error handling for corrupted inventory data
+  - Safe deserialization prevents server crashes from version issues
+  - Partial data recovery when some items are incompatible
+  - Better logging for version compatibility issues
+
+### Security
+- **Data Validation**: Enhanced ItemStack validation and sanitization
+- **Error Handling**: Graceful degradation for corrupted or incompatible data
+- **Version Safety**: Protection against version-related crashes
+
+### Performance
+- **Memory Efficiency**: Better handling of large ItemStack arrays
+- **Error Recovery**: Faster recovery from deserialization failures
+- **Resource Management**: Improved cleanup of failed operations
+
+### Compatibility
+- **Minecraft 1.20.4**: Full support confirmed
+- **Minecraft 1.20.5**: Full support confirmed
+- **Minecraft 1.20.6**: Full support confirmed
+- **Minecraft 1.21.0**: Full support confirmed
+- **Minecraft 1.21.1**: Full support confirmed
+- **Minecraft 1.21.2**: Full support confirmed
+- **Minecraft 1.21.3**: Full support confirmed
+- **Minecraft 1.21.4**: Full support confirmed
+- **Minecraft 1.21.5**: Full support confirmed
+- **Minecraft 1.21.6**: Full support confirmed
+- **Minecraft 1.21.7**: Full support confirmed
+- **Minecraft 1.21.8**: Full support confirmed
+- **Minecraft 1.21.9**: Full support confirmed
+
+### Configuration
+- **New Messages**:
+  - `loaded`: "Player data loaded successfully" / "Spielerdaten erfolgreich geladen"
+  - `load_failed`: "Failed to load player data" / "Fehler beim Laden der Spielerdaten"
+  - `update_check_disabled`: "Update checking is disabled" / "Update-Prüfung ist deaktiviert"
+  - `update_check_timeout`: "Update check timed out" / "Update-Prüfung ist abgelaufen"
+  - `update_check_no_internet`: "No internet connection for update check" / "Keine Internetverbindung für Update-Prüfung"
+  - `update_download_url`: "Download at: {url}" / "Download unter: {url}"
+
+### Commands
+- **Enhanced Commands**:
+  - All commands now use localized messages with parameter support
+  - Better error reporting with dynamic content
+  - Improved user feedback for all operations
+
+### Technical Details
+- **Build System**: Maven profiles for different Minecraft versions
+  - `mvn package -Pmc-1.20.4` for Minecraft 1.20.4 (Java 17)
+  - `mvn package -Pmc-1.21` for Minecraft 1.21 (Java 21) - Default
+  - `mvn package -Pmc-1.21.1` for Minecraft 1.21.1 (Java 21)
+- **Code Quality**: Enhanced error handling and parameter validation
+- **Resource Management**: Better cleanup and memory management
+- **Exception Handling**: More specific error messages and recovery mechanisms
+- **Debugging**: Enhanced diagnostic information and version compatibility logging
+
+---
 
 ### Added
 - **Backup System**: Complete backup and restore functionality

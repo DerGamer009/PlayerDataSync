@@ -211,6 +211,23 @@ public class PlayerDataSync extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         databaseManager.initialize();
         
+        // Check Vault integration for economy sync
+        getLogger().info("DEBUG: Economy sync setting from config: " + getConfig().getBoolean("sync.economy", false));
+        getLogger().info("DEBUG: Economy sync variable: " + syncEconomy);
+        
+        if (syncEconomy) {
+            if (getServer().getPluginManager().getPlugin("Vault") == null) {
+                getLogger().warning("Vault plugin not found! Economy sync requires Vault. Disabling economy sync.");
+                syncEconomy = false;
+                getConfig().set("sync.economy", false);
+            } else {
+                getLogger().info("Vault integration enabled for economy sync.");
+                getLogger().info("DEBUG: Vault plugin found: " + getServer().getPluginManager().getPlugin("Vault").getName());
+            }
+        } else {
+            getLogger().info("DEBUG: Economy sync is disabled in configuration");
+        }
+        
         // Initialize backup manager
         backupManager = new BackupManager(this);
         backupManager.startAutomaticBackups();
@@ -543,12 +560,45 @@ public class PlayerDataSync extends JavaPlugin {
         saveConfig(); 
     }
     
+    /**
+     * Manually trigger economy sync for a player
+     * This can be called by other plugins when server switching is detected
+     */
+    public void triggerEconomySync(Player player) {
+        if (!syncEconomy) {
+            getLogger().info("DEBUG: Economy sync disabled, skipping manual trigger for " + player.getName());
+            return;
+        }
+        
+        getLogger().info("DEBUG: Manual economy sync triggered for " + player.getName());
+        
+        try {
+            long startTime = System.currentTimeMillis();
+            databaseManager.savePlayer(player);
+            long endTime = System.currentTimeMillis();
+            
+            getLogger().info("DEBUG: Manual economy sync completed for " + player.getName() + 
+                " in " + (endTime - startTime) + "ms");
+            
+        } catch (Exception e) {
+            getLogger().severe("Failed to manually sync economy for " + player.getName() + ": " + e.getMessage());
+        }
+    }
+    
     // Getter methods for components
     public ConfigManager getConfigManager() { return configManager; }
     public DatabaseManager getDatabaseManager() { return databaseManager; }
     public BackupManager getBackupManager() { return backupManager; }
     public ConnectionPool getConnectionPool() { return connectionPool; }
     public MessageManager getMessageManager() { return messageManager; }
+    
+    /**
+     * API method for other plugins to trigger economy sync
+     * This is useful when detecting server switches via BungeeCord or other methods
+     */
+    public void syncPlayerEconomy(Player player) {
+        triggerEconomySync(player);
+    }
 
     /**
      * Check server version compatibility and log warnings if needed
