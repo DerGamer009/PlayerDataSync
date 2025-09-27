@@ -83,4 +83,26 @@ public class MessageManager {
         String raw = messages.getString(key, key);
         return ChatColor.translateAlternateColorCodes('&', raw);
     }
+    
+    public String get(String key, String... params) {
+        if (messages == null) return key;
+        String raw = messages.getString(key, key);
+        
+        // Replace placeholders with parameters
+        for (int i = 0; i < params.length; i++) {
+            String placeholder = "{" + i + "}";
+            if (raw.contains(placeholder)) {
+                raw = raw.replace(placeholder, params[i] != null ? params[i] : "");
+            }
+        }
+        
+        // Also support named placeholders for common cases
+        if (params.length > 0) {
+            raw = raw.replace("{version}", params[0] != null ? params[0] : "");
+            raw = raw.replace("{error}", params[0] != null ? params[0] : "");
+            raw = raw.replace("{url}", params[0] != null ? params[0] : "");
+        }
+        
+        return ChatColor.translateAlternateColorCodes('&', raw);
+    }
 }
