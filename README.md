@@ -1,14 +1,28 @@
 # PlayerDataSync
 
-A simple Bukkit/Spigot plugin for Minecraft 1.20.4+ that synchronizes player data using either a MySQL or SQLite database. This project is built with Maven.
-Player inventories, experience, health and more are stored in the configured
+A comprehensive Bukkit/Spigot plugin for Minecraft 1.20.4 to 1.21.9 that synchronizes player data using MySQL, SQLite, or PostgreSQL databases. This project is built with Maven.
+Player inventories, experience, health, achievements, and more are stored in the configured
 database whenever they leave the server and restored when they join again.
 
-## Building
+## Supported Versions
 
-Run the following command in the project directory:
+This plugin supports Minecraft versions **1.20.4 to 1.21.9** as confirmed by [PaperMC](https://papermc.io/downloads/all?project=paper).
+
+### Building for Different Versions
+
+The project includes Maven profiles for building against different Minecraft versions:
 
 ```bash
+# Build for Minecraft 1.20.4 (Java 17)
+mvn package -Pmc-1.20.4
+
+# Build for Minecraft 1.21 (Java 21) - Default
+mvn package -Pmc-1.21
+
+# Build for Minecraft 1.21.1 (Java 21)
+mvn package -Pmc-1.21.1
+
+# Build for default version (1.21)
 mvn package
 ```
 

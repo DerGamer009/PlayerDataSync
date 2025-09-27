@@ -567,24 +567,35 @@ public class PlayerDataSync extends JavaPlugin {
             getLogger().info("Server version: " + serverVersion);
             getLogger().info("Plugin API version: " + pluginApiVersion);
             
-            // Check if we're running on a compatible version
-            if (serverVersion.contains("1.21.1") && pluginApiVersion.equals("1.20")) {
+            // Check if we're running on a supported version range (1.20.4 to 1.21.9)
+            boolean isSupportedVersion = false;
+            String versionInfo = "";
+            
+            // Check for 1.20.4+ versions
+            if (serverVersion.contains("1.20.4") || serverVersion.contains("1.20.5") || serverVersion.contains("1.20.6")) {
+                isSupportedVersion = true;
+                versionInfo = "Minecraft 1.20.4+ - Full compatibility confirmed";
+            }
+            
+            // Check for 1.21.x versions
+            if (serverVersion.contains("1.21.0") || serverVersion.contains("1.21.1") || serverVersion.contains("1.21.2") || 
+                serverVersion.contains("1.21.3") || serverVersion.contains("1.21.4") || serverVersion.contains("1.21.5") ||
+                serverVersion.contains("1.21.6") || serverVersion.contains("1.21.7") || serverVersion.contains("1.21.8") ||
+                serverVersion.contains("1.21.9")) {
+                isSupportedVersion = true;
+                versionInfo = "Minecraft 1.21.x - Full compatibility confirmed";
+            }
+            
+            if (isSupportedVersion) {
+                getLogger().info("✅ " + versionInfo);
+            } else {
                 getLogger().warning("================================================");
                 getLogger().warning("VERSION COMPATIBILITY WARNING:");
-                getLogger().warning("This plugin was compiled for API 1.20 but you're running on 1.21.1");
-                getLogger().warning("Some features may not work correctly due to API changes");
-                getLogger().warning("Consider updating your server to 1.21.7+ for best compatibility");
+                getLogger().warning("This plugin supports Minecraft 1.20.4 to 1.21.9");
+                getLogger().warning("Current server version: " + serverVersion);
+                getLogger().warning("Some features may not work correctly");
+                getLogger().warning("Consider updating to a supported version");
                 getLogger().warning("================================================");
-            }
-            
-            // Check for older versions
-            if (serverVersion.contains("1.20.4") || serverVersion.contains("1.20.5") || serverVersion.contains("1.20.6")) {
-                getLogger().info("Running on Minecraft 1.20.x - Full compatibility confirmed");
-            }
-            
-            // Check for newer versions
-            if (serverVersion.contains("1.21.7") || serverVersion.contains("1.21.8")) {
-                getLogger().info("Running on Minecraft 1.21.7+ - Full compatibility confirmed");
             }
             
             // Test critical API methods
@@ -601,12 +612,13 @@ public class PlayerDataSync extends JavaPlugin {
             }
             
             // Log compatibility summary
-            if (serverVersion.contains("1.20")) {
-                getLogger().info("✅ Full compatibility with Minecraft 1.20.x confirmed");
-            } else if (serverVersion.contains("1.21.7") || serverVersion.contains("1.21.8")) {
-                getLogger().info("✅ Full compatibility with Minecraft 1.21.7+ confirmed");
-            } else if (serverVersion.contains("1.21.1")) {
-                getLogger().warning("⚠️  Limited compatibility with Paper 1.21.1 - some features may not work correctly");
+            if (serverVersion.contains("1.20.4") || serverVersion.contains("1.20.5") || serverVersion.contains("1.20.6")) {
+                getLogger().info("✅ Full compatibility with Minecraft 1.20.4+ confirmed");
+            } else if (serverVersion.contains("1.21.0") || serverVersion.contains("1.21.1") || serverVersion.contains("1.21.2") || 
+                      serverVersion.contains("1.21.3") || serverVersion.contains("1.21.4") || serverVersion.contains("1.21.5") ||
+                      serverVersion.contains("1.21.6") || serverVersion.contains("1.21.7") || serverVersion.contains("1.21.8") ||
+                      serverVersion.contains("1.21.9")) {
+                getLogger().info("✅ Full compatibility with Minecraft 1.21.x confirmed");
             } else {
                 getLogger().info("ℹ️  Running on version: " + serverVersion + " - compatibility status unknown");
             }
