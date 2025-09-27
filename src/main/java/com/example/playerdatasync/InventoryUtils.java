@@ -14,6 +14,9 @@ import java.util.Base64;
  * Supports serialization of various inventory types and single items
  */
 public class InventoryUtils {
+
+    private static final String DOWNGRADE_ERROR_FRAGMENT = "Server downgrades are not supported";
+    private static final String NEWER_VERSION_FRAGMENT = "Newer version";
     
     /**
      * Convert ItemStack array to Base64 string with validation
@@ -49,14 +52,11 @@ public class InventoryUtils {
                 try {
                     items[i] = (ItemStack) dataInput.readObject();
                 } catch (Exception e) {
-                    // Handle version compatibility issues
-                    if (e.getMessage() != null && e.getMessage().contains("Newer version")) {
-                        // Log the version compatibility issue
-                        System.err.println("[PlayerDataSync] Version compatibility issue detected for item " + i + 
-                            ": " + e.getMessage() + ". Skipping corrupted item.");
-                        items[i] = null; // Set to null instead of crashing
+                    if (isVersionDowngradeIssue(e)) {
+                        System.err.println("[PlayerDataSync] Version compatibility issue detected for item " + i
+                            + ": " + collectCompatibilityMessage(e) + ". Skipping unsupported item.");
+                        items[i] = null;
                     } else {
-                        // Re-throw other exceptions
                         throw e;
                     }
                 }
@@ -96,14 +96,11 @@ public class InventoryUtils {
             try {
                 return (ItemStack) dataInput.readObject();
             } catch (Exception e) {
-                // Handle version compatibility issues
-                if (e.getMessage() != null && e.getMessage().contains("Newer version")) {
-                    // Log the version compatibility issue
-                    System.err.println("[PlayerDataSync] Version compatibility issue detected for single item: " + 
-                        e.getMessage() + ". Returning null.");
-                    return null; // Return null instead of crashing
+                if (isVersionDowngradeIssue(e)) {
+                    System.err.println("[PlayerDataSync] Version compatibility issue detected for single item: "
+                        + collectCompatibilityMessage(e) + ". Returning null.");
+                    return null;
                 } else {
-                    // Re-throw other exceptions
                     throw e;
                 }
             }
@@ -218,8 +215,9 @@ public class InventoryUtils {
         try {
             return itemStackArrayFromBase64(data);
         } catch (Exception e) {
-            System.err.println("[PlayerDataSync] Failed to deserialize ItemStack array: " + e.getMessage());
-            return new ItemStack[0]; // Return empty array as fallback
+            System.err.println("[PlayerDataSync] Failed to deserialize ItemStack array: "
+                + collectCompatibilityMessage(e));
+            return new ItemStack[0];
         }
     }
     
@@ -233,8 +231,43 @@ public class InventoryUtils {
         try {
             return itemStackFromBase64(data);
         } catch (Exception e) {
-            System.err.println("[PlayerDataSync] Failed to deserialize single ItemStack: " + e.getMessage());
-            return null; // Return null as fallback
+            System.err.println("[PlayerDataSync] Failed to deserialize single ItemStack: "
+                + collectCompatibilityMessage(e));
+            return null;
         }
+    }
+
+    private static boolean isVersionDowngradeIssue(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null && (message.contains(NEWER_VERSION_FRAGMENT)
+                || message.contains(DOWNGRADE_ERROR_FRAGMENT))) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static String collectCompatibilityMessage(Throwable throwable) {
+        StringBuilder builder = new StringBuilder();
+        Throwable current = throwable;
+        boolean first = true;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null && !message.isEmpty()) {
+                if (!first) {
+                    builder.append(" | cause: ");
+                }
+                builder.append(message);
+                first = false;
+            }
+            current = current.getCause();
+        }
+        if (builder.length() == 0) {
+            builder.append(throwable.getClass().getName());
+        }
+        return builder.toString();
     }
 }
