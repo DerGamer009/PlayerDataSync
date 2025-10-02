@@ -10,7 +10,6 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 
-import java.lang.reflect.ReflectiveOperationException;
 import java.sql.*;
 import java.util.Iterator;
 import java.util.UUID;
