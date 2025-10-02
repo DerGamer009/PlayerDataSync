@@ -60,7 +60,7 @@ sync:
   # Advanced Features
   attributes: true      # Player attributes (max health, speed, etc.)
   permissions: false    # Sync permissions (requires LuckPerms integration)
-  economy: false        # Sync economy balance (requires Vault)
+  economy: true         # Sync economy balance (requires Vault)
 
 # Automatic Save Configuration
 autosave:
@@ -68,6 +68,8 @@ autosave:
   interval: 5           # minutes between automatic saves, 0 to disable
   on_world_change: true # save when player changes world
   on_death: true        # save when player dies
+  on_server_switch: true # save when player switches servers (BungeeCord)
+  on_kick: true         # save when player is kicked (might be server switch)
   async: true           # perform saves asynchronously
 
 # Data Management
@@ -115,7 +117,7 @@ security:
 integrations:
   bungeecord: false     # enable BungeeCord support
   luckperms: false      # enable LuckPerms integration
-  vault: false          # enable Vault integration for economy
+  vault: true           # enable Vault integration for economy
   placeholderapi: false # enable PlaceholderAPI support
 
 # Message Configuration
