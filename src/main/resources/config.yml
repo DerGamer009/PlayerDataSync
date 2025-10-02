@@ -65,7 +65,7 @@ sync:
 # Automatic Save Configuration
 autosave:
   enabled: true
-  interval: 5           # minutes between automatic saves, 0 to disable
+  interval: 1           # seconds between automatic saves, 0 to disable
   on_world_change: true # save when player changes world
   on_death: true        # save when player dies
   on_server_switch: true # save when player switches servers (BungeeCord)

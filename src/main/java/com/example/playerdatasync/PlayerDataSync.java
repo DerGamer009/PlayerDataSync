@@ -49,7 +49,7 @@ public class PlayerDataSync extends JavaPlugin {
     private DatabaseManager databaseManager;
     private ConfigManager configManager;
     private BackupManager backupManager;
-    private int autosaveInterval;
+    private int autosaveIntervalSeconds;
     private BukkitTask autosaveTask;
     private MessageManager messageManager;
     private Metrics metrics;
@@ -179,10 +179,10 @@ public class PlayerDataSync extends JavaPlugin {
 
         loadSyncSettings();
 
-        autosaveInterval = getConfig().getInt("autosave.interval", 5);
+        autosaveIntervalSeconds = getConfig().getInt("autosave.interval", 1);
 
-        if (autosaveInterval > 0) {
-            long ticks = autosaveInterval * 1200L;
+        if (autosaveIntervalSeconds > 0) {
+            long ticks = autosaveIntervalSeconds * 20L;
             autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
                 try {
                     int savedCount = 0;
@@ -206,6 +206,7 @@ public class PlayerDataSync extends JavaPlugin {
                     getLogger().severe("Error during autosave: " + e.getMessage());
                 }
             }, ticks, ticks);
+            getLogger().info("Autosave task scheduled with interval: " + autosaveIntervalSeconds + " seconds");
         }
 
         databaseManager = new DatabaseManager(this);
@@ -471,15 +472,15 @@ public class PlayerDataSync extends JavaPlugin {
 
         loadSyncSettings();
 
-        int newInterval = getConfig().getInt("autosave.interval", 5);
-        if (newInterval != autosaveInterval) {
-            autosaveInterval = newInterval;
+        int newIntervalSeconds = getConfig().getInt("autosave.interval", 1);
+        if (newIntervalSeconds != autosaveIntervalSeconds) {
+            autosaveIntervalSeconds = newIntervalSeconds;
             if (autosaveTask != null) {
                 autosaveTask.cancel();
                 autosaveTask = null;
             }
-            if (autosaveInterval > 0) {
-                long ticks = autosaveInterval * 1200L;
+            if (autosaveIntervalSeconds > 0) {
+                long ticks = autosaveIntervalSeconds * 20L;
                 autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
                     try {
                         int savedCount = 0;
@@ -503,7 +504,7 @@ public class PlayerDataSync extends JavaPlugin {
                         getLogger().severe("Error during autosave: " + e.getMessage());
                     }
                 }, ticks, ticks);
-                getLogger().info("Autosave task restarted with interval: " + autosaveInterval + " minutes");
+                getLogger().info("Autosave task restarted with interval: " + autosaveIntervalSeconds + " seconds");
             }
         }
     }
@@ -716,7 +717,7 @@ public class PlayerDataSync extends JavaPlugin {
                 "  economy: false\n" +
                 "autosave:\n" +
                 "  enabled: true\n" +
-                "  interval: 5\n" +
+                "  interval: 1\n" +
                 "  on_world_change: true\n" +
                 "  on_death: true\n" +
                 "  async: true\n" +

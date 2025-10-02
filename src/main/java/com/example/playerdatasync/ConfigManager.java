@@ -156,7 +156,7 @@ public class ConfigManager {
         
         // Autosave configuration
         addDefaultIfMissing("autosave.enabled", true);
-        addDefaultIfMissing("autosave.interval", 5);
+        addDefaultIfMissing("autosave.interval", 1);
         addDefaultIfMissing("autosave.on_world_change", true);
         addDefaultIfMissing("autosave.on_death", true);
         addDefaultIfMissing("autosave.async", true);
@@ -234,10 +234,10 @@ public class ConfigManager {
         }
         
         // Validate autosave interval
-        int interval = config.getInt("autosave.interval", 5);
+        int interval = config.getInt("autosave.interval", 1);
         if (interval < 0) {
-            warnings.add("Invalid autosave interval: " + interval + ". Using 5 minutes as default.");
-            config.set("autosave.interval", 5);
+            warnings.add("Invalid autosave interval: " + interval + ". Using 1 second as default.");
+            config.set("autosave.interval", 1);
         }
         
         // Validate cache size

@@ -105,7 +105,7 @@ sync:
 # Automatic Save Configuration
 autosave:
   enabled: true
-  interval: 5           # minutes between automatic saves, 0 to disable
+  interval: 1           # seconds between automatic saves, 0 to disable
   on_world_change: true # save when player changes world
   on_death: true        # save when player dies
   async: true           # perform saves asynchronously
@@ -189,7 +189,7 @@ metrics:
 [bStats](https://bstats.org/). Set it to `false` if you prefer to
 opt out of metrics collection.
 
-`autosave.interval` controls how often (in minutes) the plugin saves all online
+`autosave.interval` controls how often (in seconds) the plugin saves all online
 players to the database. Set it to `0` to disable automatic saves.
 
 Update the database values to match your environment. Set any of the `sync` options to
