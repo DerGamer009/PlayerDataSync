@@ -10,8 +10,15 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 
+import java.lang.reflect.ReflectiveOperationException;
 import java.sql.*;
 import java.util.Iterator;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
+import net.milkbowl.vault.economy.Economy;
+import net.milkbowl.vault.economy.EconomyResponse;
 
 public class DatabaseManager {
     private final PlayerDataSync plugin;
@@ -126,128 +133,170 @@ public class DatabaseManager {
     public void savePlayer(Player player) {
         long startTime = System.currentTimeMillis();
         String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, armor, offhand, effects, statistics, attributes, health, hunger, saturation, advancements, economy, last_save, server_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?)";
-        
-        Connection connection = null;
+
         try {
-            connection = plugin.getConnection();
+            PlayerSnapshot snapshot;
+            if (Bukkit.isPrimaryThread()) {
+                snapshot = capturePlayerSnapshot(player);
+            } else {
+                Future<PlayerSnapshot> future = Bukkit.getScheduler().callSyncMethod(plugin, () -> capturePlayerSnapshot(player));
+                snapshot = future.get();
+            }
+
+            if (snapshot == null) {
+                plugin.getLogger().warning("Skipping save for player " + player.getName() + " because snapshot creation failed");
+                return;
+            }
+
+            Connection connection = plugin.getConnection();
             if (connection == null) {
                 plugin.getLogger().severe("Database connection unavailable");
                 return;
             }
-            
+
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
-                ps.setString(1, player.getUniqueId().toString());
-                if (plugin.isSyncCoordinates() || plugin.isSyncPosition()) {
-                    Location loc = player.getLocation();
-                    ps.setString(2, loc.getWorld().getName());
-                    ps.setDouble(3, loc.getX());
-                    ps.setDouble(4, loc.getY());
-                    ps.setDouble(5, loc.getZ());
-                    ps.setFloat(6, loc.getYaw());
-                    ps.setFloat(7, loc.getPitch());
-                } else {
-                    ps.setString(2, null);
-                    ps.setDouble(3, 0);
-                    ps.setDouble(4, 0);
-                    ps.setDouble(5, 0);
-                    ps.setFloat(6, 0);
-                    ps.setFloat(7, 0);
-                }
-                ps.setInt(8, plugin.isSyncXp() ? player.getTotalExperience() : 0);
-                ps.setString(9, plugin.isSyncGamemode() ? player.getGameMode().name() : null);
-                try {
-                    ps.setString(10, plugin.isSyncEnderchest() ? InventoryUtils.itemStackArrayToBase64(player.getEnderChest().getContents()) : null);
-                    ps.setString(11, plugin.isSyncInventory() ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getContents()) : null);
-                    ps.setString(12, plugin.isSyncArmor() ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getArmorContents()) : null);
-                    ps.setString(13, plugin.isSyncOffhand() ? InventoryUtils.itemStackToBase64(player.getInventory().getItemInOffHand()) : null);
-                    ps.setString(14, plugin.isSyncEffects() ? serializeEffects(player) : null);
-                    ps.setString(15, plugin.isSyncStatistics() ? serializeStatistics(player) : null);
-                    ps.setString(16, plugin.isSyncAttributes() ? serializeAttributes(player) : null);
-                } catch (Exception e) {
-                    plugin.getLogger().severe("Error serializing data for " + player.getName() + ": " + e.getMessage());
-                    ps.setString(10, null);
-                    ps.setString(11, null);
-                    ps.setString(12, null);
-                    ps.setString(13, null);
-                    ps.setString(14, null);
-                    ps.setString(15, null);
-                    ps.setString(16, null);
-                }
-                ps.setDouble(17, plugin.isSyncHealth() ? player.getHealth() : player.getMaxHealth());
-                ps.setInt(18, plugin.isSyncHunger() ? player.getFoodLevel() : 20);
-                ps.setFloat(19, plugin.isSyncHunger() ? player.getSaturation() : 5);
-                String advancementData = null;
-                if (plugin.isSyncAchievements()) {
-                    // PERFORMANCE: Use timeout-based achievement serialization to prevent slow saves
-                    try {
-                        long achievementStartTime = System.currentTimeMillis();
-                        advancementData = serializeAdvancements(player);
-                        
-                        long achievementTime = System.currentTimeMillis() - achievementStartTime;
-                        if (achievementTime > 2000) { // More than 2 seconds
-                            plugin.getLogger().warning("Slow achievement serialization for " + player.getName() + 
-                                ": " + achievementTime + "ms. Consider disabling achievement sync for better performance.");
-                        }
-                        
-                        if (advancementData != null && advancementData.length() > 16777215) {
-                            plugin.getLogger().warning("Advancement data for " + player.getName() + " is too large (" + 
-                                advancementData.length() + " characters), skipping advancement sync to prevent database errors");
-                            advancementData = null;
-                        }
-                    } catch (Exception e) {
-                        plugin.getLogger().severe("CRITICAL: Achievement serialization failed for " + player.getName() + 
-                            ". Disabling achievement sync to prevent server freeze: " + e.getMessage());
-                        advancementData = null;
-                        
-                        // CRITICAL: Disable achievement sync if it causes critical errors
-                        if (plugin.getConfig().getBoolean("compatibility.disable_achievements_on_critical_error", true)) {
-                            plugin.getLogger().severe("CRITICAL: Automatically disabling achievement sync for " + player.getName() + 
-                                " due to critical error. Set 'compatibility.disable_achievements_on_critical_error: false' to prevent this.");
-                            // Note: We can't call setSyncAchievements(false) here as it's not accessible
-                        }
-                    }
-                }
-                ps.setString(20, advancementData); // FIXED: Set parameter 20 (advancements)
-                if (plugin.isSyncEconomy()) {
-                    double balance = getPlayerBalance(player);
-                    ps.setDouble(21, balance); // Set parameter 21 (economy)
-                    plugin.getLogger().info("DEBUG: Saving economy balance for " + player.getName() + ": " + balance);
-                } else {
-                    ps.setDouble(21, 0.0); // Set parameter 21 (economy)
-                    plugin.getLogger().info("DEBUG: Economy sync disabled, setting balance to 0.0 for " + player.getName());
-                }
-                // Note: last_save uses NOW() in SQL, so no parameter needed
-                ps.setString(22, plugin.getConfig().getString("server.id", "default")); // FIXED: Set parameter 22 (server_id)
-                
+                ps.setString(1, snapshot.uuid.toString());
+                ps.setString(2, snapshot.worldName);
+                ps.setDouble(3, snapshot.x);
+                ps.setDouble(4, snapshot.y);
+                ps.setDouble(5, snapshot.z);
+                ps.setFloat(6, snapshot.yaw);
+                ps.setFloat(7, snapshot.pitch);
+                ps.setInt(8, snapshot.totalExperience);
+                ps.setString(9, snapshot.gamemode);
+                ps.setString(10, snapshot.enderChestData);
+                ps.setString(11, snapshot.inventoryData);
+                ps.setString(12, snapshot.armorData);
+                ps.setString(13, snapshot.offhandData);
+                ps.setString(14, snapshot.effectsData);
+                ps.setString(15, snapshot.statisticsData);
+                ps.setString(16, snapshot.attributesData);
+                ps.setDouble(17, snapshot.health);
+                ps.setInt(18, snapshot.hunger);
+                ps.setFloat(19, snapshot.saturation);
+                ps.setString(20, snapshot.advancementsData);
+                ps.setDouble(21, snapshot.economyBalance);
+                ps.setString(22, plugin.getConfig().getString("server.id", "default"));
+
                 ps.executeUpdate();
-                
-                // Update performance metrics
+
                 long saveTime = System.currentTimeMillis() - startTime;
                 totalSaveTime += saveTime;
                 saveCount++;
-                
-                // Log slow saves
-                if (saveTime > 1000) { // More than 1 second
-                    plugin.getLogger().warning("Slow save detected for " + player.getName() + ": " + saveTime + "ms");
+
+                if (saveTime > 1000) {
+                    plugin.getLogger().warning("Slow save detected for " + snapshot.playerName + ": " + saveTime + "ms");
                 }
-                
-                // Log performance statistics periodically
+
                 logPerformanceStats();
-                
+
             } catch (SQLException e) {
-                // Handle specific data truncation errors
                 if (e.getMessage().contains("Data too long for column")) {
-                    plugin.getLogger().severe("Data truncation error for " + player.getName() + 
+                    plugin.getLogger().severe("Data truncation error for " + snapshot.playerName +
                         ": " + e.getMessage() + ". Consider disabling achievement sync or check your database column sizes.");
                 } else {
-                    plugin.getLogger().severe("Could not save data for " + player.getName() + ": " + e.getMessage());
+                    plugin.getLogger().severe("Could not save data for " + snapshot.playerName + ": " + e.getMessage());
                 }
             } finally {
                 plugin.returnConnection(connection);
             }
+        } catch (InterruptedException e) {
+            plugin.getLogger().severe("Failed to capture data for player " + player.getName() + ": " + e.getMessage());
+            Thread.currentThread().interrupt();
+        } catch (ExecutionException e) {
+            plugin.getLogger().severe("Failed to capture data for player " + player.getName() + ": " + e.getMessage());
         } catch (Exception e) {
             plugin.getLogger().severe("Unexpected error saving player " + player.getName() + ": " + e.getMessage());
         }
+    }
+
+    private PlayerSnapshot capturePlayerSnapshot(Player player) {
+        PlayerSnapshot snapshot = new PlayerSnapshot(player.getUniqueId(), player.getName());
+
+        if (plugin.isSyncCoordinates() || plugin.isSyncPosition()) {
+            Location loc = player.getLocation();
+            World world = loc.getWorld();
+            snapshot.worldName = world != null ? world.getName() : null;
+            snapshot.x = loc.getX();
+            snapshot.y = loc.getY();
+            snapshot.z = loc.getZ();
+            snapshot.yaw = loc.getYaw();
+            snapshot.pitch = loc.getPitch();
+        }
+
+        snapshot.totalExperience = plugin.isSyncXp() ? player.getTotalExperience() : 0;
+        snapshot.gamemode = plugin.isSyncGamemode() ? player.getGameMode().name() : null;
+
+        try {
+            snapshot.enderChestData = plugin.isSyncEnderchest()
+                ? InventoryUtils.itemStackArrayToBase64(player.getEnderChest().getContents())
+                : null;
+            snapshot.inventoryData = plugin.isSyncInventory()
+                ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getContents())
+                : null;
+            snapshot.armorData = plugin.isSyncArmor()
+                ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getArmorContents())
+                : null;
+            snapshot.offhandData = plugin.isSyncOffhand()
+                ? InventoryUtils.itemStackToBase64(player.getInventory().getItemInOffHand())
+                : null;
+            snapshot.effectsData = plugin.isSyncEffects() ? serializeEffects(player) : null;
+            snapshot.statisticsData = plugin.isSyncStatistics() ? serializeStatistics(player) : null;
+            snapshot.attributesData = plugin.isSyncAttributes() ? serializeAttributes(player) : null;
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error serializing data for " + player.getName() + ": " + e.getMessage());
+            snapshot.enderChestData = null;
+            snapshot.inventoryData = null;
+            snapshot.armorData = null;
+            snapshot.offhandData = null;
+            snapshot.effectsData = null;
+            snapshot.statisticsData = null;
+            snapshot.attributesData = null;
+        }
+
+        snapshot.health = plugin.isSyncHealth() ? player.getHealth() : player.getMaxHealth();
+        snapshot.hunger = plugin.isSyncHunger() ? player.getFoodLevel() : 20;
+        snapshot.saturation = plugin.isSyncHunger() ? player.getSaturation() : 5f;
+
+        snapshot.advancementsData = null;
+        if (plugin.isSyncAchievements()) {
+            try {
+                long achievementStartTime = System.currentTimeMillis();
+                snapshot.advancementsData = serializeAdvancements(player);
+
+                long achievementTime = System.currentTimeMillis() - achievementStartTime;
+                if (achievementTime > 2000) {
+                    plugin.getLogger().warning("Slow achievement serialization for " + player.getName() +
+                        ": " + achievementTime + "ms. Consider disabling achievement sync for better performance.");
+                }
+
+                if (snapshot.advancementsData != null && snapshot.advancementsData.length() > 16777215) {
+                    plugin.getLogger().warning("Advancement data for " + player.getName() + " is too large (" +
+                        snapshot.advancementsData.length() + " characters), skipping advancement sync to prevent database errors");
+                    snapshot.advancementsData = null;
+                }
+            } catch (Exception e) {
+                plugin.getLogger().severe("CRITICAL: Achievement serialization failed for " + player.getName() +
+                    ". Disabling achievement sync to prevent server freeze: " + e.getMessage());
+                snapshot.advancementsData = null;
+
+                if (plugin.getConfig().getBoolean("compatibility.disable_achievements_on_critical_error", true)) {
+                    plugin.getLogger().severe("CRITICAL: Automatically disabling achievement sync for " + player.getName() +
+                        " due to critical error. Set 'compatibility.disable_achievements_on_critical_error: false' to prevent this.");
+                }
+            }
+        }
+
+        if (plugin.isSyncEconomy()) {
+            double balance = getPlayerBalance(player);
+            snapshot.economyBalance = balance;
+            plugin.getLogger().info("DEBUG: Saving economy balance for " + player.getName() + ": " + balance);
+        } else {
+            snapshot.economyBalance = 0.0;
+            plugin.getLogger().info("DEBUG: Economy sync disabled, setting balance to 0.0 for " + player.getName());
+        }
+
+        return snapshot;
     }
 
     public void loadPlayer(Player player) {
@@ -890,20 +939,17 @@ public class DatabaseManager {
      * Get player balance using Vault API
      */
     private double getPlayerBalance(Player player) {
+        Economy economy = plugin.getEconomyProvider();
+        if (economy == null) {
+            plugin.getLogger().warning("Economy provider unavailable; skipping balance capture for " + player.getName());
+            return 0.0;
+        }
+
         try {
-            // Check if Vault is available
-            if (plugin.getServer().getPluginManager().getPlugin("Vault") == null) {
-                plugin.getLogger().warning("Vault plugin not found! Economy sync requires Vault.");
-                return 0.0;
+            if (!economy.hasAccount(player)) {
+                economy.createPlayerAccount(player);
             }
-            
-            // Get economy provider
-            net.milkbowl.vault.economy.Economy economy = plugin.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class).getProvider();
-            if (economy == null) {
-                plugin.getLogger().warning("No economy provider found! Economy sync requires an economy plugin.");
-                return 0.0;
-            }
-            
+
             double balance = economy.getBalance(player);
             plugin.getLogger().info("DEBUG: Retrieved balance for " + player.getName() + ": " + balance);
             return balance;
@@ -912,65 +958,97 @@ public class DatabaseManager {
             return 0.0;
         }
     }
-    
+
     /**
      * Set player balance using Vault API
      */
     private void setPlayerBalance(Player player, double balance) {
+        Economy economy = plugin.getEconomyProvider();
+        if (economy == null) {
+            plugin.getLogger().warning("Economy provider unavailable; skipping balance restore for " + player.getName());
+            return;
+        }
+
         plugin.getLogger().info("DEBUG: Attempting to set balance for " + player.getName() + " to " + balance);
-        
+
         try {
-            // Check if Vault is available
-            if (plugin.getServer().getPluginManager().getPlugin("Vault") == null) {
-                plugin.getLogger().warning("Vault plugin not found! Economy sync requires Vault.");
-                return;
+            if (!economy.hasAccount(player)) {
+                economy.createPlayerAccount(player);
             }
-            
-            // Get economy provider
-            net.milkbowl.vault.economy.Economy economy = plugin.getServer().getServicesManager().getRegistration(net.milkbowl.vault.economy.Economy.class).getProvider();
-            if (economy == null) {
-                plugin.getLogger().warning("No economy provider found! Economy sync requires an economy plugin.");
-                return;
-            }
-            
+
             plugin.getLogger().info("DEBUG: Economy provider found: " + economy.getName());
-            
-            // Try to use setBalance method if available (some economy plugins support this)
+
             try {
-                // Check if the economy provider has a setBalance method
-                java.lang.reflect.Method setBalanceMethod = economy.getClass().getMethod("setBalance", org.bukkit.OfflinePlayer.class, double.class);
+                java.lang.reflect.Method setBalanceMethod =
+                    economy.getClass().getMethod("setBalance", org.bukkit.OfflinePlayer.class, double.class);
                 setBalanceMethod.invoke(economy, player, balance);
                 plugin.getLogger().info("DEBUG: Set balance for " + player.getName() + " to " + balance + " using setBalance method");
                 return;
-            } catch (Exception e) {
+            } catch (NoSuchMethodException e) {
                 plugin.getLogger().info("DEBUG: setBalance method not available, using deposit/withdraw approach");
+            } catch (ReflectiveOperationException reflectiveError) {
+                plugin.getLogger().warning("Failed to invoke setBalance on economy provider " + economy.getName() + ": " + reflectiveError.getMessage());
             }
-            
-            // Fallback: Calculate difference and adjust balance
+
             double currentBalance = economy.getBalance(player);
             double difference = balance - currentBalance;
-            
+
             plugin.getLogger().info("DEBUG: Current balance: " + currentBalance + ", Target balance: " + balance + ", Difference: " + difference);
-            
+
             if (Math.abs(difference) < 0.01) {
-                // Balance is already correct (within 1 cent tolerance)
                 plugin.getLogger().info("DEBUG: Balance is already correct (within tolerance)");
                 return;
             }
-            
+
+            EconomyResponse response;
             if (difference > 0) {
-                // Add money if saved balance is higher
-                economy.depositPlayer(player, difference);
+                response = economy.depositPlayer(player, difference);
+                if (!response.transactionSuccess()) {
+                    plugin.getLogger().warning("Failed to deposit funds for " + player.getName() + ": " + response.errorMessage);
+                    return;
+                }
                 plugin.getLogger().info("DEBUG: Added " + difference + " to " + player.getName() + "'s balance (now: " + balance + ")");
-            } else if (difference < 0) {
-                // Remove money if saved balance is lower
-                economy.withdrawPlayer(player, Math.abs(difference));
+            } else {
+                response = economy.withdrawPlayer(player, Math.abs(difference));
+                if (!response.transactionSuccess()) {
+                    plugin.getLogger().warning("Failed to withdraw funds for " + player.getName() + ": " + response.errorMessage);
+                    return;
+                }
                 plugin.getLogger().info("DEBUG: Removed " + Math.abs(difference) + " from " + player.getName() + "'s balance (now: " + balance + ")");
             }
-            
+
         } catch (Exception e) {
             plugin.getLogger().warning("Error setting player balance for " + player.getName() + ": " + e.getMessage());
-            e.printStackTrace();
+        }
+    }
+
+    private static class PlayerSnapshot {
+        private final UUID uuid;
+        private final String playerName;
+        private String worldName = null;
+        private double x = 0;
+        private double y = 0;
+        private double z = 0;
+        private float yaw = 0;
+        private float pitch = 0;
+        private int totalExperience = 0;
+        private String gamemode = null;
+        private String enderChestData = null;
+        private String inventoryData = null;
+        private String armorData = null;
+        private String offhandData = null;
+        private String effectsData = null;
+        private String statisticsData = null;
+        private String attributesData = null;
+        private double health = 20.0;
+        private int hunger = 20;
+        private float saturation = 5f;
+        private String advancementsData = null;
+        private double economyBalance = 0.0;
+
+        private PlayerSnapshot(UUID uuid, String playerName) {
+            this.uuid = uuid;
+            this.playerName = playerName;
         }
     }
 }
