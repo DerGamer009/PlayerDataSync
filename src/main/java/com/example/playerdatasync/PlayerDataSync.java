@@ -2,6 +2,7 @@ package com.example.playerdatasync;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
 import com.example.playerdatasync.MessageManager;
@@ -11,6 +12,7 @@ import com.example.playerdatasync.PlayerDataListener;
 import com.example.playerdatasync.SyncCommand;
 import com.example.playerdatasync.UpdateChecker;
 import org.bstats.bukkit.Metrics;
+import net.milkbowl.vault.economy.Economy;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -45,6 +47,7 @@ public class PlayerDataSync extends JavaPlugin {
     private boolean syncAttributes;
     private boolean syncPermissions;
     private boolean syncEconomy;
+    private Economy economyProvider;
 
     private DatabaseManager databaseManager;
     private ConfigManager configManager;
@@ -211,23 +214,8 @@ public class PlayerDataSync extends JavaPlugin {
 
         databaseManager = new DatabaseManager(this);
         databaseManager.initialize();
-        
-        // Check Vault integration for economy sync
-        getLogger().info("DEBUG: Economy sync setting from config: " + getConfig().getBoolean("sync.economy", false));
-        getLogger().info("DEBUG: Economy sync variable: " + syncEconomy);
-        
-        if (syncEconomy) {
-            if (getServer().getPluginManager().getPlugin("Vault") == null) {
-                getLogger().warning("Vault plugin not found! Economy sync requires Vault. Disabling economy sync.");
-                syncEconomy = false;
-                getConfig().set("sync.economy", false);
-            } else {
-                getLogger().info("Vault integration enabled for economy sync.");
-                getLogger().info("DEBUG: Vault plugin found: " + getServer().getPluginManager().getPlugin("Vault").getName());
-            }
-        } else {
-            getLogger().info("DEBUG: Economy sync is disabled in configuration");
-        }
+
+        configureEconomyIntegration();
         
         // Initialize backup manager
         backupManager = new BackupManager(this);
@@ -555,10 +543,13 @@ public class PlayerDataSync extends JavaPlugin {
         saveConfig(); 
     }
     
-    public void setSyncEconomy(boolean value) { 
-        this.syncEconomy = value; 
-        getConfig().set("sync.economy", value); 
-        saveConfig(); 
+    public void setSyncEconomy(boolean value) {
+        this.syncEconomy = value;
+        getConfig().set("sync.economy", value);
+
+        configureEconomyIntegration();
+
+        saveConfig();
     }
     
     /**
@@ -592,6 +583,8 @@ public class PlayerDataSync extends JavaPlugin {
     public BackupManager getBackupManager() { return backupManager; }
     public ConnectionPool getConnectionPool() { return connectionPool; }
     public MessageManager getMessageManager() { return messageManager; }
+
+    public Economy getEconomyProvider() { return economyProvider; }
     
     /**
      * API method for other plugins to trigger economy sync
@@ -678,7 +671,54 @@ public class PlayerDataSync extends JavaPlugin {
             getLogger().warning("Could not perform version compatibility check: " + e.getMessage());
         }
     }
-    
+
+    private void configureEconomyIntegration() {
+        getLogger().info("DEBUG: Economy sync setting from config: " + getConfig().getBoolean("sync.economy", false));
+        getLogger().info("DEBUG: Economy sync variable: " + syncEconomy);
+
+        if (!syncEconomy) {
+            economyProvider = null;
+            getLogger().info("DEBUG: Economy sync is disabled in configuration");
+            return;
+        }
+
+        if (setupEconomyIntegration()) {
+            getLogger().info("Vault integration enabled for economy sync.");
+        } else {
+            economyProvider = null;
+            syncEconomy = false;
+            getConfig().set("sync.economy", false);
+            saveConfig();
+            getLogger().warning("Economy sync has been disabled because Vault or an economy provider is unavailable.");
+        }
+    }
+
+    private boolean setupEconomyIntegration() {
+        economyProvider = null;
+
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            getLogger().warning("Vault plugin not found! Economy sync requires Vault.");
+            return false;
+        }
+
+        RegisteredServiceProvider<Economy> registration =
+            getServer().getServicesManager().getRegistration(Economy.class);
+        if (registration == null) {
+            getLogger().warning("No Vault economy provider registration found. Economy sync requires an economy plugin.");
+            return false;
+        }
+
+        Economy provider = registration.getProvider();
+        if (provider == null) {
+            getLogger().warning("Vault returned a null economy provider. Economy sync cannot continue.");
+            return false;
+        }
+
+        economyProvider = provider;
+        getLogger().info("Hooked into Vault economy provider: " + provider.getName());
+        return true;
+    }
+
     /**
      * Create emergency minimal configuration when all other methods fail
      */
