@@ -20,6 +20,9 @@ import java.sql.SQLException;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class PlayerDataSync extends JavaPlugin {
     private Connection connection;
@@ -56,6 +59,8 @@ public class PlayerDataSync extends JavaPlugin {
     private BukkitTask autosaveTask;
     private MessageManager messageManager;
     private Metrics metrics;
+    private boolean bungeecordIntegrationEnabled;
+    private final Set<UUID> loadingPlayers = ConcurrentHashMap.newKeySet();
 
     @Override
     public void onEnable() {
@@ -182,6 +187,8 @@ public class PlayerDataSync extends JavaPlugin {
 
         loadSyncSettings();
 
+        bungeecordIntegrationEnabled = getConfig().getBoolean("integrations.bungeecord", false);
+
         autosaveIntervalSeconds = getConfig().getInt("autosave.interval", 1);
 
         if (autosaveIntervalSeconds > 0) {
@@ -189,21 +196,24 @@ public class PlayerDataSync extends JavaPlugin {
             autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
                 try {
                     int savedCount = 0;
+                    int failedCount = 0;
                     long startTime = System.currentTimeMillis();
-                    
+
                     for (Player player : Bukkit.getOnlinePlayers()) {
-                        try {
-                            databaseManager.savePlayer(player);
+                        if (databaseManager.savePlayer(player)) {
                             savedCount++;
-                        } catch (Exception e) {
-                            getLogger().warning("Failed to autosave data for " + player.getName() + ": " + e.getMessage());
+                        } else {
+                            failedCount++;
                         }
                     }
-                    
+
                     long endTime = System.currentTimeMillis();
                     if (savedCount > 0) {
-                        getLogger().info("Autosaved data for " + savedCount + " players in " + 
+                        getLogger().info("Autosaved data for " + savedCount + " players in " +
                             (endTime - startTime) + "ms");
+                    }
+                    if (failedCount > 0) {
+                        getLogger().warning(failedCount + " player saves failed during autosave.");
                     }
                 } catch (Exception e) {
                     getLogger().severe("Error during autosave: " + e.getMessage());
@@ -245,26 +255,26 @@ public class PlayerDataSync extends JavaPlugin {
         
         // Save all online players before shutdown
         if (databaseManager != null) {
-            try {
-                int savedCount = 0;
-                long startTime = System.currentTimeMillis();
-                
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    try {
-                        databaseManager.savePlayer(player);
-                        savedCount++;
-                    } catch (Exception e) {
-                        getLogger().severe("Failed to save data for " + player.getName() + " during shutdown: " + e.getMessage());
-                    }
+            int savedCount = 0;
+            int failedCount = 0;
+            long startTime = System.currentTimeMillis();
+
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                if (databaseManager.savePlayer(player)) {
+                    savedCount++;
+                } else {
+                    failedCount++;
+                    getLogger().severe("Failed to save data for " + player.getName() + " during shutdown.");
                 }
-                
-                long endTime = System.currentTimeMillis();
-                if (savedCount > 0) {
-                    getLogger().info("Saved data for " + savedCount + " players during shutdown in " + 
-                        (endTime - startTime) + "ms");
-                }
-            } catch (Exception e) {
-                getLogger().severe("Error saving players during shutdown: " + e.getMessage());
+            }
+
+            long endTime = System.currentTimeMillis();
+            if (savedCount > 0) {
+                getLogger().info("Saved data for " + savedCount + " players during shutdown in " +
+                    (endTime - startTime) + "ms");
+            }
+            if (failedCount > 0) {
+                getLogger().warning(failedCount + " player saves failed during shutdown.");
             }
         }
         
@@ -441,6 +451,8 @@ public class PlayerDataSync extends JavaPlugin {
         syncAttributes = getConfig().getBoolean("sync.attributes", true);
         syncPermissions = getConfig().getBoolean("sync.permissions", false);
         syncEconomy = getConfig().getBoolean("sync.economy", false);
+
+        bungeecordIntegrationEnabled = getConfig().getBoolean("integrations.bungeecord", false);
     }
 
     public void reloadPlugin() {
@@ -472,21 +484,24 @@ public class PlayerDataSync extends JavaPlugin {
                 autosaveTask = Bukkit.getScheduler().runTaskTimerAsynchronously(this, () -> {
                     try {
                         int savedCount = 0;
+                        int failedCount = 0;
                         long startTime = System.currentTimeMillis();
-                        
+
                         for (Player player : Bukkit.getOnlinePlayers()) {
-                            try {
-                                databaseManager.savePlayer(player);
+                            if (databaseManager.savePlayer(player)) {
                                 savedCount++;
-                            } catch (Exception e) {
-                                getLogger().warning("Failed to autosave data for " + player.getName() + ": " + e.getMessage());
+                            } else {
+                                failedCount++;
                             }
                         }
-                        
+
                         long endTime = System.currentTimeMillis();
                         if (savedCount > 0) {
-                            getLogger().info("Autosaved data for " + savedCount + " players in " + 
+                            getLogger().info("Autosaved data for " + savedCount + " players in " +
                                 (endTime - startTime) + "ms");
+                        }
+                        if (failedCount > 0) {
+                            getLogger().warning(failedCount + " player saves failed during autosave.");
                         }
                     } catch (Exception e) {
                         getLogger().severe("Error during autosave: " + e.getMessage());
@@ -551,6 +566,32 @@ public class PlayerDataSync extends JavaPlugin {
 
         saveConfig();
     }
+
+    public boolean isBungeecordIntegrationEnabled() {
+        return bungeecordIntegrationEnabled;
+    }
+
+    public void setBungeecordIntegrationEnabled(boolean enabled) {
+        this.bungeecordIntegrationEnabled = enabled;
+        getConfig().set("integrations.bungeecord", enabled);
+        saveConfig();
+    }
+
+    public void markPlayerDataLoading(UUID uuid) {
+        loadingPlayers.add(uuid);
+    }
+
+    public void markPlayerDataLoaded(UUID uuid) {
+        loadingPlayers.remove(uuid);
+    }
+
+    public boolean isPlayerDataLoading(UUID uuid) {
+        return loadingPlayers.contains(uuid);
+    }
+
+    public void clearPlayerLoadState(UUID uuid) {
+        loadingPlayers.remove(uuid);
+    }
     
     /**
      * Manually trigger economy sync for a player
@@ -563,17 +604,16 @@ public class PlayerDataSync extends JavaPlugin {
         }
         
         getLogger().info("DEBUG: Manual economy sync triggered for " + player.getName());
-        
-        try {
-            long startTime = System.currentTimeMillis();
-            databaseManager.savePlayer(player);
-            long endTime = System.currentTimeMillis();
-            
-            getLogger().info("DEBUG: Manual economy sync completed for " + player.getName() + 
+
+        long startTime = System.currentTimeMillis();
+        boolean saved = databaseManager.savePlayer(player);
+        long endTime = System.currentTimeMillis();
+
+        if (saved) {
+            getLogger().info("DEBUG: Manual economy sync completed for " + player.getName() +
                 " in " + (endTime - startTime) + "ms");
-            
-        } catch (Exception e) {
-            getLogger().severe("Failed to manually sync economy for " + player.getName() + ": " + e.getMessage());
+        } else {
+            getLogger().severe("Failed to manually sync economy for " + player.getName());
         }
     }
     

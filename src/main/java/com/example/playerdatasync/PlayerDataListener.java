@@ -5,12 +5,17 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerAttemptPickupItemEvent;
+import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+
+import java.util.concurrent.CompletableFuture;
 
 public class PlayerDataListener implements Listener {
     private final PlayerDataSync plugin;
@@ -26,50 +31,101 @@ public class PlayerDataListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        plugin.markPlayerDataLoading(player.getUniqueId());
+
         if (player.hasPermission("playerdatasync.message.show.loading")) {
             player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("loading"));
         }
-        
-        // Delay loading slightly to ensure player is fully initialized
-        Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            CompletableFuture<Boolean> loadFuture;
             try {
-                dbManager.loadPlayer(player);
-                if (player.isOnline() && player.hasPermission("playerdatasync.message.show.loaded")) {
-                    Bukkit.getScheduler().runTask(plugin, () -> 
-                        player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("loaded")));
-                }
+                loadFuture = dbManager.loadPlayer(player);
             } catch (Exception e) {
                 plugin.getLogger().severe("Error loading data for " + player.getName() + ": " + e.getMessage());
-                if (player.isOnline()) {
-                    Bukkit.getScheduler().runTask(plugin, () -> 
-                        player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("load_failed")));
-                }
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    plugin.markPlayerDataLoaded(player.getUniqueId());
+                    if (player.isOnline()) {
+                        player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("load_failed"));
+                    }
+                });
+                return;
             }
-        }, 20L); // 1 second delay
+
+            loadFuture.whenComplete((success, throwable) -> Bukkit.getScheduler().runTask(plugin, () -> {
+                plugin.markPlayerDataLoaded(player.getUniqueId());
+
+                if (!player.isOnline()) {
+                    return;
+                }
+
+                if (throwable != null) {
+                    plugin.getLogger().severe("Error loading data for " + player.getName() + ": " + throwable.getMessage());
+                    player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("load_failed"));
+                    return;
+                }
+
+                if (Boolean.TRUE.equals(success) && player.hasPermission("playerdatasync.message.show.loaded")) {
+                    player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("loaded"));
+                }
+            }));
+        });
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerDropItem(PlayerDropItemEvent event) {
+        Player player = event.getPlayer();
+        if (plugin.isPlayerDataLoading(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onPlayerAttemptPickup(PlayerAttemptPickupItemEvent event) {
+        Player player = event.getPlayer();
+        if (plugin.isPlayerDataLoading(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onEntityPickup(EntityPickupItemEvent event) {
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
+
+        Player player = (Player) event.getEntity();
+        if (plugin.isPlayerDataLoading(player.getUniqueId())) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        
+        plugin.clearPlayerLoadState(player.getUniqueId());
+
         // Save data synchronously so the database is updated before the player
         // joins another server. Using an async task here can lead to race
         // conditions when switching servers quickly via BungeeCord or similar
         // proxies, causing recent changes not to be stored in time.
-        try {
-            long startTime = System.currentTimeMillis();
-            dbManager.savePlayer(player);
-            long endTime = System.currentTimeMillis();
-            
-            // Log slow saves for performance monitoring
-            if (endTime - startTime > 1000) { // More than 1 second
-                plugin.getLogger().warning("Slow save detected for " + player.getName() + 
-                    ": " + (endTime - startTime) + "ms");
-            }
-            
-        } catch (Exception e) {
-            plugin.getLogger().severe("Failed to save data for " + player.getName() + ": " + e.getMessage());
-            e.printStackTrace();
+        long startTime = System.currentTimeMillis();
+        boolean saved = dbManager.savePlayer(player);
+        long endTime = System.currentTimeMillis();
+
+        if (!saved) {
+            plugin.getLogger().warning("Skipping inventory clear for " + player.getName() + " because saving data failed.");
+            return;
+        }
+
+        // Log slow saves for performance monitoring
+        if (endTime - startTime > 1000) { // More than 1 second
+            plugin.getLogger().warning("Slow save detected for " + player.getName() + ": " + (endTime - startTime) + "ms");
+        }
+
+        if (plugin.isBungeecordIntegrationEnabled()) {
+            player.getInventory().clear();
+            player.updateInventory();
         }
     }
     
@@ -78,14 +134,13 @@ public class PlayerDataListener implements Listener {
         if (!plugin.getConfig().getBoolean("autosave.on_world_change", true)) return;
         
         Player player = event.getPlayer();
-        
+
         // Save player data asynchronously when changing worlds
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                dbManager.savePlayer(player);
-            } catch (Exception e) {
-                plugin.getLogger().warning("Failed to save data for " + player.getName() + 
-                    " on world change: " + e.getMessage());
+            boolean saved = dbManager.savePlayer(player);
+            if (!saved) {
+                plugin.getLogger().warning("Failed to save data for " + player.getName() +
+                    " on world change: save returned unsuccessful");
             }
         });
     }
@@ -95,14 +150,13 @@ public class PlayerDataListener implements Listener {
         if (!plugin.getConfig().getBoolean("autosave.on_death", true)) return;
         
         Player player = event.getEntity();
-        
+
         // Save player data asynchronously on death
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                dbManager.savePlayer(player);
-            } catch (Exception e) {
-                plugin.getLogger().warning("Failed to save data for " + player.getName() + 
-                    " on death: " + e.getMessage());
+            boolean saved = dbManager.savePlayer(player);
+            if (!saved) {
+                plugin.getLogger().warning("Failed to save data for " + player.getName() +
+                    " on death: save returned unsuccessful");
             }
         });
     }
@@ -116,17 +170,17 @@ public class PlayerDataListener implements Listener {
         
         plugin.getLogger().info("DEBUG: Player " + player.getName() + " was kicked, saving data");
         
-        try {
-            long startTime = System.currentTimeMillis();
-            dbManager.savePlayer(player);
-            long endTime = System.currentTimeMillis();
-            
-            plugin.getLogger().info("DEBUG: Saved data for kicked player " + player.getName() + 
-                " in " + (endTime - startTime) + "ms");
-            
-        } catch (Exception e) {
-            plugin.getLogger().severe("Failed to save data for kicked player " + player.getName() + ": " + e.getMessage());
+        long startTime = System.currentTimeMillis();
+        boolean saved = dbManager.savePlayer(player);
+        long endTime = System.currentTimeMillis();
+
+        if (!saved) {
+            plugin.getLogger().severe("Failed to save data for kicked player " + player.getName());
+            return;
         }
+
+        plugin.getLogger().info("DEBUG: Saved data for kicked player " + player.getName() +
+            " in " + (endTime - startTime) + "ms");
     }
     
     @EventHandler(priority = EventPriority.HIGHEST)
@@ -139,22 +193,19 @@ public class PlayerDataListener implements Listener {
             
             // Check if the teleport is to a different server (BungeeCord behavior)
             if (event.getTo() != null && event.getTo().getWorld() != null) {
-                String currentServer = plugin.getConfig().getString("server.id", "default");
-                
                 plugin.getLogger().info("DEBUG: Player " + player.getName() + " teleported via plugin, saving data");
-                
-                // Save data before teleport
-                try {
-                    long startTime = System.currentTimeMillis();
-                    dbManager.savePlayer(player);
-                    long endTime = System.currentTimeMillis();
-                    
-                    plugin.getLogger().info("DEBUG: Saved data for teleporting player " + player.getName() + 
-                        " in " + (endTime - startTime) + "ms");
-                    
-                } catch (Exception e) {
-                    plugin.getLogger().severe("Failed to save data for teleporting player " + player.getName() + ": " + e.getMessage());
+
+                long startTime = System.currentTimeMillis();
+                boolean saved = dbManager.savePlayer(player);
+                long endTime = System.currentTimeMillis();
+
+                if (!saved) {
+                    plugin.getLogger().severe("Failed to save data for teleporting player " + player.getName());
+                    return;
                 }
+
+                plugin.getLogger().info("DEBUG: Saved data for teleporting player " + player.getName() +
+                    " in " + (endTime - startTime) + "ms");
             }
         }
     }

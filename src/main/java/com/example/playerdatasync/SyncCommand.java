@@ -154,32 +154,37 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
             // Save specific player
             Player target = Bukkit.getPlayer(args[1]);
             if (target == null) {
-                sender.sendMessage(messageManager.get("prefix") + " " + 
+                sender.sendMessage(messageManager.get("prefix") + " " +
                     messageManager.get("player_not_found").replace("{player}", args[1]));
                 return true;
             }
-            
-            try {
-                plugin.getDatabaseManager().savePlayer(target);
-                sender.sendMessage(messageManager.get("prefix") + " " + 
+
+            boolean saved = plugin.getDatabaseManager().savePlayer(target);
+            if (saved) {
+                sender.sendMessage(messageManager.get("prefix") + " " +
                     messageManager.get("manual_save_success"));
-            } catch (Exception e) {
-                sender.sendMessage(messageManager.get("prefix") + " " + 
-                    messageManager.get("manual_save_failed").replace("{error}", e.getMessage()));
+            } else {
+                sender.sendMessage(messageManager.get("prefix") + " " +
+                    messageManager.get("manual_save_failed").replace("{error}", "database save failed"));
             }
         } else {
             // Save all online players
-            try {
-                int savedCount = 0;
-                for (Player player : Bukkit.getOnlinePlayers()) {
-                    plugin.getDatabaseManager().savePlayer(player);
+            int savedCount = 0;
+            int failedCount = 0;
+            for (Player online : Bukkit.getOnlinePlayers()) {
+                if (plugin.getDatabaseManager().savePlayer(online)) {
                     savedCount++;
+                } else {
+                    failedCount++;
                 }
-                sender.sendMessage(messageManager.get("prefix") + " " + 
-                    "Saved data for " + savedCount + " players.");
-            } catch (Exception e) {
-                sender.sendMessage(messageManager.get("prefix") + " " + 
-                    messageManager.get("manual_save_failed").replace("{error}", e.getMessage()));
+            }
+
+            sender.sendMessage(messageManager.get("prefix") + " " +
+                "Saved data for " + savedCount + " players.");
+
+            if (failedCount > 0) {
+                sender.sendMessage(messageManager.get("prefix") + " " +
+                    failedCount + " saves failed.");
             }
         }
         return true;
