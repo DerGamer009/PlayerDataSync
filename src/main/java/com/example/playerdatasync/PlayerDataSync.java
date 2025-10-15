@@ -14,6 +14,9 @@ import com.example.playerdatasync.UpdateChecker;
 import org.bstats.bukkit.Metrics;
 import net.milkbowl.vault.economy.Economy;
 
+import com.google.common.io.ByteArrayDataOutput;
+import com.google.common.io.ByteStreams;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -48,6 +51,8 @@ public class PlayerDataSync extends JavaPlugin {
     private boolean syncPermissions;
     private boolean syncEconomy;
     private Economy economyProvider;
+
+    private boolean bungeecordIntegrationEnabled;
 
     private DatabaseManager databaseManager;
     private ConfigManager configManager;
@@ -181,6 +186,11 @@ public class PlayerDataSync extends JavaPlugin {
         }
 
         loadSyncSettings();
+        bungeecordIntegrationEnabled = getConfig().getBoolean("integrations.bungeecord", false);
+        if (bungeecordIntegrationEnabled) {
+            getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+            getLogger().info("BungeeCord integration enabled. Plugin messaging channel registered.");
+        }
 
         autosaveIntervalSeconds = getConfig().getInt("autosave.interval", 1);
 
@@ -193,8 +203,12 @@ public class PlayerDataSync extends JavaPlugin {
                     
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         try {
-                            databaseManager.savePlayer(player);
-                            savedCount++;
+                            if (databaseManager.savePlayer(player)) {
+                                savedCount++;
+                            } else {
+                                getLogger().warning("Failed to autosave data for " + player.getName()
+                                    + ": See previous log entries for details.");
+                            }
                         } catch (Exception e) {
                             getLogger().warning("Failed to autosave data for " + player.getName() + ": " + e.getMessage());
                         }
@@ -222,6 +236,7 @@ public class PlayerDataSync extends JavaPlugin {
         backupManager.startAutomaticBackups();
         
         getServer().getPluginManager().registerEvents(new PlayerDataListener(this, databaseManager), this);
+        getServer().getPluginManager().registerEvents(new ServerSwitchListener(this, databaseManager), this);
         if (getCommand("sync") != null) {
             SyncCommand syncCommand = new SyncCommand(this);
             getCommand("sync").setExecutor(syncCommand);
@@ -235,12 +250,16 @@ public class PlayerDataSync extends JavaPlugin {
     @Override
     public void onDisable() {
         getLogger().info("Disabling PlayerDataSync...");
-        
+
         // Cancel autosave task
         if (autosaveTask != null) {
             autosaveTask.cancel();
             autosaveTask = null;
             getLogger().info("Autosave task cancelled");
+        }
+
+        if (bungeecordIntegrationEnabled) {
+            getServer().getMessenger().unregisterOutgoingPluginChannel(this);
         }
         
         // Save all online players before shutdown
@@ -251,8 +270,12 @@ public class PlayerDataSync extends JavaPlugin {
                 
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     try {
-                        databaseManager.savePlayer(player);
-                        savedCount++;
+                        if (databaseManager.savePlayer(player)) {
+                            savedCount++;
+                        } else {
+                            getLogger().severe("Failed to save data for " + player.getName()
+                                + " during shutdown: See previous log entries for details.");
+                        }
                     } catch (Exception e) {
                         getLogger().severe("Failed to save data for " + player.getName() + " during shutdown: " + e.getMessage());
                     }
@@ -458,6 +481,16 @@ public class PlayerDataSync extends JavaPlugin {
             metrics = null;
         }
 
+        boolean wasBungeeEnabled = bungeecordIntegrationEnabled;
+        bungeecordIntegrationEnabled = getConfig().getBoolean("integrations.bungeecord", false);
+        if (bungeecordIntegrationEnabled && !wasBungeeEnabled) {
+            getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
+            getLogger().info("BungeeCord integration enabled after reload. Plugin messaging channel registered.");
+        } else if (!bungeecordIntegrationEnabled && wasBungeeEnabled) {
+            getServer().getMessenger().unregisterOutgoingPluginChannel(this);
+            getLogger().info("BungeeCord integration disabled after reload. Plugin messaging channel unregistered.");
+        }
+
         loadSyncSettings();
 
         int newIntervalSeconds = getConfig().getInt("autosave.interval", 1);
@@ -476,8 +509,12 @@ public class PlayerDataSync extends JavaPlugin {
                         
                         for (Player player : Bukkit.getOnlinePlayers()) {
                             try {
-                                databaseManager.savePlayer(player);
-                                savedCount++;
+                                if (databaseManager.savePlayer(player)) {
+                                    savedCount++;
+                                } else {
+                                    getLogger().warning("Failed to autosave data for " + player.getName()
+                                        + ": See previous log entries for details.");
+                                }
                             } catch (Exception e) {
                                 getLogger().warning("Failed to autosave data for " + player.getName() + ": " + e.getMessage());
                             }
@@ -585,13 +622,44 @@ public class PlayerDataSync extends JavaPlugin {
     public MessageManager getMessageManager() { return messageManager; }
 
     public Economy getEconomyProvider() { return economyProvider; }
-    
+
+    public boolean isBungeecordIntegrationEnabled() { return bungeecordIntegrationEnabled; }
+
     /**
      * API method for other plugins to trigger economy sync
      * This is useful when detecting server switches via BungeeCord or other methods
      */
     public void syncPlayerEconomy(Player player) {
         triggerEconomySync(player);
+    }
+
+    public void connectPlayerToServer(Player player, String targetServer) {
+        if (!bungeecordIntegrationEnabled) {
+            getLogger().warning("Attempted to send player " + player.getName()
+                + " to server '" + targetServer + "' while BungeeCord integration is disabled.");
+            return;
+        }
+
+        if (player == null || targetServer == null || targetServer.trim().isEmpty()) {
+            getLogger().warning("Invalid target server specified for player transfer.");
+            return;
+        }
+
+        Bukkit.getScheduler().runTask(this, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+
+            try {
+                ByteArrayDataOutput out = ByteStreams.newDataOutput();
+                out.writeUTF("Connect");
+                out.writeUTF(targetServer);
+                player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
+                getLogger().info("Sent player " + player.getName() + " to server '" + targetServer + "'.");
+            } catch (Exception e) {
+                getLogger().severe("Failed to send player " + player.getName() + " to server '" + targetServer + "': " + e.getMessage());
+            }
+        });
     }
 
     /**

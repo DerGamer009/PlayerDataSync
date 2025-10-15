@@ -160,11 +160,16 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
             }
             
             try {
-                plugin.getDatabaseManager().savePlayer(target);
-                sender.sendMessage(messageManager.get("prefix") + " " + 
-                    messageManager.get("manual_save_success"));
+                if (plugin.getDatabaseManager().savePlayer(target)) {
+                    sender.sendMessage(messageManager.get("prefix") + " " +
+                        messageManager.get("manual_save_success"));
+                } else {
+                    sender.sendMessage(messageManager.get("prefix") + " " +
+                        messageManager.get("manual_save_failed").replace("{error}",
+                            "Unable to persist player data. See console for details."));
+                }
             } catch (Exception e) {
-                sender.sendMessage(messageManager.get("prefix") + " " + 
+                sender.sendMessage(messageManager.get("prefix") + " " +
                     messageManager.get("manual_save_failed").replace("{error}", e.getMessage()));
             }
         } else {
@@ -172,13 +177,14 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
             try {
                 int savedCount = 0;
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    plugin.getDatabaseManager().savePlayer(player);
-                    savedCount++;
+                    if (plugin.getDatabaseManager().savePlayer(player)) {
+                        savedCount++;
+                    }
                 }
-                sender.sendMessage(messageManager.get("prefix") + " " + 
+                sender.sendMessage(messageManager.get("prefix") + " " +
                     "Saved data for " + savedCount + " players.");
             } catch (Exception e) {
-                sender.sendMessage(messageManager.get("prefix") + " " + 
+                sender.sendMessage(messageManager.get("prefix") + " " +
                     messageManager.get("manual_save_failed").replace("{error}", e.getMessage()));
             }
         }

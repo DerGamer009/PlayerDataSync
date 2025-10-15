@@ -129,7 +129,7 @@ public class DatabaseManager {
         }
     }
 
-    public void savePlayer(Player player) {
+    public boolean savePlayer(Player player) {
         long startTime = System.currentTimeMillis();
         String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, armor, offhand, effects, statistics, attributes, health, hunger, saturation, advancements, economy, last_save, server_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?)";
 
@@ -144,13 +144,13 @@ public class DatabaseManager {
 
             if (snapshot == null) {
                 plugin.getLogger().warning("Skipping save for player " + player.getName() + " because snapshot creation failed");
-                return;
+                return false;
             }
 
             Connection connection = plugin.getConnection();
             if (connection == null) {
                 plugin.getLogger().severe("Database connection unavailable");
-                return;
+                return false;
             }
 
             try (PreparedStatement ps = connection.prepareStatement(sql)) {
@@ -189,6 +189,8 @@ public class DatabaseManager {
 
                 logPerformanceStats();
 
+                return true;
+
             } catch (SQLException e) {
                 if (e.getMessage().contains("Data too long for column")) {
                     plugin.getLogger().severe("Data truncation error for " + snapshot.playerName +
@@ -196,17 +198,22 @@ public class DatabaseManager {
                 } else {
                     plugin.getLogger().severe("Could not save data for " + snapshot.playerName + ": " + e.getMessage());
                 }
+                return false;
             } finally {
                 plugin.returnConnection(connection);
             }
         } catch (InterruptedException e) {
             plugin.getLogger().severe("Failed to capture data for player " + player.getName() + ": " + e.getMessage());
             Thread.currentThread().interrupt();
+            return false;
         } catch (ExecutionException e) {
             plugin.getLogger().severe("Failed to capture data for player " + player.getName() + ": " + e.getMessage());
+            return false;
         } catch (Exception e) {
             plugin.getLogger().severe("Unexpected error saving player " + player.getName() + ": " + e.getMessage());
+            return false;
         }
+        return false;
     }
 
     private PlayerSnapshot capturePlayerSnapshot(Player player) {
