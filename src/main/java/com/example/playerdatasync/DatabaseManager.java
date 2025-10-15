@@ -500,6 +500,8 @@ public class DatabaseManager {
                 // CRITICAL: Add timeout check for counting achievements with hard limit
                 Iterator<Advancement> it = Bukkit.getServer().advancementIterator();
                 while (it.hasNext() && totalAdvancements < MAX_COUNT_ATTEMPTS) {
+                    // Advance the iterator to prevent hasNext() from always returning true
+                    it.next();
                     totalAdvancements++;
                     
                     // CRITICAL: Check timeout every 50 achievements to prevent freezing
