@@ -131,7 +131,7 @@ public class DatabaseManager {
 
     public boolean savePlayer(Player player) {
         long startTime = System.currentTimeMillis();
-        String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, armor, offhand, effects, statistics, attributes, health, hunger, saturation, advancements, economy, last_save, server_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),?)";
+        String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, armor, offhand, effects, statistics, attributes, health, hunger, saturation, advancements, economy, last_save, server_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try {
             PlayerSnapshot snapshot;
@@ -175,7 +175,8 @@ public class DatabaseManager {
                 ps.setFloat(19, snapshot.saturation);
                 ps.setString(20, snapshot.advancementsData);
                 ps.setDouble(21, snapshot.economyBalance);
-                ps.setString(22, plugin.getConfig().getString("server.id", "default"));
+                ps.setTimestamp(22, new Timestamp(System.currentTimeMillis()));
+                ps.setString(23, plugin.getConfig().getString("server.id", "default"));
 
                 ps.executeUpdate();
 
