@@ -29,23 +29,23 @@ public class PlayerDataListener implements Listener {
         if (player.hasPermission("playerdatasync.message.show.loading")) {
             player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("loading"));
         }
-        
-        // Delay loading slightly to ensure player is fully initialized
+
+        // Load data almost immediately after join to minimize empty inventories during server switches
         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
             try {
                 dbManager.loadPlayer(player);
                 if (player.isOnline() && player.hasPermission("playerdatasync.message.show.loaded")) {
-                    Bukkit.getScheduler().runTask(plugin, () -> 
+                    Bukkit.getScheduler().runTask(plugin, () ->
                         player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("loaded")));
                 }
             } catch (Exception e) {
                 plugin.getLogger().severe("Error loading data for " + player.getName() + ": " + e.getMessage());
                 if (player.isOnline()) {
-                    Bukkit.getScheduler().runTask(plugin, () -> 
+                    Bukkit.getScheduler().runTask(plugin, () ->
                         player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("load_failed")));
                 }
             }
-        }, 20L); // 1 second delay
+        }, 1L);
     }
 
     @EventHandler
@@ -58,15 +58,15 @@ public class PlayerDataListener implements Listener {
         // proxies, causing recent changes not to be stored in time.
         try {
             long startTime = System.currentTimeMillis();
-            dbManager.savePlayer(player);
+            boolean saved = dbManager.savePlayer(player);
             long endTime = System.currentTimeMillis();
-            
+
             // Log slow saves for performance monitoring
-            if (endTime - startTime > 1000) { // More than 1 second
-                plugin.getLogger().warning("Slow save detected for " + player.getName() + 
+            if (saved && endTime - startTime > 1000) { // More than 1 second
+                plugin.getLogger().warning("Slow save detected for " + player.getName() +
                     ": " + (endTime - startTime) + "ms");
             }
-            
+
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to save data for " + player.getName() + ": " + e.getMessage());
             e.printStackTrace();
