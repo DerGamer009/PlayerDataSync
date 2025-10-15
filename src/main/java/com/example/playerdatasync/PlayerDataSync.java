@@ -622,10 +622,10 @@ public class PlayerDataSync extends JavaPlugin {
             }
             
             // Check for 1.21.x versions
-            if (serverVersion.contains("1.21.0") || serverVersion.contains("1.21.1") || serverVersion.contains("1.21.2") || 
+            if (serverVersion.contains("1.21") || serverVersion.contains("1.21.1") || serverVersion.contains("1.21.2") ||
                 serverVersion.contains("1.21.3") || serverVersion.contains("1.21.4") || serverVersion.contains("1.21.5") ||
                 serverVersion.contains("1.21.6") || serverVersion.contains("1.21.7") || serverVersion.contains("1.21.8") ||
-                serverVersion.contains("1.21.9")) {
+                serverVersion.contains("1.21.9") || serverVersion.contains("1.21.10")) {
                 isSupportedVersion = true;
                 versionInfo = "Minecraft 1.21.x - Full compatibility confirmed";
             }
@@ -635,7 +635,7 @@ public class PlayerDataSync extends JavaPlugin {
             } else {
                 getLogger().warning("================================================");
                 getLogger().warning("VERSION COMPATIBILITY WARNING:");
-                getLogger().warning("This plugin supports Minecraft 1.20.4 to 1.21.9");
+                getLogger().warning("This plugin supports Minecraft 1.20.4 to 1.21.10");
                 getLogger().warning("Current server version: " + serverVersion);
                 getLogger().warning("Some features may not work correctly");
                 getLogger().warning("Consider updating to a supported version");
@@ -661,7 +661,7 @@ public class PlayerDataSync extends JavaPlugin {
             } else if (serverVersion.contains("1.21.0") || serverVersion.contains("1.21.1") || serverVersion.contains("1.21.2") || 
                       serverVersion.contains("1.21.3") || serverVersion.contains("1.21.4") || serverVersion.contains("1.21.5") ||
                       serverVersion.contains("1.21.6") || serverVersion.contains("1.21.7") || serverVersion.contains("1.21.8") ||
-                      serverVersion.contains("1.21.9")) {
+                      serverVersion.contains("1.21.9") || serverVersion.contains("1.21.10")) {
                 getLogger().info("✅ Full compatibility with Minecraft 1.21.x confirmed");
             } else {
                 getLogger().info("ℹ️  Running on version: " + serverVersion + " - compatibility status unknown");

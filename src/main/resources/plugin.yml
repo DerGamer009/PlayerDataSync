@@ -1,6 +1,6 @@
 name: PlayerDataSync
 main: com.example.playerdatasync.PlayerDataSync
-version: 1.1.8-SNAPSHOT
+version: 1.1.9-SNAPSHOT
 api-version: "1.20"
 load: STARTUP
 authors: [DerGamer09]
