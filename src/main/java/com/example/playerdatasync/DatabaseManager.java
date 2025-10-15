@@ -214,7 +214,6 @@ public class DatabaseManager {
             plugin.getLogger().severe("Unexpected error saving player " + player.getName() + ": " + e.getMessage());
             return false;
         }
-        return false;
     }
 
     private PlayerSnapshot capturePlayerSnapshot(Player player) {
