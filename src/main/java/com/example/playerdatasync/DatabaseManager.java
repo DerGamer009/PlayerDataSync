@@ -680,7 +680,7 @@ public class DatabaseManager {
                             
                             if (instance != null) {
                                 if (sb.length() > 0) sb.append(";");
-                                sb.append(attrName).append(",").append(instance.getValue());
+                                sb.append(attrName).append(",").append(instance.getBaseValue());
                             }
                         } catch (Exception e) {
                             // Some attributes might not be applicable, skip them
@@ -696,7 +696,7 @@ public class DatabaseManager {
                             org.bukkit.attribute.AttributeInstance instance = player.getAttribute(attr);
                             if (instance != null) {
                                 if (sb.length() > 0) sb.append(";");
-                                sb.append(attr.name()).append(",").append(instance.getValue());
+                                sb.append(attr.name()).append(",").append(instance.getBaseValue());
                             }
                         } catch (Exception ex) {
                             // Some attributes might not be applicable, skip them
@@ -711,7 +711,7 @@ public class DatabaseManager {
                         org.bukkit.attribute.AttributeInstance instance = player.getAttribute(attr);
                         if (instance != null) {
                             if (sb.length() > 0) sb.append(";");
-                            sb.append(attr.name()).append(",").append(instance.getValue());
+                            sb.append(attr.name()).append(",").append(instance.getBaseValue());
                         }
                     } catch (Exception ex) {
                         // Some attributes might not be applicable, skip them
