@@ -222,8 +222,8 @@ public class PlayerDataSync extends JavaPlugin {
                     }
                     
                     long endTime = System.currentTimeMillis();
-                    if (savedCount > 0) {
-                        getLogger().info("Autosaved data for " + savedCount + " players in " + 
+                    if (savedCount > 0 && isPerformanceLoggingEnabled()) {
+                        getLogger().info("Autosaved data for " + savedCount + " players in " +
                             (endTime - startTime) + "ms");
                     }
                 } catch (Exception e) {
@@ -528,8 +528,8 @@ public class PlayerDataSync extends JavaPlugin {
                         }
                         
                         long endTime = System.currentTimeMillis();
-                        if (savedCount > 0) {
-                            getLogger().info("Autosaved data for " + savedCount + " players in " + 
+                        if (savedCount > 0 && isPerformanceLoggingEnabled()) {
+                            getLogger().info("Autosaved data for " + savedCount + " players in " +
                                 (endTime - startTime) + "ms");
                         }
                     } catch (Exception e) {
@@ -897,5 +897,9 @@ public class PlayerDataSync extends JavaPlugin {
 
     public boolean isDebugEnabled() {
         return configManager != null && configManager.isDebugMode();
+    }
+
+    private boolean isPerformanceLoggingEnabled() {
+        return configManager != null && configManager.isPerformanceLoggingEnabled();
     }
 }

@@ -593,8 +593,11 @@ public class DatabaseManager {
             }
             
             if (count > 0) {
-                plugin.getLogger().info("Serialized " + count + " achievements for " + player.getName() + " in " + 
-                    (System.currentTimeMillis() - startTime) + "ms");
+                ConfigManager configManager = plugin.getConfigManager();
+                if (configManager != null && configManager.isPerformanceLoggingEnabled()) {
+                    plugin.getLogger().info("Serialized " + count + " achievements for " + player.getName() + " in " +
+                        (System.currentTimeMillis() - startTime) + "ms");
+                }
             }
             
             // CRITICAL: Log if we hit the limit
