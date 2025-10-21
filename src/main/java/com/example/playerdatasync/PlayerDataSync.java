@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.logging.Level;
 
 public class PlayerDataSync extends JavaPlugin {
     private Connection connection;
@@ -100,6 +101,12 @@ public class PlayerDataSync extends JavaPlugin {
         }
         
         configManager = new ConfigManager(this);
+
+        Level configuredLevel = configManager.getLoggingLevel();
+        if (configManager.isDebugMode() && configuredLevel.intValue() > Level.FINE.intValue()) {
+            configuredLevel = Level.FINE;
+        }
+        getLogger().setLevel(configuredLevel);
         
         // If config is still empty after ConfigManager initialization, force initialize defaults
         if (getConfig().getKeys(false).isEmpty()) {
@@ -595,18 +602,18 @@ public class PlayerDataSync extends JavaPlugin {
      */
     public void triggerEconomySync(Player player) {
         if (!syncEconomy) {
-            getLogger().info("DEBUG: Economy sync disabled, skipping manual trigger for " + player.getName());
+            logDebug("Economy sync disabled, skipping manual trigger for " + player.getName());
             return;
         }
         
-        getLogger().info("DEBUG: Manual economy sync triggered for " + player.getName());
+        logDebug("Manual economy sync triggered for " + player.getName());
         
         try {
             long startTime = System.currentTimeMillis();
             databaseManager.savePlayer(player);
             long endTime = System.currentTimeMillis();
             
-            getLogger().info("DEBUG: Manual economy sync completed for " + player.getName() + 
+            logDebug("Manual economy sync completed for " + player.getName() + 
                 " in " + (endTime - startTime) + "ms");
             
         } catch (Exception e) {
@@ -741,12 +748,12 @@ public class PlayerDataSync extends JavaPlugin {
     }
 
     private void configureEconomyIntegration() {
-        getLogger().info("DEBUG: Economy sync setting from config: " + getConfig().getBoolean("sync.economy", false));
-        getLogger().info("DEBUG: Economy sync variable: " + syncEconomy);
+        logDebug("Economy sync setting from config: " + getConfig().getBoolean("sync.economy", false));
+        logDebug("Economy sync variable: " + syncEconomy);
 
         if (!syncEconomy) {
             economyProvider = null;
-            getLogger().info("DEBUG: Economy sync is disabled in configuration");
+            logDebug("Economy sync is disabled in configuration");
             return;
         }
 
@@ -880,5 +887,15 @@ public class PlayerDataSync extends JavaPlugin {
             getLogger().severe("Failed to create emergency configuration: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    public void logDebug(String message) {
+        if (configManager != null && configManager.isDebugMode()) {
+            getLogger().log(Level.FINE, message);
+        }
+    }
+
+    public boolean isDebugEnabled() {
+        return configManager != null && configManager.isDebugMode();
     }
 }

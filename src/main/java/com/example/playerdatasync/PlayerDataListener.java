@@ -114,14 +114,14 @@ public class PlayerDataListener implements Listener {
         
         Player player = event.getPlayer();
         
-        plugin.getLogger().info("DEBUG: Player " + player.getName() + " was kicked, saving data");
+        plugin.logDebug("Player " + player.getName() + " was kicked, saving data");
         
         try {
             long startTime = System.currentTimeMillis();
             dbManager.savePlayer(player);
             long endTime = System.currentTimeMillis();
             
-            plugin.getLogger().info("DEBUG: Saved data for kicked player " + player.getName() + 
+            plugin.logDebug("Saved data for kicked player " + player.getName() + 
                 " in " + (endTime - startTime) + "ms");
             
         } catch (Exception e) {
@@ -141,7 +141,7 @@ public class PlayerDataListener implements Listener {
             if (event.getTo() != null && event.getTo().getWorld() != null) {
                 String currentServer = plugin.getConfig().getString("server.id", "default");
                 
-                plugin.getLogger().info("DEBUG: Player " + player.getName() + " teleported via plugin, saving data");
+                plugin.logDebug("Player " + player.getName() + " teleported via plugin, saving data");
                 
                 // Save data before teleport
                 try {
@@ -149,7 +149,7 @@ public class PlayerDataListener implements Listener {
                     dbManager.savePlayer(player);
                     long endTime = System.currentTimeMillis();
                     
-                    plugin.getLogger().info("DEBUG: Saved data for teleporting player " + player.getName() + 
+                    plugin.logDebug("Saved data for teleporting player " + player.getName() + 
                         " in " + (endTime - startTime) + "ms");
                     
                 } catch (Exception e) {

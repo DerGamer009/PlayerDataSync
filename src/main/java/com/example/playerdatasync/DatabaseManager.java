@@ -296,10 +296,10 @@ public class DatabaseManager {
         if (plugin.isSyncEconomy()) {
             double balance = getPlayerBalance(player);
             snapshot.economyBalance = balance;
-            plugin.getLogger().info("DEBUG: Saving economy balance for " + player.getName() + ": " + balance);
+            plugin.logDebug("Saving economy balance for " + player.getName() + ": " + balance);
         } else {
             snapshot.economyBalance = 0.0;
-            plugin.getLogger().info("DEBUG: Economy sync disabled, setting balance to 0.0 for " + player.getName());
+            plugin.logDebug("Economy sync disabled, setting balance to 0.0 for " + player.getName());
         }
 
         return snapshot;
@@ -447,10 +447,10 @@ public class DatabaseManager {
                         }
                         if (plugin.isSyncEconomy()) {
                             double balance = rs.getDouble("economy");
-                            plugin.getLogger().info("DEBUG: Loading economy balance for " + player.getName() + ": " + balance);
+                            plugin.logDebug("Loading economy balance for " + player.getName() + ": " + balance);
                             Bukkit.getScheduler().runTask(plugin, () -> setPlayerBalance(player, balance));
                         } else {
-                            plugin.getLogger().info("DEBUG: Economy sync disabled, skipping balance load for " + player.getName());
+                            plugin.logDebug("Economy sync disabled, skipping balance load for " + player.getName());
                         }
                     }
                 }
@@ -959,7 +959,7 @@ public class DatabaseManager {
             }
 
             double balance = economy.getBalance(player);
-            plugin.getLogger().info("DEBUG: Retrieved balance for " + player.getName() + ": " + balance);
+            plugin.logDebug("Retrieved balance for " + player.getName() + ": " + balance);
             return balance;
         } catch (Exception e) {
             plugin.getLogger().warning("Error getting player balance for " + player.getName() + ": " + e.getMessage());
@@ -977,23 +977,23 @@ public class DatabaseManager {
             return;
         }
 
-        plugin.getLogger().info("DEBUG: Attempting to set balance for " + player.getName() + " to " + balance);
+        plugin.logDebug("Attempting to set balance for " + player.getName() + " to " + balance);
 
         try {
             if (!economy.hasAccount(player)) {
                 economy.createPlayerAccount(player);
             }
 
-            plugin.getLogger().info("DEBUG: Economy provider found: " + economy.getName());
+            plugin.logDebug("Economy provider found: " + economy.getName());
 
             try {
                 java.lang.reflect.Method setBalanceMethod =
                     economy.getClass().getMethod("setBalance", org.bukkit.OfflinePlayer.class, double.class);
                 setBalanceMethod.invoke(economy, player, balance);
-                plugin.getLogger().info("DEBUG: Set balance for " + player.getName() + " to " + balance + " using setBalance method");
+                plugin.logDebug("Set balance for " + player.getName() + " to " + balance + " using setBalance method");
                 return;
             } catch (NoSuchMethodException e) {
-                plugin.getLogger().info("DEBUG: setBalance method not available, using deposit/withdraw approach");
+                plugin.logDebug("setBalance method not available, using deposit/withdraw approach");
             } catch (ReflectiveOperationException reflectiveError) {
                 plugin.getLogger().warning("Failed to invoke setBalance on economy provider " + economy.getName() + ": " + reflectiveError.getMessage());
             }
@@ -1001,10 +1001,10 @@ public class DatabaseManager {
             double currentBalance = economy.getBalance(player);
             double difference = balance - currentBalance;
 
-            plugin.getLogger().info("DEBUG: Current balance: " + currentBalance + ", Target balance: " + balance + ", Difference: " + difference);
+            plugin.logDebug("Current balance: " + currentBalance + ", Target balance: " + balance + ", Difference: " + difference);
 
             if (Math.abs(difference) < 0.01) {
-                plugin.getLogger().info("DEBUG: Balance is already correct (within tolerance)");
+                plugin.logDebug("Balance is already correct (within tolerance)");
                 return;
             }
 
@@ -1015,14 +1015,14 @@ public class DatabaseManager {
                     plugin.getLogger().warning("Failed to deposit funds for " + player.getName() + ": " + response.errorMessage);
                     return;
                 }
-                plugin.getLogger().info("DEBUG: Added " + difference + " to " + player.getName() + "'s balance (now: " + balance + ")");
+                plugin.logDebug("Added " + difference + " to " + player.getName() + "'s balance (now: " + balance + ")");
             } else {
                 response = economy.withdrawPlayer(player, Math.abs(difference));
                 if (!response.transactionSuccess()) {
                     plugin.getLogger().warning("Failed to withdraw funds for " + player.getName() + ": " + response.errorMessage);
                     return;
                 }
-                plugin.getLogger().info("DEBUG: Removed " + Math.abs(difference) + " from " + player.getName() + "'s balance (now: " + balance + ")");
+                plugin.logDebug("Removed " + Math.abs(difference) + " from " + player.getName() + "'s balance (now: " + balance + ")");
             }
 
         } catch (Exception e) {

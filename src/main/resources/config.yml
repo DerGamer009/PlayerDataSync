@@ -129,10 +129,10 @@ messages:
   
 # Logging and Debugging
 logging:
-  level: INFO           # Log level: DEBUG, INFO, WARN, ERROR
+  level: INFO           # Log level: DEBUG, INFO, WARN, ERROR (also accepts WARNING/SEVERE/OFF)
   log_database: false   # log database operations
   log_performance: false # log performance metrics
-  debug_mode: false     # enable debug mode for troubleshooting
+  debug_mode: false     # enable verbose debug messages (set to true only when troubleshooting)
 
 # Update Checker
 update_checker:

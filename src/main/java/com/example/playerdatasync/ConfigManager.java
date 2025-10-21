@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 
 /**
@@ -255,12 +256,13 @@ public class ConfigManager {
         }
         
         // Validate logging level
-        String logLevel = config.getString("logging.level", "INFO").toUpperCase();
-        try {
-            Level.parse(logLevel);
-        } catch (IllegalArgumentException e) {
-            warnings.add("Invalid logging level: " + logLevel + ". Using INFO as default.");
+        String logLevelRaw = config.getString("logging.level", "INFO");
+        Level resolvedLevel = parseLogLevel(logLevelRaw);
+        if (resolvedLevel == null) {
+            warnings.add("Invalid logging level: " + logLevelRaw + ". Using INFO as default.");
             config.set("logging.level", "INFO");
+        } else {
+            config.set("logging.level", resolvedLevel.getName());
         }
         
         // Report warnings
@@ -330,11 +332,45 @@ public class ConfigManager {
      * Get logging level
      */
     public Level getLoggingLevel() {
-        String levelStr = config.getString("logging.level", "INFO");
-        try {
-            return Level.parse(levelStr);
-        } catch (IllegalArgumentException e) {
-            return Level.INFO;
+        Level level = parseLogLevel(config.getString("logging.level", "INFO"));
+        return level != null ? level : Level.INFO;
+    }
+
+    private Level parseLogLevel(String levelStr) {
+        if (levelStr == null) {
+            return null;
+        }
+
+        String normalized = levelStr.trim().toUpperCase(Locale.ROOT);
+        switch (normalized) {
+            case "WARN":
+            case "WARNING":
+                return Level.WARNING;
+            case "ERROR":
+            case "SEVERE":
+                return Level.SEVERE;
+            case "DEBUG":
+            case "FINE":
+                return Level.FINE;
+            case "TRACE":
+            case "FINER":
+                return Level.FINER;
+            case "FINEST":
+                return Level.FINEST;
+            case "CONFIG":
+                return Level.CONFIG;
+            case "ALL":
+                return Level.ALL;
+            case "OFF":
+                return Level.OFF;
+            case "INFO":
+                return Level.INFO;
+            default:
+                try {
+                    return Level.parse(normalized);
+                } catch (IllegalArgumentException ignored) {
+                    return null;
+                }
         }
     }
     
