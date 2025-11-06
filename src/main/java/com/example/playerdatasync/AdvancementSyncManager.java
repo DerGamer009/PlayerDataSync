@@ -70,7 +70,7 @@ public class AdvancementSyncManager implements Listener {
     }
 
     public void recordAdvancement(UUID uuid, String key) {
-        PlayerAdvancementState state = states.computeIfAbsent(uuid, key -> new PlayerAdvancementState());
+        PlayerAdvancementState state = states.computeIfAbsent(uuid, id -> new PlayerAdvancementState());
         state.completedAdvancements.add(key);
         if (state.importInProgress) {
             state.pendingDuringImport.add(key);
