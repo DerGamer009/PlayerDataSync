@@ -95,7 +95,7 @@ integration_bungeecord_enabled: "&aBungeeCord mode enabled."
 integration_placeholderapi_enabled: "&aPlaceholderAPI integration enabled."
 
 # Editor Integration Messages
-editor_disabled: "&cThe web editor integration is disabled."
+editor_disabled: "&cThe web editor integration is not configured. Set PDS_EDITOR_API_KEY or the system property pds.editor.apiKey."
 editor_player_required: "&cYou must provide a player when running this command from console."
 editor_token_generating: "&7Requesting editor access for &b{player}&7..."
 editor_token_success: "&aEditor link:&r {url}"

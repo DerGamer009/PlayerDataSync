@@ -150,9 +150,7 @@ public class PlayerDataSync extends JavaPlugin {
         }
 
         editorIntegrationManager = new EditorIntegrationManager(this);
-        if (editorIntegrationManager.isEnabled()) {
-            editorIntegrationManager.start();
-        }
+        editorIntegrationManager.start();
         // Initialize database connection
         databaseType = getConfig().getString("database.type", "mysql");
         try {

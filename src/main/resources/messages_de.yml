@@ -95,7 +95,7 @@ integration_bungeecord_enabled: "&aBungeeCord-Modus aktiviert."
 integration_placeholderapi_enabled: "&aPlaceholderAPI-Integration aktiviert."
 
 # Editor-Integrationsnachrichten
-editor_disabled: "&cDie Editor-Integration ist deaktiviert."
+editor_disabled: "&cDie Editor-Integration ist nicht konfiguriert. Setze PDS_EDITOR_API_KEY oder die System-Property pds.editor.apiKey."
 editor_player_required: "&cBitte gib einen Spieler an, wenn du den Befehl von der Konsole nutzt."
 editor_token_generating: "&7Fordere Editor-Zugang für &b{player}&7 an..."
 editor_token_success: "&aEditor-Link:&r {url}"

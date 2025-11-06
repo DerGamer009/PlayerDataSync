@@ -125,14 +125,6 @@ integrations:
   vault: true           # enable Vault integration for economy
   placeholderapi: false # enable PlaceholderAPI support
 
-# Web Editor Integration
-editor:
-  enabled: false             # enable remote web editor integration
-  base_url: https://pds.devvoxel.de/api # API base URL for the editor services
-  api_key: ""               # API key provided by the PlayerDataSync dashboard
-  server_id: ""             # optional override, defaults to server.id when empty
-  heartbeat_interval: 60     # seconds between automatic heartbeat updates (0 to disable)
-
 # Message Configuration
 messages:
   enabled: true         # enable player messages

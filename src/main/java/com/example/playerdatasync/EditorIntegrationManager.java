@@ -25,8 +25,16 @@ import java.util.regex.Pattern;
  * reports the server heartbeat state.
  */
 public class EditorIntegrationManager {
+    private static final String DEFAULT_BASE_URL = "https://pds.devvoxel.de/api";
+    private static final int DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 60;
+    private static final String API_KEY_ENV = "PDS_EDITOR_API_KEY";
+    private static final String API_KEY_PROPERTY = "pds.editor.apiKey";
+    private static final String SERVER_ID_ENV = "PDS_EDITOR_SERVER_ID";
+    private static final String SERVER_ID_PROPERTY = "pds.editor.serverId";
+    private static final String HEARTBEAT_INTERVAL_ENV = "PDS_EDITOR_HEARTBEAT_INTERVAL";
+    private static final String HEARTBEAT_INTERVAL_PROPERTY = "pds.editor.heartbeatInterval";
+
     private final PlayerDataSync plugin;
-    private final boolean enabled;
     private final String baseUrl;
     private final String apiKey;
     private final String serverId;
@@ -38,35 +46,19 @@ public class EditorIntegrationManager {
     public EditorIntegrationManager(PlayerDataSync plugin) {
         this.plugin = plugin;
 
-        ConfigManager configManager = plugin.getConfigManager();
-        this.enabled = configManager != null && configManager.isEditorIntegrationEnabled();
-        String resolvedBase = configManager != null ? trimTrailingSlash(configManager.getEditorBaseUrl())
-            : "https://pds.devvoxel.de/api";
-        if (resolvedBase == null || resolvedBase.isEmpty()) {
-            resolvedBase = "https://pds.devvoxel.de/api";
-        }
-        this.baseUrl = resolvedBase;
-        this.apiKey = configManager != null ? configManager.getEditorApiKey() : "";
-        String configuredServerId = configManager != null ? configManager.getEditorServerId() : null;
-        String defaultServerId = configManager != null ? configManager.getServerId() : "default";
-        this.serverId = (configuredServerId == null || configuredServerId.trim().isEmpty())
-            ? defaultServerId
-            : configuredServerId.trim();
-        int interval = configManager != null ? configManager.getEditorHeartbeatInterval() : 60;
-        this.heartbeatIntervalSeconds = Math.max(0, interval);
+        this.baseUrl = resolveBaseUrl();
+        this.apiKey = resolveApiKey();
+        this.serverId = resolveServerId();
+        this.heartbeatIntervalSeconds = resolveHeartbeatInterval();
     }
 
-    public boolean isEnabled() {
-        return enabled;
+    public boolean hasConfiguredApiKey() {
+        return apiKey != null && !apiKey.trim().isEmpty();
     }
 
     public void start() {
-        if (!enabled) {
-            return;
-        }
-
-        if (apiKey == null || apiKey.trim().isEmpty()) {
-            plugin.getLogger().warning("Editor integration enabled but editor.api_key is missing. Disabling editor features.");
+        if (!hasConfiguredApiKey()) {
+            plugin.getLogger().warning("Editor integration is enabled but no API key is configured. Set the PDS_EDITOR_API_KEY environment variable or the pds.editor.apiKey system property.");
             return;
         }
 
@@ -92,7 +84,7 @@ public class EditorIntegrationManager {
             heartbeatTask = null;
         }
 
-        if (!enabled || apiKey == null || apiKey.trim().isEmpty()) {
+        if (!hasConfiguredApiKey()) {
             return;
         }
 
@@ -102,12 +94,7 @@ public class EditorIntegrationManager {
     public CompletableFuture<EditorTokenResult> requestEditorToken(UUID playerUuid, String playerName) {
         CompletableFuture<EditorTokenResult> future = new CompletableFuture<>();
 
-        if (!enabled) {
-            future.completeExceptionally(new IllegalStateException("Editor integration disabled"));
-            return future;
-        }
-
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (!hasConfiguredApiKey()) {
             future.completeExceptionally(new IllegalStateException("Missing editor API key"));
             return future;
         }
@@ -125,15 +112,80 @@ public class EditorIntegrationManager {
         return future;
     }
 
+    private String resolveBaseUrl() {
+        String envOverride = System.getenv("PDS_EDITOR_BASE_URL");
+        if (envOverride != null && !envOverride.trim().isEmpty()) {
+            return trimTrailingSlash(envOverride);
+        }
+
+        String propertyOverride = System.getProperty("pds.editor.baseUrl");
+        if (propertyOverride != null && !propertyOverride.trim().isEmpty()) {
+            return trimTrailingSlash(propertyOverride);
+        }
+
+        return DEFAULT_BASE_URL;
+    }
+
+    private String resolveApiKey() {
+        String value = System.getenv(API_KEY_ENV);
+        if (value == null || value.trim().isEmpty()) {
+            value = System.getProperty(API_KEY_PROPERTY);
+        }
+
+        if ((value == null || value.trim().isEmpty()) && plugin.getConfig().contains("editor.api_key")) {
+            value = plugin.getConfig().getString("editor.api_key", "");
+        }
+
+        return value != null ? value.trim() : "";
+    }
+
+    private String resolveServerId() {
+        String override = System.getenv(SERVER_ID_ENV);
+        if (override == null || override.trim().isEmpty()) {
+            override = System.getProperty(SERVER_ID_PROPERTY);
+        }
+
+        if (override != null && !override.trim().isEmpty()) {
+            return override.trim();
+        }
+
+        ConfigManager configManager = plugin.getConfigManager();
+        if (configManager != null) {
+            return configManager.getServerId();
+        }
+
+        String fallback = plugin.getConfig().getString("server.id", "default");
+        if (fallback == null || fallback.trim().isEmpty()) {
+            return "default";
+        }
+        return fallback.trim();
+    }
+
+    private int resolveHeartbeatInterval() {
+        String value = System.getenv(HEARTBEAT_INTERVAL_ENV);
+        if (value == null || value.trim().isEmpty()) {
+            value = System.getProperty(HEARTBEAT_INTERVAL_PROPERTY);
+        }
+
+        if ((value == null || value.trim().isEmpty()) && plugin.getConfig().contains("editor.heartbeat_interval")) {
+            value = String.valueOf(plugin.getConfig().getInt("editor.heartbeat_interval", DEFAULT_HEARTBEAT_INTERVAL_SECONDS));
+        }
+
+        if (value != null) {
+            try {
+                int parsed = Integer.parseInt(value.trim());
+                return Math.max(0, parsed);
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        return DEFAULT_HEARTBEAT_INTERVAL_SECONDS;
+    }
+
     public CompletableFuture<Boolean> pushSnapshot() {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        if (!enabled) {
-            future.completeExceptionally(new IllegalStateException("Editor integration disabled"));
-            return future;
-        }
-
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (!hasConfiguredApiKey()) {
             future.completeExceptionally(new IllegalStateException("Missing editor API key"));
             return future;
         }
@@ -156,12 +208,7 @@ public class EditorIntegrationManager {
     public CompletableFuture<Boolean> sendHeartbeatAsync(boolean online) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        if (!enabled) {
-            future.complete(false);
-            return future;
-        }
-
-        if (apiKey == null || apiKey.trim().isEmpty()) {
+        if (!hasConfiguredApiKey()) {
             future.completeExceptionally(new IllegalStateException("Missing editor API key"));
             return future;
         }
