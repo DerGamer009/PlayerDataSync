@@ -111,19 +111,20 @@ public class BackupManager {
         if (connection == null) {
             throw new SQLException("No database connection available");
         }
-        
+
         try {
+            String tableName = plugin.getTablePrefix();
             // Create SQL dump
             StringBuilder sqlDump = new StringBuilder();
             sqlDump.append("-- PlayerDataSync Database Backup\n");
             sqlDump.append("-- Created: ").append(new java.util.Date()).append("\n\n");
-            
+
             // Get table structure
             DatabaseMetaData metaData = connection.getMetaData();
-            try (ResultSet rs = metaData.getTables(null, null, "player_data", new String[]{"TABLE"})) {
+            try (ResultSet rs = metaData.getTables(null, null, tableName, new String[]{"TABLE"})) {
                 if (rs.next()) {
-                    sqlDump.append("CREATE TABLE IF NOT EXISTS player_data (\n");
-                    try (ResultSet columns = metaData.getColumns(null, null, "player_data", null)) {
+                    sqlDump.append("CREATE TABLE IF NOT EXISTS ").append(tableName).append(" (\n");
+                    try (ResultSet columns = metaData.getColumns(null, null, tableName, null)) {
                         List<String> columnDefs = new ArrayList<>();
                         while (columns.next()) {
                             String columnName = columns.getString("COLUMN_NAME");
@@ -149,12 +150,12 @@ public class BackupManager {
                     sqlDump.append("\n);\n\n");
                 }
             }
-            
+
             // Get table data
-            try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM player_data")) {
+            try (PreparedStatement ps = connection.prepareStatement("SELECT * FROM " + tableName)) {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
-                        sqlDump.append("INSERT INTO player_data VALUES (");
+                        sqlDump.append("INSERT INTO ").append(tableName).append(" VALUES (");
                         ResultSetMetaData rsMeta = rs.getMetaData();
                         List<String> values = new ArrayList<>();
                         for (int i = 1; i <= rsMeta.getColumnCount(); i++) {

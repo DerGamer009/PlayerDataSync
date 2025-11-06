@@ -9,7 +9,8 @@ server:
 
 database:
   type: mysql # Available options: mysql, sqlite, postgresql
-  
+  table_prefix: player_data # Prefix used for all plugin tables
+
   # MySQL Database Configuration
   mysql:
     host: localhost

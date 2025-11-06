@@ -20,7 +20,7 @@ public class ConfigManager {
     private File configFile;
     
     // Configuration version for migration
-    private static final int CURRENT_CONFIG_VERSION = 2;
+    private static final int CURRENT_CONFIG_VERSION = 3;
     
     public ConfigManager(PlayerDataSync plugin) {
         this.plugin = plugin;
@@ -61,11 +61,15 @@ public class ConfigManager {
      */
     private void migrateConfig(int fromVersion) {
         try {
-            if (fromVersion == 1) {
-                // Migrate from v1 to v2
+            if (fromVersion < 2) {
                 migrateFromV1ToV2();
+                fromVersion = 2;
             }
-            
+
+            if (fromVersion < 3) {
+                migrateFromV2ToV3();
+            }
+
             plugin.getLogger().info("Configuration migration completed successfully.");
             
         } catch (Exception e) {
@@ -112,6 +116,17 @@ public class ConfigManager {
         addDefaultIfMissing("logging.log_performance", false);
         addDefaultIfMissing("logging.debug_mode", false);
     }
+
+    private void migrateFromV2ToV3() {
+        addDefaultIfMissing("database.table_prefix", "player_data");
+
+        String prefix = config.getString("database.table_prefix", "player_data");
+        String sanitized = sanitizeTablePrefix(prefix);
+        if (!sanitized.equals(prefix)) {
+            config.set("database.table_prefix", sanitized);
+            plugin.getLogger().info("Sanitized database.table_prefix from '" + prefix + "' to '" + sanitized + "'.");
+        }
+    }
     
     /**
      * Initialize default configuration if completely missing
@@ -135,6 +150,7 @@ public class ConfigManager {
         addDefaultIfMissing("database.mysql.ssl", false);
         addDefaultIfMissing("database.mysql.connection_timeout", 5000);
         addDefaultIfMissing("database.mysql.max_connections", 10);
+        addDefaultIfMissing("database.table_prefix", "player_data");
         addDefaultIfMissing("database.sqlite.file", "plugins/PlayerDataSync/playerdata.db");
         
         // Sync configuration
@@ -233,7 +249,18 @@ public class ConfigManager {
             warnings.add("Invalid database type: " + dbType + ". Using MySQL as default.");
             config.set("database.type", "mysql");
         }
-        
+
+        String tablePrefix = config.getString("database.table_prefix", "player_data");
+        String sanitizedPrefix = sanitizeTablePrefix(tablePrefix);
+        if (sanitizedPrefix.isEmpty()) {
+            warnings.add("database.table_prefix is empty or invalid. Using default 'player_data'.");
+            sanitizedPrefix = "player_data";
+        }
+        if (!sanitizedPrefix.equals(tablePrefix)) {
+            warnings.add("Sanitized database.table_prefix from '" + tablePrefix + "' to '" + sanitizedPrefix + "'.");
+            config.set("database.table_prefix", sanitizedPrefix);
+        }
+
         // Validate autosave interval
         int interval = config.getInt("autosave.interval", 1);
         if (interval < 0) {
@@ -313,12 +340,28 @@ public class ConfigManager {
     public boolean isDebugMode() {
         return config.getBoolean("logging.debug_mode", false);
     }
+
+    public String getTablePrefix() {
+        return sanitizeTablePrefix(config.getString("database.table_prefix", "player_data"));
+    }
     
     /**
      * Check if database logging is enabled
      */
     public boolean isDatabaseLoggingEnabled() {
         return config.getBoolean("logging.log_database", false);
+    }
+
+    private String sanitizeTablePrefix(String prefix) {
+        if (prefix == null) {
+            return "player_data";
+        }
+
+        String sanitized = prefix.trim().replaceAll("[^a-zA-Z0-9_]", "_");
+        if (sanitized.isEmpty()) {
+            return "player_data";
+        }
+        return sanitized;
     }
     
     /**

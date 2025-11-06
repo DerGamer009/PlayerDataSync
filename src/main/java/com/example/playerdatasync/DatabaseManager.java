@@ -37,7 +37,8 @@ public class DatabaseManager {
     }
 
     public void initialize() {
-        String sql = "CREATE TABLE IF NOT EXISTS player_data (" +
+        String tableName = getTableName();
+        String sql = "CREATE TABLE IF NOT EXISTS " + tableName + " (" +
                 "uuid VARCHAR(36) PRIMARY KEY," +
                 "world VARCHAR(255)," +
                 "x DOUBLE,y DOUBLE,z DOUBLE," +
@@ -71,25 +72,25 @@ public class DatabaseManager {
                 st.executeUpdate(sql);
                 // Ensure columns exist for older installations
                 DatabaseMetaData meta = connection.getMetaData();
-                try (ResultSet rs = meta.getColumns(null, null, "player_data", "hunger")) {
+                try (ResultSet rs = meta.getColumns(null, null, tableName, "hunger")) {
                     if (!rs.next()) {
-                        st.executeUpdate("ALTER TABLE player_data ADD COLUMN hunger INT");
+                        st.executeUpdate("ALTER TABLE " + tableName + " ADD COLUMN hunger INT");
                     }
                 }
-                try (ResultSet rs = meta.getColumns(null, null, "player_data", "saturation")) {
+                try (ResultSet rs = meta.getColumns(null, null, tableName, "saturation")) {
                     if (!rs.next()) {
-                        st.executeUpdate("ALTER TABLE player_data ADD COLUMN saturation FLOAT");
+                        st.executeUpdate("ALTER TABLE " + tableName + " ADD COLUMN saturation FLOAT");
                     }
                 }
-                try (ResultSet rs = meta.getColumns(null, null, "player_data", "advancements")) {
+                try (ResultSet rs = meta.getColumns(null, null, tableName, "advancements")) {
                     if (!rs.next()) {
-                        st.executeUpdate("ALTER TABLE player_data ADD COLUMN advancements LONGTEXT");
+                        st.executeUpdate("ALTER TABLE " + tableName + " ADD COLUMN advancements LONGTEXT");
                     } else {
                         // Check if it's TEXT and upgrade to LONGTEXT
                         String dataType = rs.getString("TYPE_NAME");
                         if ("TEXT".equalsIgnoreCase(dataType)) {
                             try {
-                                st.executeUpdate("ALTER TABLE player_data MODIFY COLUMN advancements LONGTEXT");
+                                st.executeUpdate("ALTER TABLE " + tableName + " MODIFY COLUMN advancements LONGTEXT");
                                 plugin.getLogger().info("Upgraded advancements column from TEXT to LONGTEXT");
                             } catch (SQLException e) {
                                 plugin.getLogger().warning("Could not upgrade advancements column to LONGTEXT: " + e.getMessage());
@@ -97,16 +98,16 @@ public class DatabaseManager {
                         }
                     }
                 }
-                
+
                 // Add new columns for extended features
-                addColumnIfNotExists(meta, st, "armor", "TEXT");
-                addColumnIfNotExists(meta, st, "offhand", "TEXT");
-                addColumnIfNotExists(meta, st, "effects", "TEXT");
-                addColumnIfNotExists(meta, st, "statistics", "LONGTEXT");
-                addColumnIfNotExists(meta, st, "attributes", "TEXT");
-                addColumnIfNotExists(meta, st, "economy", "DOUBLE DEFAULT 0.0");
-                addColumnIfNotExists(meta, st, "last_save", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
-                addColumnIfNotExists(meta, st, "server_id", "VARCHAR(50) DEFAULT 'default'");
+                addColumnIfNotExists(meta, st, tableName, "armor", "TEXT");
+                addColumnIfNotExists(meta, st, tableName, "offhand", "TEXT");
+                addColumnIfNotExists(meta, st, tableName, "effects", "TEXT");
+                addColumnIfNotExists(meta, st, tableName, "statistics", "LONGTEXT");
+                addColumnIfNotExists(meta, st, tableName, "attributes", "TEXT");
+                addColumnIfNotExists(meta, st, tableName, "economy", "DOUBLE DEFAULT 0.0");
+                addColumnIfNotExists(meta, st, tableName, "last_save", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP");
+                addColumnIfNotExists(meta, st, tableName, "server_id", "VARCHAR(50) DEFAULT 'default'");
             }
         } catch (SQLException e) {
             plugin.getLogger().severe("Could not create table: " + e.getMessage());
@@ -118,10 +119,10 @@ public class DatabaseManager {
     /**
      * Helper method to add column if it doesn't exist
      */
-    private void addColumnIfNotExists(DatabaseMetaData meta, Statement st, String columnName, String columnType) throws SQLException {
-        try (ResultSet rs = meta.getColumns(null, null, "player_data", columnName)) {
+    private void addColumnIfNotExists(DatabaseMetaData meta, Statement st, String table, String columnName, String columnType) throws SQLException {
+        try (ResultSet rs = meta.getColumns(null, null, table, columnName)) {
             if (!rs.next()) {
-                st.executeUpdate("ALTER TABLE player_data ADD COLUMN " + columnName + " " + columnType);
+                st.executeUpdate("ALTER TABLE " + table + " ADD COLUMN " + columnName + " " + columnType);
                 plugin.getLogger().info("Added new column: " + columnName);
             }
         } catch (SQLException e) {
@@ -129,9 +130,14 @@ public class DatabaseManager {
         }
     }
 
+    private String getTableName() {
+        return plugin.getTablePrefix();
+    }
+
     public boolean savePlayer(Player player) {
         long startTime = System.currentTimeMillis();
-        String sql = "REPLACE INTO player_data (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, armor, offhand, effects, statistics, attributes, health, hunger, saturation, advancements, economy, last_save, server_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        String tableName = getTableName();
+        String sql = "REPLACE INTO " + tableName + " (uuid, world, x, y, z, yaw, pitch, xp, gamemode, enderchest, inventory, armor, offhand, effects, statistics, attributes, health, hunger, saturation, advancements, economy, last_save, server_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
         try {
             PlayerSnapshot snapshot;
@@ -307,7 +313,9 @@ public class DatabaseManager {
 
     public void loadPlayer(Player player) {
         long startTime = System.currentTimeMillis();
-        String sql = "SELECT * FROM player_data WHERE uuid = ?";
+        String tableName = getTableName();
+        String sql = "SELECT * FROM " + tableName + " WHERE uuid = ?";
+
         
         Connection connection = null;
         try {

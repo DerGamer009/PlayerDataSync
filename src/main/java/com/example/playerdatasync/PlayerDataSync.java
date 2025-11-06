@@ -32,6 +32,7 @@ public class PlayerDataSync extends JavaPlugin {
     private String databaseUrl;
     private String databaseUser;
     private String databasePassword;
+    private String tablePrefix;
     // Basic sync options
     private boolean syncCoordinates;
     private boolean syncXp;
@@ -101,6 +102,7 @@ public class PlayerDataSync extends JavaPlugin {
         }
         
         configManager = new ConfigManager(this);
+        tablePrefix = configManager.getTablePrefix();
 
         Level configuredLevel = configManager.getLoggingLevel();
         if (configManager.isDebugMode() && configuredLevel.intValue() > Level.FINE.intValue()) {
@@ -476,6 +478,11 @@ public class PlayerDataSync extends JavaPlugin {
     public void reloadPlugin() {
         reloadConfig();
 
+        if (configManager != null) {
+            configManager.reloadConfig();
+            tablePrefix = configManager.getTablePrefix();
+        }
+
         // Always use messages.language path for reload
         String lang = getConfig().getString("messages.language", "en");
         messageManager.load(lang);
@@ -623,6 +630,7 @@ public class PlayerDataSync extends JavaPlugin {
     
     // Getter methods for components
     public ConfigManager getConfigManager() { return configManager; }
+    public String getTablePrefix() { return tablePrefix != null ? tablePrefix : "player_data"; }
     public DatabaseManager getDatabaseManager() { return databaseManager; }
     public BackupManager getBackupManager() { return backupManager; }
     public ConnectionPool getConnectionPool() { return connectionPool; }
@@ -805,12 +813,13 @@ public class PlayerDataSync extends JavaPlugin {
             }
             
             // Create minimal working configuration
-            String emergencyConfig = 
-                "config-version: 2\n" +
+            String emergencyConfig =
+                "config-version: 3\n" +
                 "server:\n" +
                 "  id: default\n" +
                 "database:\n" +
                 "  type: sqlite\n" +
+                "  table_prefix: player_data\n" +
                 "  sqlite:\n" +
                 "    file: plugins/PlayerDataSync/playerdata.db\n" +
                 "sync:\n" +
