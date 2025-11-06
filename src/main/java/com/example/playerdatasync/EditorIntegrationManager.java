@@ -13,6 +13,11 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -177,9 +182,10 @@ public class EditorIntegrationManager {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
         Bukkit.getScheduler().runTask(plugin, () -> {
-            String payload = buildSnapshotPayload();
+            ServerSnapshotData snapshotData = captureServerSnapshot();
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
                 try {
+                    String payload = buildSnapshotPayload(snapshotData);
                     postJson("/editor/snapshot", payload);
                     future.complete(true);
                 } catch (Exception ex) {
@@ -234,18 +240,43 @@ public class EditorIntegrationManager {
         return builder.toString();
     }
 
-    private String buildSnapshotPayload() {
+    private String buildSnapshotPayload(ServerSnapshotData snapshotData) {
         StringBuilder builder = new StringBuilder();
         builder.append('{');
         appendJsonString(builder, "serverId", serverId);
-        appendJsonNumber(builder, "timestamp", System.currentTimeMillis());
-        appendJsonNumber(builder, "online", Bukkit.getOnlinePlayers().size());
-        appendJsonNumber(builder, "maxPlayers", Bukkit.getMaxPlayers());
-        appendJsonString(builder, "motd", Bukkit.getMotd());
-        appendJsonString(builder, "minecraftVersion", Bukkit.getBukkitVersion());
-        appendJsonString(builder, "serverVersion", Bukkit.getVersion());
-        appendJsonString(builder, "pluginVersion", plugin.getDescription().getVersion());
+        appendJsonNumber(builder, "timestamp", snapshotData.timestamp);
+        appendJsonNumber(builder, "online", snapshotData.onlinePlayers);
+        appendJsonNumber(builder, "maxPlayers", snapshotData.maxPlayers);
+        appendJsonString(builder, "motd", snapshotData.motd);
+        appendJsonString(builder, "minecraftVersion", snapshotData.minecraftVersion);
+        appendJsonString(builder, "serverVersion", snapshotData.serverVersion);
+        appendJsonString(builder, "pluginVersion", snapshotData.pluginVersion);
+        appendJsonRaw(builder, "onlinePlayers", snapshotData.playersJson);
+        appendJsonRaw(builder, "worlds", snapshotData.worldsJson);
+        appendJsonRaw(builder, "playerData", fetchDatabaseSnapshotJson());
 
+        builder.append('}');
+        return builder.toString();
+    }
+
+    private ServerSnapshotData captureServerSnapshot() {
+        String playersJson = buildPlayersJson();
+        String worldsJson = buildWorldsJson();
+
+        return new ServerSnapshotData(
+            System.currentTimeMillis(),
+            Bukkit.getOnlinePlayers().size(),
+            Bukkit.getMaxPlayers(),
+            Bukkit.getMotd(),
+            Bukkit.getBukkitVersion(),
+            Bukkit.getVersion(),
+            plugin.getDescription().getVersion(),
+            playersJson,
+            worldsJson
+        );
+    }
+
+    private String buildPlayersJson() {
         StringBuilder players = new StringBuilder();
         players.append('[');
         boolean firstPlayer = true;
@@ -257,15 +288,18 @@ public class EditorIntegrationManager {
             players.append('{');
             appendJsonString(players, "uuid", player.getUniqueId().toString());
             appendJsonString(players, "name", player.getName());
-            if (player.getWorld() != null) {
-                appendJsonString(players, "world", player.getWorld().getName());
+            World world = player.getWorld();
+            if (world != null) {
+                appendJsonString(players, "world", world.getName());
             }
             appendJsonNumber(players, "ping", player.getPing());
             players.append('}');
         }
         players.append(']');
-        appendJsonRaw(builder, "onlinePlayers", players.toString());
+        return players.toString();
+    }
 
+    private String buildWorldsJson() {
         StringBuilder worlds = new StringBuilder();
         worlds.append('[');
         boolean firstWorld = true;
@@ -281,10 +315,94 @@ public class EditorIntegrationManager {
             worlds.append('}');
         }
         worlds.append(']');
-        appendJsonRaw(builder, "worlds", worlds.toString());
+        return worlds.toString();
+    }
 
-        builder.append('}');
-        return builder.toString();
+    private String fetchDatabaseSnapshotJson() {
+        Connection connection = null;
+        StringBuilder array = new StringBuilder();
+        array.append('[');
+        boolean firstRow = true;
+
+        try {
+            connection = plugin.getConnection();
+            if (connection == null) {
+                return "[]";
+            }
+
+            String sql = "SELECT * FROM " + plugin.getTablePrefix();
+            try (Statement statement = connection.createStatement();
+                 ResultSet resultSet = statement.executeQuery(sql)) {
+
+                ResultSetMetaData metaData = resultSet.getMetaData();
+                int columnCount = metaData.getColumnCount();
+
+                while (resultSet.next()) {
+                    if (!firstRow) {
+                        array.append(',');
+                    }
+                    firstRow = false;
+                    array.append('{');
+
+                    for (int i = 1; i <= columnCount; i++) {
+                        if (i > 1) {
+                            array.append(',');
+                        }
+
+                        String columnName = metaData.getColumnLabel(i);
+                        Object value = resultSet.getObject(i);
+                        appendJsonValue(array, columnName, value);
+                    }
+
+                    array.append('}');
+                }
+            }
+        } catch (SQLException ex) {
+            plugin.getLogger().warning("Failed to fetch database snapshot: " + ex.getMessage());
+            return "[]";
+        } finally {
+            plugin.returnConnection(connection);
+        }
+
+        array.append(']');
+        return array.toString();
+    }
+
+    private void appendJsonValue(StringBuilder builder, String key, Object value) {
+        builder.append('"').append(escapeJson(key)).append('"').append(':');
+        if (value == null) {
+            builder.append("null");
+        } else if (value instanceof Number || value instanceof Boolean) {
+            builder.append(value.toString());
+        } else {
+            builder.append('"').append(escapeJson(value.toString())).append('"');
+        }
+    }
+
+    private static class ServerSnapshotData {
+        private final long timestamp;
+        private final int onlinePlayers;
+        private final int maxPlayers;
+        private final String motd;
+        private final String minecraftVersion;
+        private final String serverVersion;
+        private final String pluginVersion;
+        private final String playersJson;
+        private final String worldsJson;
+
+        private ServerSnapshotData(long timestamp, int onlinePlayers, int maxPlayers, String motd,
+                                   String minecraftVersion, String serverVersion, String pluginVersion,
+                                   String playersJson, String worldsJson) {
+            this.timestamp = timestamp;
+            this.onlinePlayers = onlinePlayers;
+            this.maxPlayers = maxPlayers;
+            this.motd = motd;
+            this.minecraftVersion = minecraftVersion;
+            this.serverVersion = serverVersion;
+            this.pluginVersion = pluginVersion;
+            this.playersJson = playersJson != null ? playersJson : "[]";
+            this.worldsJson = worldsJson != null ? worldsJson : "[]";
+        }
     }
 
     private String buildHeartbeatPayload(boolean online) {
