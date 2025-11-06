@@ -299,11 +299,6 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (!manager.hasConfiguredApiKey()) {
-            sender.sendMessage(prefix + messageManager.get("editor_disabled"));
-            return true;
-        }
-
         String action = args.length > 1 ? args[1].toLowerCase() : "token";
 
         switch (action) {
