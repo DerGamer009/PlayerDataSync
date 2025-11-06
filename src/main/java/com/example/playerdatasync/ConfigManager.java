@@ -20,7 +20,7 @@ public class ConfigManager {
     private File configFile;
     
     // Configuration version for migration
-    private static final int CURRENT_CONFIG_VERSION = 4;
+    private static final int CURRENT_CONFIG_VERSION = 5;
     
     public ConfigManager(PlayerDataSync plugin) {
         this.plugin = plugin;
@@ -73,6 +73,11 @@ public class ConfigManager {
 
             if (fromVersion < 4) {
                 migrateFromV3ToV4();
+                fromVersion = 4;
+            }
+
+            if (fromVersion < 5) {
+                migrateFromV4ToV5();
             }
 
             plugin.getLogger().info("Configuration migration completed successfully.");
@@ -134,11 +139,15 @@ public class ConfigManager {
     }
 
     private void migrateFromV3ToV4() {
-        addDefaultIfMissing("editor.enabled", false);
-        addDefaultIfMissing("editor.base_url", "https://pds.devvoxel.de/api");
-        addDefaultIfMissing("editor.api_key", "");
-        addDefaultIfMissing("editor.server_id", "");
-        addDefaultIfMissing("editor.heartbeat_interval", 60);
+        // No longer required. Previous versions introduced editor configuration defaults
+        // that have since been removed.
+    }
+
+    private void migrateFromV4ToV5() {
+        if (config.contains("editor")) {
+            plugin.getLogger().info("Removing deprecated editor.* configuration entries.");
+            config.set("editor", null);
+        }
     }
     
     /**
@@ -237,12 +246,6 @@ public class ConfigManager {
         addDefaultIfMissing("metrics.custom_metrics", true);
 
         // Editor integration defaults
-        addDefaultIfMissing("editor.enabled", false);
-        addDefaultIfMissing("editor.base_url", "https://pds.devvoxel.de/api");
-        addDefaultIfMissing("editor.api_key", "");
-        addDefaultIfMissing("editor.server_id", "");
-        addDefaultIfMissing("editor.heartbeat_interval", 60);
-
         // Messages configuration
         addDefaultIfMissing("messages.enabled", true);
         addDefaultIfMissing("messages.language", "en");
@@ -316,26 +319,6 @@ public class ConfigManager {
             config.set("logging.level", resolvedLevel.getName());
         }
 
-        String editorBaseUrl = config.getString("editor.base_url", "https://pds.devvoxel.de/api");
-        if (editorBaseUrl == null || editorBaseUrl.trim().isEmpty()) {
-            warnings.add("editor.base_url is empty. Using default endpoint.");
-            config.set("editor.base_url", "https://pds.devvoxel.de/api");
-        } else {
-            config.set("editor.base_url", trimTrailingSlash(editorBaseUrl));
-        }
-
-        int heartbeatInterval = config.getInt("editor.heartbeat_interval", 60);
-        if (heartbeatInterval < 0) {
-            warnings.add("editor.heartbeat_interval was below zero. Using 60 seconds instead.");
-            config.set("editor.heartbeat_interval", 60);
-        }
-
-        String editorServerId = config.getString("editor.server_id", "");
-        if (editorServerId != null && editorServerId.length() > 64) {
-            warnings.add("editor.server_id is too long. Truncating to 64 characters.");
-            config.set("editor.server_id", editorServerId.substring(0, 64));
-        }
-        
         // Report warnings
         if (!warnings.isEmpty()) {
             plugin.getLogger().warning("Configuration validation found issues:");
@@ -408,17 +391,6 @@ public class ConfigManager {
         return sanitized;
     }
 
-    private String trimTrailingSlash(String value) {
-        if (value == null) {
-            return "";
-        }
-        String trimmed = value.trim();
-        while (trimmed.endsWith("/")) {
-            trimmed = trimmed.substring(0, trimmed.length() - 1);
-        }
-        return trimmed;
-    }
-    
     /**
      * Check if performance logging is enabled
      */
@@ -428,31 +400,6 @@ public class ConfigManager {
 
     public String getServerId() {
         return config.getString("server.id", "default");
-    }
-
-    public boolean isEditorIntegrationEnabled() {
-        return config.getBoolean("editor.enabled", false);
-    }
-
-    public String getEditorBaseUrl() {
-        return trimTrailingSlash(config.getString("editor.base_url", "https://pds.devvoxel.de/api"));
-    }
-
-    public String getEditorApiKey() {
-        return config.getString("editor.api_key", "");
-    }
-
-    public String getEditorServerId() {
-        String override = config.getString("editor.server_id");
-        if (override == null || override.trim().isEmpty()) {
-            return getServerId();
-        }
-        return override.trim();
-    }
-
-    public int getEditorHeartbeatInterval() {
-        int interval = config.getInt("editor.heartbeat_interval", 60);
-        return Math.max(0, interval);
     }
     
     /**

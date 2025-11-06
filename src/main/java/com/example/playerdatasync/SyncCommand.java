@@ -294,7 +294,12 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
         EditorIntegrationManager manager = plugin.getEditorIntegrationManager();
         String prefix = messageManager.get("prefix") + " ";
 
-        if (manager == null || !manager.isEnabled()) {
+        if (manager == null) {
+            sender.sendMessage(prefix + messageManager.get("editor_disabled"));
+            return true;
+        }
+
+        if (!manager.hasConfiguredApiKey()) {
             sender.sendMessage(prefix + messageManager.get("editor_disabled"));
             return true;
         }

@@ -70,7 +70,7 @@ public class AdvancementSyncManager implements Listener {
     }
 
     public void recordAdvancement(UUID uuid, String key) {
-        PlayerAdvancementState state = states.computeIfAbsent(uuid, PlayerAdvancementState::new);
+        PlayerAdvancementState state = states.computeIfAbsent(uuid, key -> new PlayerAdvancementState());
         state.completedAdvancements.add(key);
         if (state.importInProgress) {
             state.pendingDuringImport.add(key);
@@ -83,7 +83,7 @@ public class AdvancementSyncManager implements Listener {
             return;
         }
 
-        PlayerAdvancementState state = states.computeIfAbsent(player.getUniqueId(), PlayerAdvancementState::new);
+        PlayerAdvancementState state = states.computeIfAbsent(player.getUniqueId(), key -> new PlayerAdvancementState());
         if (state.importFinished || state.importInProgress) {
             return;
         }
@@ -99,7 +99,7 @@ public class AdvancementSyncManager implements Listener {
     }
 
     public void seedFromDatabase(UUID uuid, String csv) {
-        PlayerAdvancementState state = states.computeIfAbsent(uuid, PlayerAdvancementState::new);
+        PlayerAdvancementState state = states.computeIfAbsent(uuid, key -> new PlayerAdvancementState());
         state.completedAdvancements.clear();
         state.pendingDuringImport.clear();
 
@@ -128,7 +128,7 @@ public class AdvancementSyncManager implements Listener {
     }
 
     public String serializeForSave(Player player) {
-        PlayerAdvancementState state = states.computeIfAbsent(player.getUniqueId(), PlayerAdvancementState::new);
+        PlayerAdvancementState state = states.computeIfAbsent(player.getUniqueId(), key -> new PlayerAdvancementState());
 
         if (!state.importFinished && !state.importInProgress) {
             if (plugin.getConfig().getBoolean("performance.automatic_player_advancement_import", true)) {
@@ -146,7 +146,7 @@ public class AdvancementSyncManager implements Listener {
     }
 
     public void queuePlayerImport(Player player, boolean force) {
-        PlayerAdvancementState state = states.computeIfAbsent(player.getUniqueId(), PlayerAdvancementState::new);
+        PlayerAdvancementState state = states.computeIfAbsent(player.getUniqueId(), key -> new PlayerAdvancementState());
         if (!force) {
             if (state.importInProgress || state.importFinished) {
                 return;
