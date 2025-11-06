@@ -57,8 +57,10 @@ public class PlayerDataSync extends JavaPlugin {
     private boolean bungeecordIntegrationEnabled;
 
     private DatabaseManager databaseManager;
+    private AdvancementSyncManager advancementSyncManager;
     private ConfigManager configManager;
     private BackupManager backupManager;
+    private EditorIntegrationManager editorIntegrationManager;
     private int autosaveIntervalSeconds;
     private BukkitTask autosaveTask;
     private MessageManager messageManager;
@@ -146,6 +148,11 @@ public class PlayerDataSync extends JavaPlugin {
         } else {
             metrics = null;
         }
+
+        editorIntegrationManager = new EditorIntegrationManager(this);
+        if (editorIntegrationManager.isEnabled()) {
+            editorIntegrationManager.start();
+        }
         // Initialize database connection
         databaseType = getConfig().getString("database.type", "mysql");
         try {
@@ -195,6 +202,7 @@ public class PlayerDataSync extends JavaPlugin {
         }
 
         loadSyncSettings();
+        advancementSyncManager = new AdvancementSyncManager(this);
         bungeecordIntegrationEnabled = getConfig().getBoolean("integrations.bungeecord", false);
         if (bungeecordIntegrationEnabled) {
             getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
@@ -305,7 +313,17 @@ public class PlayerDataSync extends JavaPlugin {
             backupManager.stopAutomaticBackups();
             backupManager = null;
         }
-        
+
+        if (editorIntegrationManager != null) {
+            editorIntegrationManager.shutdown();
+            editorIntegrationManager = null;
+        }
+
+        if (advancementSyncManager != null) {
+            advancementSyncManager.shutdown();
+            advancementSyncManager = null;
+        }
+
         // Shutdown connection pool
         if (connectionPool != null) {
             connectionPool.shutdown();
@@ -507,6 +525,10 @@ public class PlayerDataSync extends JavaPlugin {
 
         loadSyncSettings();
 
+        if (advancementSyncManager != null) {
+            advancementSyncManager.reloadFromConfig();
+        }
+
         int newIntervalSeconds = getConfig().getInt("autosave.interval", 1);
         if (newIntervalSeconds != autosaveIntervalSeconds) {
             autosaveIntervalSeconds = newIntervalSeconds;
@@ -632,9 +654,11 @@ public class PlayerDataSync extends JavaPlugin {
     public ConfigManager getConfigManager() { return configManager; }
     public String getTablePrefix() { return tablePrefix != null ? tablePrefix : "player_data"; }
     public DatabaseManager getDatabaseManager() { return databaseManager; }
+    public AdvancementSyncManager getAdvancementSyncManager() { return advancementSyncManager; }
     public BackupManager getBackupManager() { return backupManager; }
     public ConnectionPool getConnectionPool() { return connectionPool; }
     public MessageManager getMessageManager() { return messageManager; }
+    public EditorIntegrationManager getEditorIntegrationManager() { return editorIntegrationManager; }
 
     public Economy getEconomyProvider() { return economyProvider; }
 
@@ -908,7 +932,7 @@ public class PlayerDataSync extends JavaPlugin {
         return configManager != null && configManager.isDebugMode();
     }
 
-    private boolean isPerformanceLoggingEnabled() {
+    public boolean isPerformanceLoggingEnabled() {
         return configManager != null && configManager.isPerformanceLoggingEnabled();
     }
 }

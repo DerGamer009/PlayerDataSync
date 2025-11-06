@@ -46,6 +46,11 @@ public class PlayerDataListener implements Listener {
                 }
             }
         }, 1L);
+
+        AdvancementSyncManager advancementSyncManager = plugin.getAdvancementSyncManager();
+        if (advancementSyncManager != null) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> advancementSyncManager.handlePlayerJoin(player), 2L);
+        }
     }
 
     @EventHandler
@@ -70,6 +75,11 @@ public class PlayerDataListener implements Listener {
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to save data for " + player.getName() + ": " + e.getMessage());
             e.printStackTrace();
+        }
+
+        AdvancementSyncManager advancementSyncManager = plugin.getAdvancementSyncManager();
+        if (advancementSyncManager != null) {
+            advancementSyncManager.handlePlayerQuit(player);
         }
     }
     

@@ -58,6 +58,7 @@ permissions:
       playerdatasync.admin.attributes: true
       playerdatasync.admin.permissions: true
       playerdatasync.admin.economy: true
+      playerdatasync.admin.editor: true
       playerdatasync.admin.reload: true
       playerdatasync.admin.save: true
       playerdatasync.backup: true
@@ -113,6 +114,9 @@ permissions:
     default: op
   playerdatasync.admin.economy:
     description: Allows toggling economy synchronization
+    default: op
+  playerdatasync.admin.editor:
+    description: Allows managing the web editor integration and requesting tokens
     default: op
   playerdatasync.admin.reload:
     description: Allows reloading the plugin configuration

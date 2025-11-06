@@ -433,6 +433,15 @@ public class DatabaseManager {
                         }
                         if (plugin.isSyncAchievements()) {
                             String advData = rs.getString("advancements");
+                            AdvancementSyncManager advancementSyncManager = plugin.getAdvancementSyncManager();
+                            if (advancementSyncManager != null) {
+                                advancementSyncManager.seedFromDatabase(player.getUniqueId(), advData);
+                                if (advData == null && plugin.getConfig().getBoolean("performance.automatic_player_advancement_import", true)) {
+                                    Bukkit.getScheduler().runTask(plugin, () ->
+                                        advancementSyncManager.queuePlayerImport(player, false));
+                                }
+                            }
+
                             if (advData != null && !advData.isEmpty()) {
                                 // Check if there are too many achievements to prevent lag
                                 String[] achievementKeys = advData.split(",");
@@ -490,12 +499,24 @@ public class DatabaseManager {
         player.giveExp(total);
     }
 
+    private String serializeAdvancements(Player player) {
+        AdvancementSyncManager advancementSyncManager = plugin.getAdvancementSyncManager();
+        if (advancementSyncManager != null) {
+            String serialized = advancementSyncManager.serializeForSave(player);
+            if (serialized != null) {
+                return serialized;
+            }
+        }
+
+        return legacySerializeAdvancements(player);
+    }
+
     /**
      * Serialize only newly obtained achievements (not all achievements)
      * This prevents loading all 1000+ achievements on first login
      * CRITICAL FIX: Added timeout protection to prevent server freezing
      */
-    private String serializeAdvancements(Player player) {
+    private String legacySerializeAdvancements(Player player) {
         // CRITICAL: Add timeout protection to prevent server freezing
         long startTime = System.currentTimeMillis();
         final long TIMEOUT_MS = plugin.getConfig().getLong("performance.achievement_timeout_ms", 5000); // Configurable timeout

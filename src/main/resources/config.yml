@@ -98,6 +98,10 @@ performance:
   achievement_batch_size: 50 # number of achievements to process in one batch to prevent lag
   achievement_timeout_ms: 5000 # timeout for achievement serialization to prevent server freeze (milliseconds)
   max_achievements_per_player: 2000 # hard limit to prevent infinite loops (increased for Minecraft's 1000+ achievements)
+  preload_advancements_on_startup: true # pre-cache the server's advancement registry on startup
+  advancement_import_batch_size: 250 # number of advancements scanned per tick while caching definitions
+  player_advancement_import_batch_size: 150 # number of advancements checked per tick when importing a player
+  automatic_player_advancement_import: true # automatically queue imports for players without cached advancement data
 
 # Compatibility Settings
 compatibility:
@@ -120,6 +124,14 @@ integrations:
   luckperms: false      # enable LuckPerms integration
   vault: true           # enable Vault integration for economy
   placeholderapi: false # enable PlaceholderAPI support
+
+# Web Editor Integration
+editor:
+  enabled: false             # enable remote web editor integration
+  base_url: https://pds.devvoxel.de/api # API base URL for the editor services
+  api_key: ""               # API key provided by the PlayerDataSync dashboard
+  server_id: ""             # optional override, defaults to server.id when empty
+  heartbeat_interval: 60     # seconds between automatic heartbeat updates (0 to disable)
 
 # Message Configuration
 messages:
