@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 public class EditorIntegrationManager {
     private static final String DEFAULT_BASE_URL = "https://pds.devvoxel.de/api";
     private static final int DEFAULT_HEARTBEAT_INTERVAL_SECONDS = 60;
+    private static final String DEFAULT_EDITOR_PAGE_BASE = "https://pds.devvoxel.de/editor/";
     private static final String API_KEY_ENV = "PDS_EDITOR_API_KEY";
     private static final String API_KEY_PROPERTY = "pds.editor.apiKey";
     private static final String SERVER_ID_ENV = "PDS_EDITOR_SERVER_ID";
@@ -52,18 +53,13 @@ public class EditorIntegrationManager {
         this.heartbeatIntervalSeconds = resolveHeartbeatInterval();
     }
 
-    public boolean hasConfiguredApiKey() {
-        return apiKey != null && !apiKey.trim().isEmpty();
-    }
-
     public void start() {
-        if (!hasConfiguredApiKey()) {
-            plugin.getLogger().warning("Editor integration is enabled but no API key is configured. Set the PDS_EDITOR_API_KEY environment variable or the pds.editor.apiKey system property.");
+        if (!started.compareAndSet(false, true)) {
             return;
         }
 
-        if (!started.compareAndSet(false, true)) {
-            return;
+        if (apiKey == null || apiKey.isEmpty()) {
+            plugin.getLogger().info("Starting editor integration without an API key; requests will be unauthenticated.");
         }
 
         // Send initial heartbeat immediately
@@ -84,20 +80,11 @@ public class EditorIntegrationManager {
             heartbeatTask = null;
         }
 
-        if (!hasConfiguredApiKey()) {
-            return;
-        }
-
         sendHeartbeatAsync(false);
     }
 
     public CompletableFuture<EditorTokenResult> requestEditorToken(UUID playerUuid, String playerName) {
         CompletableFuture<EditorTokenResult> future = new CompletableFuture<>();
-
-        if (!hasConfiguredApiKey()) {
-            future.completeExceptionally(new IllegalStateException("Missing editor API key"));
-            return future;
-        }
 
         Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
@@ -136,7 +123,11 @@ public class EditorIntegrationManager {
             value = plugin.getConfig().getString("editor.api_key", "");
         }
 
-        return value != null ? value.trim() : "";
+        if (value != null) {
+            value = value.trim();
+        }
+
+        return (value == null || value.isEmpty()) ? null : value;
     }
 
     private String resolveServerId() {
@@ -185,11 +176,6 @@ public class EditorIntegrationManager {
     public CompletableFuture<Boolean> pushSnapshot() {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
 
-        if (!hasConfiguredApiKey()) {
-            future.completeExceptionally(new IllegalStateException("Missing editor API key"));
-            return future;
-        }
-
         Bukkit.getScheduler().runTask(plugin, () -> {
             String payload = buildSnapshotPayload();
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
@@ -207,11 +193,6 @@ public class EditorIntegrationManager {
 
     public CompletableFuture<Boolean> sendHeartbeatAsync(boolean online) {
         CompletableFuture<Boolean> future = new CompletableFuture<>();
-
-        if (!hasConfiguredApiKey()) {
-            future.completeExceptionally(new IllegalStateException("Missing editor API key"));
-            return future;
-        }
 
         if (!plugin.isEnabled()) {
             try {
@@ -409,6 +390,10 @@ public class EditorIntegrationManager {
         String url = extractJsonString(response, "url");
         long expiresIn = extractJsonNumber(response, "expiresIn");
 
+        if ((url == null || url.isEmpty()) && token != null && !token.isEmpty()) {
+            url = buildEditorPageUrl(token);
+        }
+
         return new EditorTokenResult(token, url, expiresIn, response);
     }
 
@@ -442,6 +427,23 @@ public class EditorIntegrationManager {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
         return trimmed;
+    }
+
+    private String buildEditorPageUrl(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalizedBase = trimTrailingSlash(baseUrl);
+        if (normalizedBase.endsWith("/api")) {
+            normalizedBase = normalizedBase.substring(0, normalizedBase.length() - 4);
+        }
+
+        if (normalizedBase.isEmpty()) {
+            return DEFAULT_EDITOR_PAGE_BASE + token;
+        }
+
+        return normalizedBase + "/editor/" + token;
     }
 
     public static class EditorTokenResult {
