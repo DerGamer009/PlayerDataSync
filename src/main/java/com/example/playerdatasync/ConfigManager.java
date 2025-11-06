@@ -20,7 +20,7 @@ public class ConfigManager {
     private File configFile;
     
     // Configuration version for migration
-    private static final int CURRENT_CONFIG_VERSION = 3;
+    private static final int CURRENT_CONFIG_VERSION = 4;
     
     public ConfigManager(PlayerDataSync plugin) {
         this.plugin = plugin;
@@ -68,6 +68,11 @@ public class ConfigManager {
 
             if (fromVersion < 3) {
                 migrateFromV2ToV3();
+                fromVersion = 3;
+            }
+
+            if (fromVersion < 4) {
+                migrateFromV3ToV4();
             }
 
             plugin.getLogger().info("Configuration migration completed successfully.");
@@ -126,6 +131,14 @@ public class ConfigManager {
             config.set("database.table_prefix", sanitized);
             plugin.getLogger().info("Sanitized database.table_prefix from '" + prefix + "' to '" + sanitized + "'.");
         }
+    }
+
+    private void migrateFromV3ToV4() {
+        addDefaultIfMissing("editor.enabled", false);
+        addDefaultIfMissing("editor.base_url", "https://pds.devvoxel.de/api");
+        addDefaultIfMissing("editor.api_key", "");
+        addDefaultIfMissing("editor.server_id", "");
+        addDefaultIfMissing("editor.heartbeat_interval", 60);
     }
     
     /**
@@ -189,6 +202,10 @@ public class ConfigManager {
         addDefaultIfMissing("performance.achievement_batch_size", 50);
         addDefaultIfMissing("performance.achievement_timeout_ms", 5000);
         addDefaultIfMissing("performance.max_achievements_per_player", 2000);
+        addDefaultIfMissing("performance.preload_advancements_on_startup", true);
+        addDefaultIfMissing("performance.advancement_import_batch_size", 250);
+        addDefaultIfMissing("performance.player_advancement_import_batch_size", 150);
+        addDefaultIfMissing("performance.automatic_player_advancement_import", true);
         
         // Compatibility configuration
         addDefaultIfMissing("compatibility.safe_attribute_sync", true);
@@ -218,7 +235,14 @@ public class ConfigManager {
         // Metrics configuration
         addDefaultIfMissing("metrics.bstats", true);
         addDefaultIfMissing("metrics.custom_metrics", true);
-        
+
+        // Editor integration defaults
+        addDefaultIfMissing("editor.enabled", false);
+        addDefaultIfMissing("editor.base_url", "https://pds.devvoxel.de/api");
+        addDefaultIfMissing("editor.api_key", "");
+        addDefaultIfMissing("editor.server_id", "");
+        addDefaultIfMissing("editor.heartbeat_interval", 60);
+
         // Messages configuration
         addDefaultIfMissing("messages.enabled", true);
         addDefaultIfMissing("messages.language", "en");
@@ -290,6 +314,26 @@ public class ConfigManager {
             config.set("logging.level", "INFO");
         } else {
             config.set("logging.level", resolvedLevel.getName());
+        }
+
+        String editorBaseUrl = config.getString("editor.base_url", "https://pds.devvoxel.de/api");
+        if (editorBaseUrl == null || editorBaseUrl.trim().isEmpty()) {
+            warnings.add("editor.base_url is empty. Using default endpoint.");
+            config.set("editor.base_url", "https://pds.devvoxel.de/api");
+        } else {
+            config.set("editor.base_url", trimTrailingSlash(editorBaseUrl));
+        }
+
+        int heartbeatInterval = config.getInt("editor.heartbeat_interval", 60);
+        if (heartbeatInterval < 0) {
+            warnings.add("editor.heartbeat_interval was below zero. Using 60 seconds instead.");
+            config.set("editor.heartbeat_interval", 60);
+        }
+
+        String editorServerId = config.getString("editor.server_id", "");
+        if (editorServerId != null && editorServerId.length() > 64) {
+            warnings.add("editor.server_id is too long. Truncating to 64 characters.");
+            config.set("editor.server_id", editorServerId.substring(0, 64));
         }
         
         // Report warnings
@@ -363,12 +407,52 @@ public class ConfigManager {
         }
         return sanitized;
     }
+
+    private String trimTrailingSlash(String value) {
+        if (value == null) {
+            return "";
+        }
+        String trimmed = value.trim();
+        while (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        return trimmed;
+    }
     
     /**
      * Check if performance logging is enabled
      */
     public boolean isPerformanceLoggingEnabled() {
         return config.getBoolean("logging.log_performance", false);
+    }
+
+    public String getServerId() {
+        return config.getString("server.id", "default");
+    }
+
+    public boolean isEditorIntegrationEnabled() {
+        return config.getBoolean("editor.enabled", false);
+    }
+
+    public String getEditorBaseUrl() {
+        return trimTrailingSlash(config.getString("editor.base_url", "https://pds.devvoxel.de/api"));
+    }
+
+    public String getEditorApiKey() {
+        return config.getString("editor.api_key", "");
+    }
+
+    public String getEditorServerId() {
+        String override = config.getString("editor.server_id");
+        if (override == null || override.trim().isEmpty()) {
+            return getServerId();
+        }
+        return override.trim();
+    }
+
+    public int getEditorHeartbeatInterval() {
+        int interval = config.getInt("editor.heartbeat_interval", 60);
+        return Math.max(0, interval);
     }
     
     /**

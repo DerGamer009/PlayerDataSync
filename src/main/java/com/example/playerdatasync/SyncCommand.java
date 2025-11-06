@@ -28,7 +28,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
     
     // Available sub-commands
     private static final List<String> SUB_COMMANDS = Arrays.asList(
-        "reload", "status", "save", "help", "cache", "validate", "backup", "restore"
+        "reload", "status", "save", "help", "cache", "validate", "backup", "restore", "achievements", "editor"
     );
     
     public SyncCommand(PlayerDataSync plugin) {
@@ -62,13 +62,19 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
                 
             case "validate":
                 return handleValidate(sender, args);
-                
+
             case "backup":
                 return handleBackup(sender, args);
-                
+
             case "restore":
                 return handleRestore(sender, args);
-                
+
+            case "achievements":
+                return handleAchievements(sender, args);
+
+            case "editor":
+                return handleEditor(sender, args);
+
             default:
                 // Try to parse as sync option
                 if (args.length == 2) {
@@ -278,10 +284,191 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
                 sender.sendMessage(messageManager.get("prefix") + " Restore failed!");
             }
         });
-        
+
         return true;
     }
-    
+
+    private boolean handleEditor(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "playerdatasync.admin.editor")) return true;
+
+        EditorIntegrationManager manager = plugin.getEditorIntegrationManager();
+        String prefix = messageManager.get("prefix") + " ";
+
+        if (manager == null || !manager.isEnabled()) {
+            sender.sendMessage(prefix + messageManager.get("editor_disabled"));
+            return true;
+        }
+
+        String action = args.length > 1 ? args[1].toLowerCase() : "token";
+
+        switch (action) {
+            case "token":
+                Player target;
+                if (args.length > 2) {
+                    target = Bukkit.getPlayer(args[2]);
+                    if (target == null) {
+                        sender.sendMessage(prefix + messageManager.get("player_not_found").replace("{player}", args[2]));
+                        return true;
+                    }
+                } else if (sender instanceof Player) {
+                    target = (Player) sender;
+                } else {
+                    sender.sendMessage(prefix + messageManager.get("editor_player_required"));
+                    return true;
+                }
+
+                String playerName = target.getName();
+                sender.sendMessage(prefix + messageManager.get("editor_token_generating").replace("{player}", playerName));
+
+                manager.requestEditorToken(target.getUniqueId(), playerName).whenComplete((result, throwable) ->
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        if (throwable != null) {
+                            sender.sendMessage(prefix + messageManager.get("editor_token_failed")
+                                .replace("{error}", throwable.getMessage() != null ? throwable.getMessage() : "unknown error"));
+                            return;
+                        }
+
+                        if (result == null) {
+                            sender.sendMessage(prefix + messageManager.get("editor_token_failed").replace("{error}", "no response"));
+                            return;
+                        }
+
+                        String url = result.getUrl();
+                        String token = result.getToken();
+
+                        if (url != null && !url.isEmpty()) {
+                            sender.sendMessage(prefix + messageManager.get("editor_token_success")
+                                .replace("{url}", url));
+                        }
+
+                        if (token != null && !token.isEmpty()) {
+                            String expires = result.getExpiresIn() > 0
+                                ? messageManager.get("editor_token_expires")
+                                    .replace("{seconds}", String.valueOf(result.getExpiresIn()))
+                                : messageManager.get("editor_token_expires_unknown");
+
+                            sender.sendMessage(prefix + messageManager.get("editor_token_value")
+                                .replace("{token}", token)
+                                .replace("{expires}", expires));
+                        } else if (url == null || url.isEmpty()) {
+                            sender.sendMessage(prefix + messageManager.get("editor_token_failed")
+                                .replace("{error}", "missing token"));
+                        }
+                    })
+                );
+                return true;
+
+            case "snapshot":
+                sender.sendMessage(prefix + messageManager.get("editor_snapshot_start"));
+                manager.pushSnapshot().whenComplete((success, throwable) ->
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        if (throwable != null) {
+                            sender.sendMessage(prefix + messageManager.get("editor_snapshot_failed")
+                                .replace("{error}", throwable.getMessage() != null ? throwable.getMessage() : "unknown error"));
+                        } else {
+                            sender.sendMessage(prefix + messageManager.get("editor_snapshot_success"));
+                        }
+                    })
+                );
+                return true;
+
+            case "heartbeat":
+                if (args.length < 3) {
+                    sender.sendMessage(prefix + messageManager.get("editor_heartbeat_usage"));
+                    return true;
+                }
+
+                boolean online;
+                if (args[2].equalsIgnoreCase("online")) {
+                    online = true;
+                } else if (args[2].equalsIgnoreCase("offline")) {
+                    online = false;
+                } else {
+                    sender.sendMessage(prefix + messageManager.get("editor_heartbeat_usage"));
+                    return true;
+                }
+
+                manager.sendHeartbeatAsync(online).whenComplete((success, throwable) ->
+                    Bukkit.getScheduler().runTask(plugin, () -> {
+                        if (throwable != null) {
+                            sender.sendMessage(prefix + messageManager.get("editor_heartbeat_failed")
+                                .replace("{error}", throwable.getMessage() != null ? throwable.getMessage() : "unknown error"));
+                        } else {
+                            sender.sendMessage(prefix + messageManager.get("editor_heartbeat_success")
+                                .replace("{status}", online ? messageManager.get("editor_status_online")
+                                    : messageManager.get("editor_status_offline")));
+                        }
+                    })
+                );
+                return true;
+
+            default:
+                sender.sendMessage(prefix + messageManager.get("editor_usage"));
+                return true;
+        }
+    }
+
+    private boolean handleAchievements(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "playerdatasync.admin.achievements")) return true;
+
+        AdvancementSyncManager advancementSyncManager = plugin.getAdvancementSyncManager();
+        if (advancementSyncManager == null) {
+            sender.sendMessage(messageManager.get("prefix") + " Advancement manager is not available.");
+            return true;
+        }
+
+        String prefix = messageManager.get("prefix") + " ";
+
+        if (args.length == 1 || args[1].equalsIgnoreCase("status")) {
+            sender.sendMessage(prefix + "Advancement cache: " + advancementSyncManager.getGlobalImportStatus());
+
+            if (args.length > 2) {
+                Player target = Bukkit.getPlayer(args[2]);
+                if (target == null) {
+                    sender.sendMessage(prefix + "Player '" + args[2] + "' is not online.");
+                } else {
+                    sender.sendMessage(prefix + target.getName() + ": " +
+                        advancementSyncManager.getPlayerStatus(target.getUniqueId()));
+                }
+            } else if (sender instanceof Player) {
+                Player player = (Player) sender;
+                sender.sendMessage(prefix + "You: " +
+                    advancementSyncManager.getPlayerStatus(player.getUniqueId()));
+            }
+
+            sender.sendMessage(prefix + "Use /sync achievements import [player] to queue an import.");
+            return true;
+        }
+
+        String action = args[1].toLowerCase();
+        if (action.equals("import") || action.equals("preload")) {
+            if (args.length == 2) {
+                boolean started = advancementSyncManager.startGlobalImport(true);
+                if (started) {
+                    sender.sendMessage(prefix + "Started global advancement cache rebuild.");
+                } else if (advancementSyncManager.getGlobalImportStatus().startsWith("running")) {
+                    sender.sendMessage(prefix + "Global advancement cache rebuild is already running.");
+                } else {
+                    sender.sendMessage(prefix + "Advancement cache already up to date. Use /sync achievements import again later to rebuild.");
+                }
+                return true;
+            }
+
+            Player target = Bukkit.getPlayer(args[2]);
+            if (target == null) {
+                sender.sendMessage(prefix + "Player '" + args[2] + "' is not online.");
+                return true;
+            }
+
+            advancementSyncManager.forceRescan(target);
+            sender.sendMessage(prefix + "Queued advancement import for " + target.getName() + ".");
+            return true;
+        }
+
+        sender.sendMessage(prefix + "Unknown achievements subcommand. Try /sync achievements status or /sync achievements import");
+        return true;
+    }
+
     /**
      * Format file size for display
      */
@@ -330,6 +517,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§b/sync validate §8- §7Validate data integrity");
         sender.sendMessage("§b/sync backup [type] §8- §7Create manual backup");
         sender.sendMessage("§b/sync restore [backup] §8- §7Restore from backup");
+        sender.sendMessage("§b/sync editor token [player] §8- §7Generate web editor access");
         sender.sendMessage("§b/sync help §8- §7Show this help");
         sender.sendMessage(messageManager.get("help_footer"));
         return true;
@@ -449,13 +637,25 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
                     .filter(s -> s.startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
             }
-            
+
             if (firstArg.equals("backup")) {
                 return Arrays.asList("manual", "automatic", "scheduled").stream()
                     .filter(s -> s.startsWith(args[1].toLowerCase()))
                     .collect(Collectors.toList());
             }
-            
+
+            if (firstArg.equals("achievements")) {
+                return Arrays.asList("status", "import").stream()
+                    .filter(s -> s.startsWith(args[1].toLowerCase()))
+                    .collect(Collectors.toList());
+            }
+
+            if (firstArg.equals("editor")) {
+                return Arrays.asList("token", "snapshot", "heartbeat").stream()
+                    .filter(s -> s.startsWith(args[1].toLowerCase()))
+                    .collect(Collectors.toList());
+            }
+
             if (firstArg.equals("restore")) {
                 // List available backup files
                 return plugin.getBackupManager().listBackups().stream()
@@ -464,7 +664,35 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
                     .collect(Collectors.toList());
             }
         }
-        
+
+        if (args.length == 3) {
+            if (args[0].equalsIgnoreCase("achievements")) {
+                String second = args[1].toLowerCase();
+                if (second.equals("status") || second.equals("import") || second.equals("preload")) {
+                    return Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .filter(name -> name.toLowerCase().startsWith(args[2].toLowerCase()))
+                        .collect(Collectors.toList());
+                }
+            }
+
+            if (args[0].equalsIgnoreCase("editor")) {
+                String second = args[1].toLowerCase();
+                if (second.equals("token")) {
+                    return Bukkit.getOnlinePlayers().stream()
+                        .map(Player::getName)
+                        .filter(name -> name.toLowerCase().startsWith(args[2].toLowerCase()))
+                        .collect(Collectors.toList());
+                }
+
+                if (second.equals("heartbeat")) {
+                    return Arrays.asList("online", "offline").stream()
+                        .filter(s -> s.startsWith(args[2].toLowerCase()))
+                        .collect(Collectors.toList());
+                }
+            }
+        }
+
         return completions;
     }
 }
