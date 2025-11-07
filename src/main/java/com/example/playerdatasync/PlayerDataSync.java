@@ -61,6 +61,7 @@ public class PlayerDataSync extends JavaPlugin {
     private ConfigManager configManager;
     private BackupManager backupManager;
     private EditorIntegrationManager editorIntegrationManager;
+    private InventoryViewerIntegrationManager inventoryViewerIntegrationManager;
     private int autosaveIntervalSeconds;
     private BukkitTask autosaveTask;
     private MessageManager messageManager;
@@ -244,6 +245,13 @@ public class PlayerDataSync extends JavaPlugin {
         databaseManager = new DatabaseManager(this);
         databaseManager.initialize();
 
+        boolean invSeeIntegration = getConfig().getBoolean("integrations.invsee", true);
+        boolean openInvIntegration = getConfig().getBoolean("integrations.openinv", true);
+        if (invSeeIntegration || openInvIntegration) {
+            inventoryViewerIntegrationManager = new InventoryViewerIntegrationManager(this, databaseManager,
+                invSeeIntegration, openInvIntegration);
+        }
+
         configureEconomyIntegration();
         
         // Initialize backup manager
@@ -320,6 +328,11 @@ public class PlayerDataSync extends JavaPlugin {
         if (advancementSyncManager != null) {
             advancementSyncManager.shutdown();
             advancementSyncManager = null;
+        }
+
+        if (inventoryViewerIntegrationManager != null) {
+            inventoryViewerIntegrationManager.shutdown();
+            inventoryViewerIntegrationManager = null;
         }
 
         // Shutdown connection pool
@@ -522,6 +535,20 @@ public class PlayerDataSync extends JavaPlugin {
         }
 
         loadSyncSettings();
+
+        boolean invSeeIntegration = getConfig().getBoolean("integrations.invsee", true);
+        boolean openInvIntegration = getConfig().getBoolean("integrations.openinv", true);
+        if (inventoryViewerIntegrationManager != null) {
+            if (!invSeeIntegration && !openInvIntegration) {
+                inventoryViewerIntegrationManager.shutdown();
+                inventoryViewerIntegrationManager = null;
+            } else {
+                inventoryViewerIntegrationManager.updateSettings(invSeeIntegration, openInvIntegration);
+            }
+        } else if (invSeeIntegration || openInvIntegration) {
+            inventoryViewerIntegrationManager = new InventoryViewerIntegrationManager(this, databaseManager,
+                invSeeIntegration, openInvIntegration);
+        }
 
         if (advancementSyncManager != null) {
             advancementSyncManager.reloadFromConfig();

@@ -10,7 +10,9 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.advancement.AdvancementProgress;
 
+import java.io.IOException;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -1060,6 +1062,222 @@ public class DatabaseManager {
         } catch (Exception e) {
             plugin.getLogger().warning("Error setting player balance for " + player.getName() + ": " + e.getMessage());
         }
+    }
+
+    public OfflinePlayerData loadOfflinePlayerData(UUID uuid, String fallbackName) {
+        String displayName = fallbackName != null ? fallbackName : "unknown";
+        if (uuid == null) {
+            OfflinePlayerData empty = new OfflinePlayerData(null, displayName);
+            empty.setInventoryContents(new ItemStack[36]);
+            empty.setArmorContents(new ItemStack[4]);
+            empty.setEnderChestContents(new ItemStack[27]);
+            return empty;
+        }
+
+        String tableName = getTableName();
+        String sql = "SELECT inventory, armor, offhand, enderchest FROM " + tableName + " WHERE uuid = ?";
+
+        Connection connection = null;
+        try {
+            connection = plugin.getConnection();
+            if (connection == null) {
+                plugin.getLogger().severe("Database connection unavailable");
+                OfflinePlayerData empty = new OfflinePlayerData(uuid, displayName);
+                empty.setInventoryContents(new ItemStack[36]);
+                empty.setArmorContents(new ItemStack[4]);
+                empty.setEnderChestContents(new ItemStack[27]);
+                return empty;
+            }
+
+            try (PreparedStatement ps = connection.prepareStatement(sql)) {
+                ps.setString(1, uuid.toString());
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        OfflinePlayerData data = new OfflinePlayerData(uuid, displayName);
+                        data.setExistsInDatabase(true);
+
+                        ItemStack[] combinedInventory = InventoryUtils.safeItemStackArrayFromBase64(rs.getString("inventory"));
+                        data.setInventoryContents(extractMainInventory(combinedInventory));
+
+                        ItemStack[] armor = InventoryUtils.safeItemStackArrayFromBase64(rs.getString("armor"));
+                        if (armor.length == 0 && combinedInventory.length > 36) {
+                            armor = new ItemStack[] {
+                                combinedInventory.length > 36 ? combinedInventory[36] : null,
+                                combinedInventory.length > 37 ? combinedInventory[37] : null,
+                                combinedInventory.length > 38 ? combinedInventory[38] : null,
+                                combinedInventory.length > 39 ? combinedInventory[39] : null
+                            };
+                        }
+                        data.setArmorContents(normalizeArmorArray(armor));
+
+                        ItemStack offhand = InventoryUtils.safeItemStackFromBase64(rs.getString("offhand"));
+                        if (offhand == null && combinedInventory.length > 40) {
+                            offhand = combinedInventory[40];
+                        }
+                        data.setOffhandItem(offhand);
+
+                        ItemStack[] enderChest = InventoryUtils.safeItemStackArrayFromBase64(rs.getString("enderchest"));
+                        data.setEnderChestContents(enderChest);
+
+                        return data;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Error loading offline data for " + displayName + ": " + e.getMessage());
+        } finally {
+            plugin.returnConnection(connection);
+        }
+
+        OfflinePlayerData emptyData = new OfflinePlayerData(uuid, displayName);
+        emptyData.setInventoryContents(new ItemStack[36]);
+        emptyData.setArmorContents(new ItemStack[4]);
+        emptyData.setEnderChestContents(new ItemStack[27]);
+        return emptyData;
+    }
+
+    public boolean saveOfflineInventoryData(OfflinePlayerData data) {
+        if (data == null || data.getUuid() == null) {
+            return false;
+        }
+
+        Connection connection = null;
+        try {
+            connection = plugin.getConnection();
+            if (connection == null) {
+                plugin.getLogger().severe("Database connection unavailable");
+                return false;
+            }
+
+            ItemStack[] main = data.getInventoryContents();
+            ItemStack[] armor = normalizeArmorArray(data.getArmorContents());
+            ItemStack offhand = data.getOffhandItem();
+
+            ItemStack[] combined = combineInventoryAndEquipment(main, armor, offhand);
+            String inventoryData = InventoryUtils.itemStackArrayToBase64(combined);
+            String armorData = InventoryUtils.itemStackArrayToBase64(armor);
+            String offhandData = offhand != null ? InventoryUtils.itemStackToBase64(offhand) : "";
+
+            String tableName = getTableName();
+            String serverId = plugin.getConfig().getString("server.id", "default");
+
+            if (data.existsInDatabase()) {
+                String updateSql = "UPDATE " + tableName
+                    + " SET inventory=?, armor=?, offhand=?, last_save=CURRENT_TIMESTAMP, server_id=? WHERE uuid=?";
+                try (PreparedStatement ps = connection.prepareStatement(updateSql)) {
+                    ps.setString(1, inventoryData);
+                    ps.setString(2, armorData);
+                    ps.setString(3, offhandData);
+                    ps.setString(4, serverId);
+                    ps.setString(5, data.getUuid().toString());
+                    if (ps.executeUpdate() > 0) {
+                        return true;
+                    }
+                }
+            }
+
+            String insertSql = "INSERT INTO " + tableName
+                + " (uuid, inventory, armor, offhand, server_id) VALUES (?,?,?,?,?)";
+            try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
+                ps.setString(1, data.getUuid().toString());
+                ps.setString(2, inventoryData);
+                ps.setString(3, armorData);
+                ps.setString(4, offhandData);
+                ps.setString(5, serverId);
+                if (ps.executeUpdate() > 0) {
+                    data.setExistsInDatabase(true);
+                    return true;
+                }
+            }
+        } catch (SQLException | IOException e) {
+            plugin.getLogger().severe("Error saving offline inventory for " + data.getDisplayName() + ": " + e.getMessage());
+        } finally {
+            plugin.returnConnection(connection);
+        }
+        return false;
+    }
+
+    public boolean saveOfflineEnderChestData(OfflinePlayerData data) {
+        if (data == null || data.getUuid() == null) {
+            return false;
+        }
+
+        Connection connection = null;
+        try {
+            connection = plugin.getConnection();
+            if (connection == null) {
+                plugin.getLogger().severe("Database connection unavailable");
+                return false;
+            }
+
+            ItemStack[] contents = data.getEnderChestContents();
+            String enderData = InventoryUtils.itemStackArrayToBase64(contents != null ? contents : new ItemStack[0]);
+
+            String tableName = getTableName();
+            String serverId = plugin.getConfig().getString("server.id", "default");
+
+            if (data.existsInDatabase()) {
+                String updateSql = "UPDATE " + tableName
+                    + " SET enderchest=?, last_save=CURRENT_TIMESTAMP, server_id=? WHERE uuid=?";
+                try (PreparedStatement ps = connection.prepareStatement(updateSql)) {
+                    ps.setString(1, enderData);
+                    ps.setString(2, serverId);
+                    ps.setString(3, data.getUuid().toString());
+                    if (ps.executeUpdate() > 0) {
+                        return true;
+                    }
+                }
+            }
+
+            String insertSql = "INSERT INTO " + tableName + " (uuid, enderchest, server_id) VALUES (?,?,?)";
+            try (PreparedStatement ps = connection.prepareStatement(insertSql)) {
+                ps.setString(1, data.getUuid().toString());
+                ps.setString(2, enderData);
+                ps.setString(3, serverId);
+                if (ps.executeUpdate() > 0) {
+                    data.setExistsInDatabase(true);
+                    return true;
+                }
+            }
+        } catch (SQLException | IOException e) {
+            plugin.getLogger().severe("Error saving offline ender chest for " + data.getDisplayName() + ": " + e.getMessage());
+        } finally {
+            plugin.returnConnection(connection);
+        }
+        return false;
+    }
+
+    private ItemStack[] extractMainInventory(ItemStack[] combined) {
+        ItemStack[] main = new ItemStack[36];
+        if (combined != null) {
+            System.arraycopy(combined, 0, main, 0, Math.min(combined.length, 36));
+        }
+        return main;
+    }
+
+    private ItemStack[] normalizeArmorArray(ItemStack[] armor) {
+        ItemStack[] normalized = new ItemStack[4];
+        if (armor != null) {
+            for (int i = 0; i < Math.min(armor.length, 4); i++) {
+                normalized[i] = armor[i];
+            }
+        }
+        return normalized;
+    }
+
+    private ItemStack[] combineInventoryAndEquipment(ItemStack[] main, ItemStack[] armor, ItemStack offhand) {
+        ItemStack[] combined = new ItemStack[41];
+        for (int i = 0; i < 36; i++) {
+            combined[i] = (main != null && i < main.length) ? main[i] : null;
+        }
+
+        ItemStack[] normalizedArmor = normalizeArmorArray(armor);
+        combined[36] = normalizedArmor[0];
+        combined[37] = normalizedArmor[1];
+        combined[38] = normalizedArmor[2];
+        combined[39] = normalizedArmor[3];
+        combined[40] = offhand;
+        return combined;
     }
 
     private static class PlayerSnapshot {
