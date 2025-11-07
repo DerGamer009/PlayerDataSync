@@ -61,6 +61,8 @@ permissions:
       playerdatasync.admin.editor: true
       playerdatasync.admin.reload: true
       playerdatasync.admin.save: true
+      playerdatasync.integration.invsee: true
+      playerdatasync.integration.enderchest: true
       playerdatasync.backup: true
       playerdatasync.import: true
       playerdatasync.export: true
@@ -187,3 +189,9 @@ permissions:
   playerdatasync.integration.luckperms:
     description: Allow LuckPerms integration
     default: false
+  playerdatasync.integration.invsee:
+    description: Allows viewing and editing stored player inventories through InvSee/OpenInv integration
+    default: op
+  playerdatasync.integration.enderchest:
+    description: Allows viewing and editing stored player ender chests through InvSee/OpenInv integration
+    default: op

@@ -20,7 +20,7 @@ public class ConfigManager {
     private File configFile;
     
     // Configuration version for migration
-    private static final int CURRENT_CONFIG_VERSION = 5;
+    private static final int CURRENT_CONFIG_VERSION = 6;
     
     public ConfigManager(PlayerDataSync plugin) {
         this.plugin = plugin;
@@ -78,6 +78,11 @@ public class ConfigManager {
 
             if (fromVersion < 5) {
                 migrateFromV4ToV5();
+                fromVersion = 5;
+            }
+
+            if (fromVersion < 6) {
+                migrateFromV5ToV6();
             }
 
             plugin.getLogger().info("Configuration migration completed successfully.");
@@ -148,6 +153,11 @@ public class ConfigManager {
             plugin.getLogger().info("Removing deprecated editor.* configuration entries.");
             config.set("editor", null);
         }
+    }
+
+    private void migrateFromV5ToV6() {
+        addDefaultIfMissing("integrations.invsee", true);
+        addDefaultIfMissing("integrations.openinv", true);
     }
     
     /**
@@ -244,6 +254,9 @@ public class ConfigManager {
         // Metrics configuration
         addDefaultIfMissing("metrics.bstats", true);
         addDefaultIfMissing("metrics.custom_metrics", true);
+
+        addDefaultIfMissing("integrations.invsee", true);
+        addDefaultIfMissing("integrations.openinv", true);
 
         // Editor integration defaults
         // Messages configuration

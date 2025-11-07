@@ -124,6 +124,8 @@ integrations:
   luckperms: false      # enable LuckPerms integration
   vault: true           # enable Vault integration for economy
   placeholderapi: false # enable PlaceholderAPI support
+  invsee: true          # enable InvSee++ style inventory viewing integration
+  openinv: true         # enable OpenInv style inventory viewing integration
 
 # Message Configuration
 messages:

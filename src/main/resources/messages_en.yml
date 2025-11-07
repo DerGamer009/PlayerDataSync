@@ -87,12 +87,20 @@ security_encryption_enabled: "&aData encryption is enabled."
 security_encryption_disabled: "&eData encryption is disabled."
 
 # Integration Messages
+integration_placeholderapi_enabled: "&aPlaceholderAPI integration enabled."
 integration_vault_enabled: "&aVault integration enabled."
 integration_vault_disabled: "&eVault integration disabled."
 integration_luckperms_enabled: "&aLuckPerms integration enabled."
 integration_luckperms_disabled: "&eLuckPerms integration disabled."
 integration_bungeecord_enabled: "&aBungeeCord mode enabled."
-integration_placeholderapi_enabled: "&aPlaceholderAPI integration enabled."
+inventory_view_usage_inventory: "&cUsage: /invsee <player>"
+inventory_view_usage_ender: "&cUsage: /endersee <player>"
+inventory_view_loading: "&7Loading stored data for &b{player}&7..."
+inventory_view_no_data: "&eNo stored data found for &b{player}&e. Showing empty inventory."
+inventory_view_open_failed: "&cUnable to load stored data for &b{player}&c."
+inventory_view_save_failed: "&cFailed to save changes for &b{player}&c. Check console for details."
+inventory_view_title_inventory: "&8Inventory » &b{player}"
+inventory_view_title_ender: "&8Ender Chest » &b{player}"
 
 # Editor Integration Messages
 editor_disabled: "&cThe web editor integration is not configured. Set PDS_EDITOR_API_KEY or the system property pds.editor.apiKey."
