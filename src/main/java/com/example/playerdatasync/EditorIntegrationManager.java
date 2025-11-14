@@ -56,6 +56,14 @@ public class EditorIntegrationManager {
         this.apiKey = resolveApiKey();
         this.serverId = resolveServerId();
         this.heartbeatIntervalSeconds = resolveHeartbeatInterval();
+        
+        // Log resolved server ID for debugging
+        if (this.serverId == null || this.serverId.trim().isEmpty()) {
+            plugin.getLogger().warning("EditorIntegrationManager: serverId is null or empty! Using 'default' as fallback.");
+            this.serverId = "default";
+        } else {
+            plugin.getLogger().info("EditorIntegrationManager: Resolved server_id: " + this.serverId);
+        }
     }
 
     public void start() {
@@ -136,25 +144,35 @@ public class EditorIntegrationManager {
     }
 
     private String resolveServerId() {
+        // First check environment variable
         String override = System.getenv(SERVER_ID_ENV);
-        if (override == null || override.trim().isEmpty()) {
-            override = System.getProperty(SERVER_ID_PROPERTY);
-        }
-
         if (override != null && !override.trim().isEmpty()) {
             return override.trim();
         }
 
-        ConfigManager configManager = plugin.getConfigManager();
-        if (configManager != null) {
-            return configManager.getServerId();
+        // Then check system property
+        override = System.getProperty(SERVER_ID_PROPERTY);
+        if (override != null && !override.trim().isEmpty()) {
+            return override.trim();
         }
 
-        String fallback = plugin.getConfig().getString("server.id", "default");
-        if (fallback == null || fallback.trim().isEmpty()) {
-            return "default";
+        // Try ConfigManager
+        ConfigManager configManager = plugin.getConfigManager();
+        if (configManager != null) {
+            String serverId = configManager.getServerId();
+            if (serverId != null && !serverId.trim().isEmpty()) {
+                return serverId.trim();
+            }
         }
-        return fallback.trim();
+
+        // Fallback to direct config access
+        String fallback = plugin.getConfig().getString("server.id", "default");
+        if (fallback != null && !fallback.trim().isEmpty()) {
+            return fallback.trim();
+        }
+
+        // Last resort: return default
+        return "default";
     }
 
     private int resolveHeartbeatInterval() {
@@ -406,9 +424,16 @@ public class EditorIntegrationManager {
     }
 
     private String buildHeartbeatPayload(boolean online) {
+        // Safety check: ensure serverId is never null or empty
+        String effectiveServerId = serverId;
+        if (effectiveServerId == null || effectiveServerId.trim().isEmpty()) {
+            plugin.getLogger().warning("buildHeartbeatPayload: serverId is null or empty! Using 'default' as fallback.");
+            effectiveServerId = "default";
+        }
+        
         StringBuilder builder = new StringBuilder();
         builder.append('{');
-        appendJsonString(builder, "serverId", serverId);
+        appendJsonString(builder, "serverId", effectiveServerId);
         appendJsonNumber(builder, "timestamp", System.currentTimeMillis());
         appendJsonRaw(builder, "online", online ? "true" : "false");
         appendJsonNumber(builder, "onlinePlayers", Bukkit.getOnlinePlayers().size());
