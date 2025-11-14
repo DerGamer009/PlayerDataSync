@@ -54,16 +54,18 @@ public class EditorIntegrationManager {
 
         this.baseUrl = resolveBaseUrl();
         this.apiKey = resolveApiKey();
-        this.serverId = resolveServerId();
-        this.heartbeatIntervalSeconds = resolveHeartbeatInterval();
         
-        // Log resolved server ID for debugging
-        if (this.serverId == null || this.serverId.trim().isEmpty()) {
+        // Resolve server ID and ensure it's never null or empty
+        String resolvedServerId = resolveServerId();
+        if (resolvedServerId == null || resolvedServerId.trim().isEmpty()) {
             plugin.getLogger().warning("EditorIntegrationManager: serverId is null or empty! Using 'default' as fallback.");
             this.serverId = "default";
         } else {
+            this.serverId = resolvedServerId;
             plugin.getLogger().info("EditorIntegrationManager: Resolved server_id: " + this.serverId);
         }
+        
+        this.heartbeatIntervalSeconds = resolveHeartbeatInterval();
     }
 
     public void start() {
