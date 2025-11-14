@@ -240,6 +240,7 @@ public class EditorIntegrationManager {
                     future.complete(true);
                 } catch (Exception ex) {
                     plugin.getLogger().warning("Failed to send heartbeat: " + ex.getMessage());
+                    plugin.getLogger().warning("Heartbeat payload was: " + payload);
                     future.completeExceptionally(ex);
                 }
             });
@@ -435,12 +436,19 @@ public class EditorIntegrationManager {
         
         StringBuilder builder = new StringBuilder();
         builder.append('{');
-        appendJsonString(builder, "serverId", effectiveServerId);
+        // API expects "server_id" (snake_case) not "serverId" (camelCase)
+        appendJsonString(builder, "server_id", effectiveServerId);
         appendJsonNumber(builder, "timestamp", System.currentTimeMillis());
         appendJsonRaw(builder, "online", online ? "true" : "false");
         appendJsonNumber(builder, "onlinePlayers", Bukkit.getOnlinePlayers().size());
         builder.append('}');
-        return builder.toString();
+        
+        String payload = builder.toString();
+        if (plugin.isDebugEnabled() || plugin.getConfigManager() != null && plugin.getConfigManager().isDebugMode()) {
+            plugin.getLogger().info("Heartbeat payload: " + payload);
+        }
+        
+        return payload;
     }
 
     private String postJson(String endpoint, String payload) throws IOException {
