@@ -149,12 +149,14 @@ public class EditorIntegrationManager {
         // First check environment variable
         String override = System.getenv(SERVER_ID_ENV);
         if (override != null && !override.trim().isEmpty()) {
+            plugin.getLogger().info("EditorIntegrationManager: Using server_id from environment variable: " + override);
             return override.trim();
         }
 
         // Then check system property
         override = System.getProperty(SERVER_ID_PROPERTY);
         if (override != null && !override.trim().isEmpty()) {
+            plugin.getLogger().info("EditorIntegrationManager: Using server_id from system property: " + override);
             return override.trim();
         }
 
@@ -163,17 +165,24 @@ public class EditorIntegrationManager {
         if (configManager != null) {
             String serverId = configManager.getServerId();
             if (serverId != null && !serverId.trim().isEmpty()) {
+                plugin.getLogger().info("EditorIntegrationManager: Using server_id from ConfigManager: " + serverId);
                 return serverId.trim();
+            } else {
+                plugin.getLogger().warning("EditorIntegrationManager: ConfigManager.getServerId() returned null or empty, trying direct config access");
             }
+        } else {
+            plugin.getLogger().warning("EditorIntegrationManager: ConfigManager is null, trying direct config access");
         }
 
         // Fallback to direct config access
         String fallback = plugin.getConfig().getString("server.id", "default");
         if (fallback != null && !fallback.trim().isEmpty()) {
+            plugin.getLogger().info("EditorIntegrationManager: Using server_id from config file (server.id): " + fallback);
             return fallback.trim();
         }
 
         // Last resort: return default
+        plugin.getLogger().warning("EditorIntegrationManager: Could not resolve server_id from any source, using 'default'");
         return "default";
     }
 
@@ -250,9 +259,16 @@ public class EditorIntegrationManager {
     }
 
     private String buildTokenPayload(UUID playerUuid, String playerName) {
+        // Safety check: ensure serverId is never null or empty
+        String effectiveServerId = serverId;
+        if (effectiveServerId == null || effectiveServerId.trim().isEmpty()) {
+            effectiveServerId = "default";
+        }
+        
         StringBuilder builder = new StringBuilder();
         builder.append('{');
-        appendJsonString(builder, "serverId", serverId);
+        // API expects "server_id" (snake_case) not "serverId" (camelCase)
+        appendJsonString(builder, "server_id", effectiveServerId);
         appendJsonString(builder, "playerUuid", playerUuid != null ? playerUuid.toString() : "");
         appendJsonString(builder, "playerName", playerName != null ? playerName : "");
         appendJsonString(builder, "pluginVersion", plugin.getDescription().getVersion());
@@ -262,9 +278,16 @@ public class EditorIntegrationManager {
     }
 
     private String buildSnapshotPayload(ServerSnapshotData snapshotData) {
+        // Safety check: ensure serverId is never null or empty
+        String effectiveServerId = serverId;
+        if (effectiveServerId == null || effectiveServerId.trim().isEmpty()) {
+            effectiveServerId = "default";
+        }
+        
         StringBuilder builder = new StringBuilder();
         builder.append('{');
-        appendJsonString(builder, "serverId", serverId);
+        // API expects "server_id" (snake_case) not "serverId" (camelCase)
+        appendJsonString(builder, "server_id", effectiveServerId);
         appendJsonNumber(builder, "timestamp", snapshotData.timestamp);
         appendJsonNumber(builder, "online", snapshotData.onlinePlayers);
         appendJsonNumber(builder, "maxPlayers", snapshotData.maxPlayers);
