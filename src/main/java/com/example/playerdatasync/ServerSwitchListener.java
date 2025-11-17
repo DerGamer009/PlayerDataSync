@@ -60,7 +60,8 @@ public class ServerSwitchListener implements Listener {
         String targetServer = parts[1];
         event.setCancelled(true);
 
-        if (player.hasPermission("playerdatasync.message.show.saving")) {
+        if (plugin.getConfigManager() != null && plugin.getConfigManager().shouldShowSyncMessages() 
+            && player.hasPermission("playerdatasync.message.show.saving")) {
             player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("server_switch_save"));
         }
 
@@ -73,7 +74,8 @@ public class ServerSwitchListener implements Listener {
                 }
 
                 if (saveSuccessful) {
-                    if (player.hasPermission("playerdatasync.message.show.saving")) {
+                    if (plugin.getConfigManager() != null && plugin.getConfigManager().shouldShowSyncMessages() 
+                        && player.hasPermission("playerdatasync.message.show.saving")) {
                         player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("server_switch_saved"));
                     }
 
@@ -81,7 +83,8 @@ public class ServerSwitchListener implements Listener {
                     player.getInventory().setArmorContents(new ItemStack[player.getInventory().getArmorContents().length]);
                     player.getInventory().setItemInOffHand(null);
                     player.updateInventory();
-                } else if (player.hasPermission("playerdatasync.message.show.errors")) {
+                } else if (plugin.getConfigManager() != null && plugin.getConfigManager().shouldShowSyncMessages() 
+                    && player.hasPermission("playerdatasync.message.show.errors")) {
                     player.sendMessage(messageManager.get("prefix") + " "
                         + messageManager.get("sync_failed").replace("{error}", "Unable to save data before server switch."));
                 }

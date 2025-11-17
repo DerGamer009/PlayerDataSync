@@ -261,6 +261,7 @@ public class ConfigManager {
         // Editor integration defaults
         // Messages configuration
         addDefaultIfMissing("messages.enabled", true);
+        addDefaultIfMissing("messages.show_sync_messages", true);
         addDefaultIfMissing("messages.language", "en");
         addDefaultIfMissing("messages.prefix", "&8[&bPDS&8]");
         addDefaultIfMissing("messages.colors", true);
@@ -524,6 +525,13 @@ public class ConfigManager {
     
     public boolean isStrictValidation() {
         return config.getBoolean("data_management.validation.strict_mode", false);
+    }
+    
+    /**
+     * Check if sync messages should be shown to players
+     */
+    public boolean shouldShowSyncMessages() {
+        return config.getBoolean("messages.show_sync_messages", true);
     }
     
     /**

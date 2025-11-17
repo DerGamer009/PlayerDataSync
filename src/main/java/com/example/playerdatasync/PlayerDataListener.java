@@ -26,7 +26,8 @@ public class PlayerDataListener implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
-        if (player.hasPermission("playerdatasync.message.show.loading")) {
+        if (plugin.getConfigManager() != null && plugin.getConfigManager().shouldShowSyncMessages() 
+            && player.hasPermission("playerdatasync.message.show.loading")) {
             player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("loading"));
         }
 
@@ -34,13 +35,16 @@ public class PlayerDataListener implements Listener {
         Bukkit.getScheduler().runTaskLaterAsynchronously(plugin, () -> {
             try {
                 dbManager.loadPlayer(player);
-                if (player.isOnline() && player.hasPermission("playerdatasync.message.show.loaded")) {
+                if (player.isOnline() && plugin.getConfigManager() != null 
+                    && plugin.getConfigManager().shouldShowSyncMessages() 
+                    && player.hasPermission("playerdatasync.message.show.loaded")) {
                     Bukkit.getScheduler().runTask(plugin, () ->
                         player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("loaded")));
                 }
             } catch (Exception e) {
                 plugin.getLogger().severe("Error loading data for " + player.getName() + ": " + e.getMessage());
-                if (player.isOnline()) {
+                if (player.isOnline() && plugin.getConfigManager() != null 
+                    && plugin.getConfigManager().shouldShowSyncMessages()) {
                     Bukkit.getScheduler().runTask(plugin, () ->
                         player.sendMessage(messageManager.get("prefix") + " " + messageManager.get("load_failed")));
                 }
