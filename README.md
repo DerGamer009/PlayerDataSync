@@ -161,6 +161,7 @@ integrations:
 # Message Configuration
 messages:
   enabled: true         # enable player messages
+  show_sync_messages: true  # show sync messages when loading/saving data (set to false to disable all sync notifications)
   language: en          # default language (en, de, fr, es, etc.)
   prefix: "&8[&bPDS&8]" # message prefix
   colors: true          # enable color codes in messages
@@ -197,6 +198,14 @@ Update the database values to match your environment. Set any of the `sync` opti
 
 Messages support color codes using the `&` character. For example,
 `&e` will display text in yellow.
+
+### Disabling Sync Messages
+If you want to disable sync notifications (loading, saving, etc.) when players switch servers, set `show_sync_messages: false`:
+```yaml
+messages:
+  show_sync_messages: false  # Disables all sync-related messages
+```
+This prevents players from seeing sync notifications even if they have the required permissions.
 
 ## Performance Considerations
 

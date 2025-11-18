@@ -5,6 +5,39 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2025-01-14
+
+### Fixed
+- **API Server ID**: Fixed "Missing server_id" error in heartbeat and API requests
+  - Changed JSON field name from `"serverId"` (camelCase) to `"server_id"` (snake_case) in all API payloads
+  - Improved server_id resolution from config file with better fallback handling
+  - Added detailed logging to track which server_id source is being used
+  - Fixed server_id not being read correctly from `server.id` config option
+  - All API endpoints (heartbeat, token, snapshot) now correctly send server_id
+
+### Added
+- **Message Configuration**: New option to disable sync messages
+  - Added `messages.show_sync_messages` config option (default: `true`)
+  - When set to `false`, all sync-related messages (loading, saving, server switch) are disabled
+  - Prevents empty messages from being sent when message strings are empty
+  - Works in conjunction with existing permission system
+
+### Changed
+- **API Integration**: All JSON payloads now use snake_case for `server_id` field
+  - `buildHeartbeatPayload()`: Uses `"server_id"` instead of `"serverId"`
+  - `buildTokenPayload()`: Uses `"server_id"` instead of `"serverId"`
+  - `buildSnapshotPayload()`: Uses `"server_id"` instead of `"serverId"`
+- **Server ID Resolution**: Enhanced resolution logic with better error handling
+  - Checks environment variables first, then system properties, then ConfigManager, then direct config
+  - Always ensures a valid server_id is returned (never null or empty)
+  - Added comprehensive logging for debugging server_id resolution
+
+### Configuration
+- **New Settings**:
+  - `messages.show_sync_messages`: Control whether sync messages are shown to players (default: `true`)
+
+---
+
 ## [1.1.7-SNAPSHOT] - 2025-01-05
 
 ### Added
