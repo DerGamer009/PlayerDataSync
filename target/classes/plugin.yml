@@ -1,6 +1,6 @@
 name: PlayerDataSync
 main: com.example.playerdatasync.PlayerDataSync
-version: 1.1.9-SNAPSHOT
+version: 1.2.3-SNAPSHOT
 api-version: "1.20"
 load: STARTUP
 authors: [DerGamer09]
@@ -58,8 +58,11 @@ permissions:
       playerdatasync.admin.attributes: true
       playerdatasync.admin.permissions: true
       playerdatasync.admin.economy: true
+      playerdatasync.admin.editor: true
       playerdatasync.admin.reload: true
       playerdatasync.admin.save: true
+      playerdatasync.integration.invsee: true
+      playerdatasync.integration.enderchest: true
       playerdatasync.backup: true
       playerdatasync.import: true
       playerdatasync.export: true
@@ -113,6 +116,9 @@ permissions:
     default: op
   playerdatasync.admin.economy:
     description: Allows toggling economy synchronization
+    default: op
+  playerdatasync.admin.editor:
+    description: Allows managing the web editor integration and requesting tokens
     default: op
   playerdatasync.admin.reload:
     description: Allows reloading the plugin configuration
@@ -183,3 +189,9 @@ permissions:
   playerdatasync.integration.luckperms:
     description: Allow LuckPerms integration
     default: false
+  playerdatasync.integration.invsee:
+    description: Allows viewing and editing stored player inventories through InvSee/OpenInv integration
+    default: op
+  playerdatasync.integration.enderchest:
+    description: Allows viewing and editing stored player ender chests through InvSee/OpenInv integration
+    default: op

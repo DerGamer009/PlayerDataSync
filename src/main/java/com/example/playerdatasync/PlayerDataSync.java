@@ -793,7 +793,7 @@ public class PlayerDataSync extends JavaPlugin {
             } else if (serverVersion.contains("1.21") || serverVersion.contains("1.21.1") || serverVersion.contains("1.21.2") || 
                       serverVersion.contains("1.21.3") || serverVersion.contains("1.21.4") || serverVersion.contains("1.21.5") ||
                       serverVersion.contains("1.21.6") || serverVersion.contains("1.21.7") || serverVersion.contains("1.21.8") ||
-                      serverVersion.contains("1.21.9") || serverVersion.contains("1.21.10")) {
+                      serverVersion.contains("1.21.9") || serverVersion.contains("1.21.10") || serverVersion.contains("1.21.11")) {
                 getLogger().info("✅ Full compatibility with Minecraft 1.21.x confirmed");
             } else {
                 getLogger().info("ℹ️  Running on version: " + serverVersion + " - compatibility status unknown");
