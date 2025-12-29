@@ -5,6 +5,88 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4-SNAPSHOT] - 2025-12-29
+
+### Added
+- **Extended Version Support**: Full compatibility with Minecraft 1.8 to 1.21.11
+  - Comprehensive version detection and compatibility checking
+  - Maven build profiles for all major Minecraft versions (1.8, 1.9-1.16, 1.17, 1.18-1.20, 1.21+)
+  - Automatic feature detection and disabling based on server version
+  - VersionCompatibility utility class for runtime version checks
+- **Project Structure Reorganization**: Complete package restructuring
+  - Organized code into logical packages: `core`, `database`, `integration`, `listeners`, `managers`, `utils`, `commands`, `api`
+  - Improved code maintainability and organization
+  - All imports and package declarations updated accordingly
+- **Version-Based Feature Management**: Automatic feature disabling
+  - Offhand sync automatically disabled on 1.8 (requires 1.9+)
+  - Attribute sync automatically disabled on 1.8 (requires 1.9+)
+  - Advancement sync automatically disabled on 1.8-1.11 (requires 1.12+)
+  - Features are checked and disabled during plugin initialization
+
+### Fixed
+- **Issue #43 - Experience Synchronization Error**: Fixed experience synchronization issues
+  - Changed from reset + `giveExp()` to direct `setTotalExperience()` method
+  - Added validation for negative experience values
+  - More reliable experience restoration across all versions
+- **Issue #42 - Vault Reset on Server Restart**: Fixed economy balance not being restored on server restart
+  - Economy integration is now reconfigured during shutdown to ensure availability
+  - Balance restoration with 5-tick delay and retry mechanism
+  - Improved Vault provider availability checking
+- **Issue #41 - Potion Effect on Death**: Fixed potion effects being restored after death
+  - Effects are only restored if player is not dead or respawning
+  - Added death/respawn state checking before effect restoration
+  - Effects are properly cleared on death as expected
+- **Issue #40 - Heartbeat HTTP 500**: Improved error handling for HTTP 500 errors
+  - Enhanced error handling with detailed logging
+  - Specific error messages for different HTTP status codes (400, 401, 404, 500+)
+  - Connection timeout and socket timeout handling
+  - Better debugging information for API issues
+
+### Changed
+- **Minecraft Version Support**: Extended from 1.20.4-1.21.9 to 1.8-1.21.11
+  - Default Java version set to 8 for maximum compatibility
+  - Maven profiles for different Java versions (8, 16, 17, 21)
+  - Plugin API version set to 1.8 (lowest supported version)
+- **Build System**: Enhanced Maven configuration
+  - Compiler plugin now uses variables for source/target versions
+  - Multiple build profiles for different Minecraft versions
+  - Proper Java version handling per Minecraft version
+- **Code Organization**: Complete package restructure
+  - `core/`: Main plugin class (PlayerDataSync)
+  - `database/`: Database management (DatabaseManager, ConnectionPool)
+  - `integration/`: Plugin integrations (EditorIntegrationManager, InventoryViewerIntegrationManager)
+  - `listeners/`: Event listeners (PlayerDataListener, ServerSwitchListener)
+  - `managers/`: Manager classes (AdvancementSyncManager, BackupManager, ConfigManager, MessageManager)
+  - `utils/`: Utility classes (InventoryUtils, OfflinePlayerData, PlayerDataCache, VersionCompatibility)
+  - `commands/`: Command handlers (SyncCommand)
+  - `api/`: API and update checker (UpdateChecker)
+- **Version Compatibility Checking**: Enhanced startup version validation
+  - Detects Minecraft version range (1.8 to 1.21.11)
+  - Logs feature availability based on version
+  - Provides warnings for unsupported versions
+  - Tests critical API methods with version checks
+
+### Technical Details
+- **Build Profiles**: 
+  - `mvn package -Pmc-1.8` for Minecraft 1.8 (Java 8)
+  - `mvn package -Pmc-1.9` through `-Pmc-1.16` for 1.9-1.16 (Java 8)
+  - `mvn package -Pmc-1.17` for Minecraft 1.17 (Java 16)
+  - `mvn package -Pmc-1.18` through `-Pmc-1.20` for 1.18-1.20 (Java 17)
+  - `mvn package -Pmc-1.21` for Minecraft 1.21+ (Java 21) - Default
+- **Code Quality**: Improved error handling and version compatibility
+- **Resource Management**: Better cleanup and memory management
+- **Exception Handling**: More specific error messages and recovery mechanisms
+
+### Compatibility
+- **Minecraft 1.8**: Full support (some features disabled)
+- **Minecraft 1.9-1.11**: Full support (advancements disabled)
+- **Minecraft 1.12-1.16**: Full support
+- **Minecraft 1.17**: Full support
+- **Minecraft 1.18-1.20**: Full support
+- **Minecraft 1.21-1.21.11**: Full support
+
+---
+
 ## [Unreleased] - 2025-01-14
 
 ### Fixed

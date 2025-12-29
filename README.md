@@ -1,25 +1,44 @@
 # PlayerDataSync
 
-A comprehensive Bukkit/Spigot plugin for Minecraft 1.20.4 to 1.21.9 that synchronizes player data using MySQL, SQLite, or PostgreSQL databases. This project is built with Maven.
+A comprehensive Bukkit/Spigot plugin for Minecraft 1.8 to 1.21.11 that synchronizes player data using MySQL, SQLite, or PostgreSQL databases. This project is built with Maven.
 Player inventories, experience, health, achievements, and more are stored in the configured
 database whenever they leave the server and restored when they join again.
 
 ## Supported Versions
 
-This plugin supports Minecraft versions **1.20.4 to 1.21.9** as confirmed by [PaperMC](https://papermc.io/downloads/all?project=paper).
+This plugin supports Minecraft versions **1.8 to 1.21.11**. Some features are automatically disabled on older versions:
+- **Offhand sync**: Requires 1.9+
+- **Attribute sync**: Requires 1.9+
+- **Advancement sync**: Requires 1.12+
 
 ### Building for Different Versions
 
 The project includes Maven profiles for building against different Minecraft versions:
 
 ```bash
-# Build for Minecraft 1.20.4 (Java 17)
-mvn package -Pmc-1.20.4
+# Build for Minecraft 1.8 (Java 8)
+mvn package -Pmc-1.8
 
-# Build for Minecraft 1.21 (Java 21) - Default
+# Build for Minecraft 1.9-1.16 (Java 8)
+mvn package -Pmc-1.9
+mvn package -Pmc-1.10
+mvn package -Pmc-1.11
+mvn package -Pmc-1.12
+mvn package -Pmc-1.13
+mvn package -Pmc-1.14
+mvn package -Pmc-1.15
+mvn package -Pmc-1.16
+
+# Build for Minecraft 1.17 (Java 16)
+mvn package -Pmc-1.17
+
+# Build for Minecraft 1.18-1.20 (Java 17)
+mvn package -Pmc-1.18
+mvn package -Pmc-1.19
+mvn package -Pmc-1.20
+
+# Build for Minecraft 1.21+ (Java 21) - Default
 mvn package -Pmc-1.21
-
-# Build for Minecraft 1.21.1 (Java 21)
 mvn package -Pmc-1.21.1
 
 # Build for default version (1.21)

@@ -1,6 +1,10 @@
 # =====================================
 # PlayerDataSync Configuration
-# Compatible with Minecraft 1.20.4 - 1.21.8
+# Compatible with Minecraft 1.8 - 1.21.11
+# Note: Some features require newer versions:
+#   - Offhand sync: 1.9+
+#   - Attribute sync: 1.9+
+#   - Advancement sync: 1.12+
 # =====================================
 
 # Server Configuration

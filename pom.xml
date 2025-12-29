@@ -4,15 +4,15 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.example</groupId>
     <artifactId>PlayerDataSync</artifactId>
-    <version>1.2.3-SNAPSHOT</version>
+    <version>1.2.4-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <minecraft.version>1.21</minecraft.version>
-        <java.version>21</java.version>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <java.version>8</java.version>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
     </properties>
 
     <repositories>
@@ -139,9 +139,133 @@
     </dependencies>
 
     <profiles>
-        <!-- Profile for Minecraft 1.20.4 -->
+        <!-- Profile for Minecraft 1.8 (Java 8) -->
         <profile>
-            <id>mc-1.20.4</id>
+            <id>mc-1.8</id>
+            <properties>
+                <minecraft.version>1.8.8</minecraft.version>
+                <java.version>8</java.version>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <!-- Profile for Minecraft 1.9-1.12 (Java 8) -->
+        <profile>
+            <id>mc-1.9</id>
+            <properties>
+                <minecraft.version>1.9.4</minecraft.version>
+                <java.version>8</java.version>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <profile>
+            <id>mc-1.10</id>
+            <properties>
+                <minecraft.version>1.10.2</minecraft.version>
+                <java.version>8</java.version>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <profile>
+            <id>mc-1.11</id>
+            <properties>
+                <minecraft.version>1.11.2</minecraft.version>
+                <java.version>8</java.version>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <profile>
+            <id>mc-1.12</id>
+            <properties>
+                <minecraft.version>1.12.2</minecraft.version>
+                <java.version>8</java.version>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <!-- Profile for Minecraft 1.13-1.16 (Java 8) -->
+        <profile>
+            <id>mc-1.13</id>
+            <properties>
+                <minecraft.version>1.13.2</minecraft.version>
+                <java.version>8</java.version>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <profile>
+            <id>mc-1.14</id>
+            <properties>
+                <minecraft.version>1.14.4</minecraft.version>
+                <java.version>8</java.version>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <profile>
+            <id>mc-1.15</id>
+            <properties>
+                <minecraft.version>1.15.2</minecraft.version>
+                <java.version>8</java.version>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <profile>
+            <id>mc-1.16</id>
+            <properties>
+                <minecraft.version>1.16.5</minecraft.version>
+                <java.version>8</java.version>
+                <maven.compiler.source>8</maven.compiler.source>
+                <maven.compiler.target>8</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <!-- Profile for Minecraft 1.17 (Java 16) -->
+        <profile>
+            <id>mc-1.17</id>
+            <properties>
+                <minecraft.version>1.17.1</minecraft.version>
+                <java.version>16</java.version>
+                <maven.compiler.source>16</maven.compiler.source>
+                <maven.compiler.target>16</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <!-- Profile for Minecraft 1.18-1.20 (Java 17) -->
+        <profile>
+            <id>mc-1.18</id>
+            <properties>
+                <minecraft.version>1.18.2</minecraft.version>
+                <java.version>17</java.version>
+                <maven.compiler.source>17</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <profile>
+            <id>mc-1.19</id>
+            <properties>
+                <minecraft.version>1.19.4</minecraft.version>
+                <java.version>17</java.version>
+                <maven.compiler.source>17</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
+            </properties>
+        </profile>
+        
+        <profile>
+            <id>mc-1.20</id>
             <properties>
                 <minecraft.version>1.20.4</minecraft.version>
                 <java.version>17</java.version>
@@ -150,7 +274,7 @@
             </properties>
         </profile>
         
-        <!-- Profile for Minecraft 1.21 (default) -->
+        <!-- Profile for Minecraft 1.21+ (Java 21) -->
         <profile>
             <id>mc-1.21</id>
             <activation>
@@ -164,7 +288,6 @@
             </properties>
         </profile>
         
-        <!-- Profile for Minecraft 1.21.1 -->
         <profile>
             <id>mc-1.21.1</id>
             <properties>
@@ -189,8 +312,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
                     <compilerArgs>
                         <arg>-parameters</arg>
                     </compilerArgs>
