@@ -1,0 +1,123 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Package Files
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+.idea_modules/
+
+# IDE - Eclipse
+.classpath
+.project
+.settings/
+bin/
+.metadata
+
+# IDE - NetBeans
+nbproject/private/
+build/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# IDE - VS Code
+.vscode/
+*.code-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.swp
+*.swo
+*~
+.desktop.ini
+
+# Plugin specific
+# Database files (SQLite)
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Configuration files with sensitive data
+# Uncomment if you want to ignore config files with passwords
+# config.yml
+# database.yml
+
+# Logs directory
+logs/
+server.log
+latest.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Test output
+test-output/
+coverage/
+
+# Java
+*.class
+hs_err_pid*
+replay_pid*
+
+# Minecraft server files (if testing locally)
+server/
+world/
+world_nether/
+world_the_end/
+plugins/
+crash-reports/
+world-datapack/
+usercache.json
+banned-players.json
+banned-ips.json
+ops.json
+whitelist.json
+eula.txt
+server.properties
+bukkit.yml
+spigot.yml
+paper.yml
+
+# Plugin development
+# Keep config.yml and plugin.yml as examples, but ignore local config changes
+# Uncomment if you want to ignore all config changes:
+# src/main/resources/config.yml
+
