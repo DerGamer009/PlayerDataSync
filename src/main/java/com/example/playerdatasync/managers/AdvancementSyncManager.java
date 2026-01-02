@@ -324,6 +324,8 @@ public class AdvancementSyncManager implements Listener {
         private volatile boolean awaitingGlobalCache = false;
         private volatile long lastImportStart = 0;
         private volatile long lastImportDuration = 0;
+        // Field reserved for future use (tracking last update time)
+        @SuppressWarnings("unused")
         private volatile long lastUpdated = 0;
     }
 }

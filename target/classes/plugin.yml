@@ -1,7 +1,7 @@
 name: PlayerDataSync
 main: com.example.playerdatasync.core.PlayerDataSync
-version: 1.2.4-SNAPSHOT
-api-version: "1.8"
+version: 1.2.7-RELEASE
+api-version: "1.13"
 load: STARTUP
 authors: [DerGamer09]
 description: Advanced player data synchronization plugin for Minecraft servers

@@ -73,7 +73,7 @@ autosave:
   interval: 1           # seconds between automatic saves, 0 to disable
   on_world_change: true # save when player changes world
   on_death: true        # save when player dies
-  on_server_switch: true # save when player switches servers (BungeeCord)
+  on_server_switch: true # save when player switches servers (BungeeCord/Velocity)
   on_kick: true         # save when player is kicked (might be server switch)
   async: true           # perform saves asynchronously
 
@@ -124,12 +124,19 @@ security:
 
 # Integration Settings
 integrations:
-  bungeecord: false     # enable BungeeCord support
+  bungeecord: false     # enable BungeeCord/Velocity support
   luckperms: false      # enable LuckPerms integration
   vault: true           # enable Vault integration for economy
   placeholderapi: false # enable PlaceholderAPI support
   invsee: true          # enable InvSee++ style inventory viewing integration
   openinv: true         # enable OpenInv style inventory viewing integration
+
+# Respawn to Lobby Feature
+# Sends players to a lobby server after death/respawn
+# Requires BungeeCord or Velocity integration to be enabled
+respawn_to_lobby:
+  enabled: false        # enable respawn to lobby feature
+  server: lobby         # name of the lobby server (must match BungeeCord/Velocity server name)
 
 # Message Configuration
 messages:

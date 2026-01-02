@@ -10,6 +10,7 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
 import com.example.playerdatasync.core.PlayerDataSync;
@@ -83,7 +84,7 @@ public class PlayerDataListener implements Listener {
 
         } catch (Exception e) {
             plugin.getLogger().severe("Failed to save data for " + player.getName() + ": " + e.getMessage());
-            e.printStackTrace();
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e);
         }
 
         AdvancementSyncManager advancementSyncManager = plugin.getAdvancementSyncManager();
@@ -188,5 +189,58 @@ public class PlayerDataListener implements Listener {
                 }
             }
         }
+    }
+    
+    /**
+     * Handle player respawn - Respawn to Lobby feature
+     * Sends player to lobby server after death if enabled
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onPlayerRespawn(PlayerRespawnEvent event) {
+        // Check if respawn to lobby is enabled
+        if (!plugin.getConfig().getBoolean("respawn_to_lobby.enabled", false)) {
+            return;
+        }
+        
+        // Check if BungeeCord integration is enabled (required for server switching)
+        if (!plugin.isBungeecordIntegrationEnabled()) {
+            plugin.getLogger().warning("Respawn to lobby is enabled but BungeeCord integration is disabled. " +
+                "Please enable BungeeCord integration in config.yml");
+            return;
+        }
+        
+        Player player = event.getPlayer();
+        String lobbyServer = plugin.getConfig().getString("respawn_to_lobby.server", "lobby");
+        
+        // Check if current server is already the lobby server
+        String currentServerId = plugin.getConfig().getString("server.id", "default");
+        if (currentServerId.equalsIgnoreCase(lobbyServer)) {
+            plugin.logDebug("Player " + player.getName() + " is already on lobby server, skipping respawn transfer");
+            return;
+        }
+        
+        // Save player data before transferring
+        plugin.logDebug("Saving data for " + player.getName() + " before respawn to lobby");
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                boolean saved = dbManager.savePlayer(player);
+                if (saved) {
+                    plugin.logDebug("Data saved for " + player.getName() + " before respawn to lobby");
+                } else {
+                    plugin.getLogger().warning("Failed to save data for " + player.getName() + " before respawn to lobby");
+                }
+                
+                // Transfer player to lobby server after save completes
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (player.isOnline()) {
+                        plugin.getLogger().info("Transferring " + player.getName() + " to lobby server '" + lobbyServer + "' after respawn");
+                        plugin.connectPlayerToServer(player, lobbyServer);
+                    }
+                });
+            } catch (Exception e) {
+                plugin.getLogger().severe("Error saving data for " + player.getName() + " before respawn to lobby: " + e.getMessage());
+                plugin.getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e);
+            }
+        });
     }
 }

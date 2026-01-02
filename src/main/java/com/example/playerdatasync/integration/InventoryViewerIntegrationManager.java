@@ -136,7 +136,28 @@ public class InventoryViewerIntegrationManager implements Listener {
     }
 
     private void handleInventoryRequest(Player viewer, String targetName, boolean enderChest) {
-        OfflinePlayer offline = Bukkit.getOfflinePlayer(targetName);
+        // Use UUID-based lookup instead of deprecated getOfflinePlayer(String)
+        OfflinePlayer offline = null;
+        try {
+            // Try to find online player first
+            Player onlinePlayer = Bukkit.getPlayer(targetName);
+            if (onlinePlayer != null) {
+                offline = onlinePlayer;
+            } else {
+                // For offline players, we still need to use deprecated method for compatibility
+                // This is necessary for 1.8-1.16 compatibility
+                @SuppressWarnings("deprecation")
+                OfflinePlayer tempPlayer = Bukkit.getOfflinePlayer(targetName);
+                offline = tempPlayer;
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Could not get offline player for " + targetName + ": " + e.getMessage());
+            return;
+        }
+        
+        if (offline == null) {
+            return;
+        }
         UUID targetUuid = offline != null ? offline.getUniqueId() : null;
         String displayName = offline != null && offline.getName() != null ? offline.getName() : targetName;
 
@@ -314,7 +335,36 @@ public class InventoryViewerIntegrationManager implements Listener {
     }
 
     private ItemStack createFillerItem() {
-        ItemStack pane = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
+        Material paneMaterial;
+        
+        // GRAY_STAINED_GLASS_PANE only exists in 1.13+
+        // For 1.8-1.12, use STAINED_GLASS_PANE with durability/data value 7 (gray)
+        try {
+            if (com.example.playerdatasync.utils.VersionCompatibility.isAtLeast(1, 13, 0)) {
+                paneMaterial = Material.GRAY_STAINED_GLASS_PANE;
+            } else {
+                // For 1.8-1.12, use STAINED_GLASS_PANE
+                paneMaterial = Material.valueOf("STAINED_GLASS_PANE");
+            }
+        } catch (IllegalArgumentException e) {
+            // Fallback if STAINED_GLASS_PANE doesn't exist (shouldn't happen, but be safe)
+            paneMaterial = Material.GLASS_PANE;
+            plugin.getLogger().warning("Could not find STAINED_GLASS_PANE, using GLASS_PANE as fallback");
+        }
+        
+        ItemStack pane = new ItemStack(paneMaterial);
+        
+        // Set durability/data value for 1.8-1.12 (7 = gray color)
+        if (!com.example.playerdatasync.utils.VersionCompatibility.isAtLeast(1, 13, 0)) {
+            try {
+                // setDurability is deprecated but necessary for 1.8-1.12 compatibility
+                pane.setDurability((short) 7); // Gray color
+            } catch (Exception e) {
+                plugin.getLogger().warning("Could not set glass pane color for filler item: " + e.getMessage());
+                // Continue with default material
+            }
+        }
+        
         ItemMeta meta = pane.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(" ");

@@ -5,6 +5,236 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.7-RELEASE] - 2025-12-29
+
+### 🔧 Critical Fixes & New Features
+
+This release includes critical bug fixes for XP synchronization and Vault economy, plus a new Respawn to Lobby feature.
+
+### Fixed
+- **Issue #45 - XP & Level Synchronization (Critical Fix)**: Complete rewrite of experience synchronization
+  - ✅ Replaced unreliable `setTotalExperience()` with `giveExp()` as primary method
+  - ✅ `giveExp()` is more reliable across all Minecraft versions (1.8-1.21.11)
+  - ✅ Better error handling and verification with detailed logging
+  - ✅ Automatic correction if experience doesn't match expected value
+  - ✅ Prevents XP sync failures on all supported versions
+  - ✅ Improved level calculation and synchronization
+  - 🔧 Fixes Issue #43, #45 and XP sync problems across version range
+  - 📝 Detailed logging for debugging XP sync issues
+- **Issue #46 - Vault Balance de-sync on server shutdown**: Fixed economy balance not being saved during shutdown
+  - ✅ Enhanced shutdown save process to ensure Vault economy is available
+  - ✅ Reconfigure economy integration before shutdown save
+  - ✅ Added delay to ensure Vault is fully initialized before saving
+  - ✅ Force balance refresh before save to get latest balance
+  - ✅ Better error handling and logging during shutdown
+  - ✅ Prevents economy balance loss on server restart
+  - 🔧 Fixes Issue #46: Vault Balance de-sync on server shutdown
+
+### Added
+- **Respawn to Lobby Feature**: New feature to send players to lobby server after death/respawn
+  - ✅ Automatically transfers players to lobby server after respawn
+  - ✅ Uses existing BungeeCord integration and shared database
+  - ✅ Configurable lobby server name
+  - ✅ Saves player data before transfer to ensure data consistency
+  - ✅ Smart detection to prevent transfers if already on lobby server
+  - ✅ Requires BungeeCord integration to be enabled
+  - 📝 Configuration: `respawn_to_lobby.enabled` and `respawn_to_lobby.server` in config.yml
+
+### Technical Details
+- **XP Sync Method Change**: Switched from `setTotalExperience()` to `giveExp()` for better compatibility
+- **Why**: `setTotalExperience()` has version-specific bugs, `giveExp()` works reliably everywhere
+- **Verification**: Added automatic verification and correction mechanism
+- **Logging**: Enhanced logging with before/after values for debugging
+- **Shutdown Process**: Improved economy save process with Vault reconfiguration and balance refresh
+- **Respawn Handler**: New `PlayerRespawnEvent` handler for lobby transfer functionality
+
+---
+
+## [1.2.8-BETA] - 2025-12-29
+
+### 🎉 Big Update - Major Improvements & API Migration
+
+This release includes significant improvements, API migrations, and enhanced compatibility features.
+
+### Fixed
+- **XP Synchronization (Critical Fix)**: Complete rewrite of experience synchronization
+  - ✅ Replaced unreliable `setTotalExperience()` with `giveExp()` as primary method
+  - ✅ `giveExp()` is more reliable across all Minecraft versions (1.8-1.21.11)
+  - ✅ Better error handling and verification with detailed logging
+  - ✅ Automatic correction if experience doesn't match expected value
+  - ✅ Prevents XP sync failures on all supported versions
+  - 🔧 Fixes Issue #43, #45 and XP sync problems across version range
+
+### Changed
+- **Update Checker**: Complete migration to CraftingStudio Pro API
+  - ✅ Migrated from SpigotMC Legacy API to CraftingStudio Pro API
+  - ✅ New API endpoint: `https://craftingstudiopro.de/api/plugins/playerdatasync/latest`
+  - ✅ Uses plugin slug (`playerdatasync`) instead of resource ID
+  - ✅ Improved JSON response parsing using Gson library
+  - ✅ Better error handling for HTTP status codes (429 Rate Limit, etc.)
+  - ✅ Enhanced update information with download URLs from API response
+  - 📖 API Documentation: https://www.craftingstudiopro.de/docs/api
+- **Plugin API Version**: Updated to 1.13 for better modern API support
+  - Minimum required Minecraft version: 1.13
+  - Still supports versions 1.8-1.21.11 with automatic compatibility handling
+  - Improved NamespacedKey support and modern Material API usage
+
+### Fixed
+- **Version Compatibility**: Fixed critical GRAY_STAINED_GLASS_PANE compatibility issue
+  - ✅ Prevents fatal error on Minecraft 1.8-1.12 servers
+  - ✅ Automatic version detection and Material selection
+  - ✅ Uses `STAINED_GLASS_PANE` with durability value 7 for older versions (1.8-1.12)
+  - ✅ Uses `GRAY_STAINED_GLASS_PANE` for modern versions (1.13+)
+  - ✅ Filler item in inventory viewer now works correctly across all supported versions
+- **Inventory Synchronization**: Enhanced inventory sync reliability
+  - ✅ Added `updateInventory()` calls after loading inventory, armor, and offhand
+  - ✅ Improved client synchronization for all inventory types
+  - ✅ Better inventory size validation (normalized to 36 slots for main inventory)
+  - ✅ Improved enderchest size validation (normalized to 27 slots)
+  - ✅ Better armor array normalization (ensures exactly 4 slots)
+- **ItemStack Validation**: Enhanced ItemStack sanitization and validation
+  - ✅ Improved validation of item amounts (checks against max stack size)
+  - ✅ Better handling of invalid stack sizes (clamps to max instead of removing)
+  - ✅ Improved AIR item filtering
+  - ✅ More robust error handling for corrupted items
+- **Logging System**: Complete logging overhaul
+  - ✅ Replaced all `System.err.println()` calls with proper Bukkit logger
+  - ✅ Replaced all `printStackTrace()` calls with proper `logger.log()` calls
+  - ✅ Better log levels (WARNING/SEVERE instead of stderr for compatibility issues)
+  - ✅ More consistent error messages across the codebase
+  - ✅ Stack traces now properly logged through plugin logger
+  - ✅ Improved logging for version compatibility issues
+
+### Improved
+- **Code Quality**: Significant improvements to error handling and resource management
+  - ✅ Comprehensive exception handling with proper stack trace logging
+  - ✅ Better debug logging throughout inventory operations
+  - ✅ Improved client synchronization after inventory changes
+  - ✅ Better resource management and cleanup
+  - ✅ Enhanced error diagnostics throughout the codebase
+- **Performance**: Optimizations for inventory operations
+  - ✅ Better item validation prevents unnecessary operations
+  - ✅ Improved error recovery mechanisms
+  - ✅ Enhanced memory management
+
+### Technical Details
+- **API Migration**: Complete rewrite of UpdateChecker class
+  - Old: SpigotMC Legacy API (plain text response)
+  - New: CraftingStudio Pro API (JSON response with Gson parsing)
+  - Improved error handling for network issues and rate limits
+- **Compatibility**: Maintained support for Minecraft 1.8-1.21.11
+  - Version-based feature detection and automatic disabling
+  - Graceful degradation for unsupported features on older versions
+  - Comprehensive version compatibility checking at startup
+
+### Breaking Changes
+⚠️ **Plugin API Version**: Changed from `1.8` to `1.13`
+- Plugins compiled with this version require at least Minecraft 1.13
+- Server administrators using 1.8-1.12 should continue using previous versions
+- Automatic legacy conversion may still work, but not guaranteed
+
+### Migration Guide
+If upgrading from 1.2.6-RELEASE or earlier:
+1. No configuration changes required
+2. Update checker will now use CraftingStudio Pro API
+3. All existing data is compatible
+4. Recommended to test on a staging server first
+
+---
+
+## [1.2.6-RELEASE] - 2025-12-29
+
+### Changed
+- **Update Checker**: Migrated to CraftingStudio Pro API
+  - Updated from SpigotMC API to CraftingStudio Pro API (https://craftingstudiopro.de/api)
+  - Now uses plugin slug instead of resource ID
+  - Improved JSON response parsing for better update information
+  - Better error handling for rate limits (429 responses)
+  - API endpoint: `/api/plugins/playerdatasync/latest`
+
+### Fixed
+- **Version Compatibility**: Fixed GRAY_STAINED_GLASS_PANE compatibility issue for Minecraft 1.8-1.12
+  - Added version check to use STAINED_GLASS_PANE with durability value 7 for older versions
+  - Prevents fatal error when loading plugin on 1.8-1.12 servers
+  - Filler item in inventory viewer now works correctly across all supported versions
+
+---
+
+## [1.2.7-ALPHA] - 2025-12-29
+
+### Changed
+- **Update Checker**: Migrated to CraftingStudio Pro API
+  - Updated from SpigotMC API to CraftingStudio Pro API (https://craftingstudiopro.de/api)
+  - Now uses plugin slug instead of resource ID
+  - Improved JSON response parsing for better update information
+  - Better error handling for rate limits (429 responses)
+  - API endpoint: `/api/plugins/playerdatasync/latest`
+
+### Fixed
+- **Version Compatibility**: Fixed GRAY_STAINED_GLASS_PANE compatibility issue for Minecraft 1.8-1.12
+  - Added version check to use STAINED_GLASS_PANE with durability value 7 for older versions
+  - Prevents fatal error when loading plugin on 1.8-1.12 servers
+  - Filler item in inventory viewer now works correctly across all supported versions
+
+---
+
+## [1.2.6-ALPHA] - 2025-12-29
+
+### Improved
+- **Inventory Synchronization**: Significantly improved inventory sync reliability
+  - Added `updateInventory()` call after loading inventory, armor, and offhand to ensure client synchronization
+  - Improved inventory size validation (normalized to 36 slots for main inventory)
+  - Improved enderchest size validation (normalized to 27 slots)
+  - Better armor array normalization (ensures exactly 4 slots)
+  - Enhanced error handling with detailed logging and stack traces
+  - Added debug logging for successful inventory loads
+- **ItemStack Validation**: Enhanced ItemStack sanitization
+  - Improved validation of item amounts (checks against max stack size)
+  - Better handling of invalid stack sizes (clamps to max stack size instead of removing)
+  - Improved AIR item filtering
+  - More robust error handling for corrupted items
+- **Logging System**: Improved logging consistency
+  - Replaced all `System.err.println()` calls with proper Bukkit logger
+  - Replaced all `printStackTrace()` calls with proper logger.log() calls
+  - Better log levels (WARNING instead of stderr for compatibility issues)
+  - More consistent error messages across the codebase
+  - Improved logging for version compatibility issues
+  - Stack traces now properly logged through plugin logger instead of printStackTrace()
+- **Code Quality**: Further improvements to error handling
+  - Added comprehensive exception handling with stack traces
+  - Better debug logging throughout inventory operations
+  - Improved client synchronization after inventory changes
+  - Better resource management and cleanup
+
+### Fixed
+- **Inventory Sync Issues**: Fixed cases where inventory changes weren't synchronized with client
+- **ItemStack Validation**: Fixed potential issues with invalid item amounts and stack sizes
+- **Logging**: Fixed inconsistent logging using System.err instead of proper logger
+
+---
+
+## [1.2.5-SNAPSHOT] - 2025-12-29
+
+### Fixed
+- **Issue #45 - XP Sync Not Working**: Fixed experience synchronization not working
+  - Improved `applyExperience()` method with proper reset before setting experience
+  - Added verification to ensure experience is set correctly
+  - Added fallback mechanism using `giveExp()` if `setTotalExperience()` doesn't work
+  - Better error handling with detailed logging and stack traces
+  - Now works reliably across all Minecraft versions (1.8-1.21.11)
+
+### Improved
+- **Code Quality**: Fixed deprecated method usage and improved compatibility
+  - Replaced deprecated `URL(String)` constructor with `URI.toURL()` for better Java 20+ compatibility
+  - Replaced deprecated `PotionEffectType.getName()` with `getKey().getKey()` for better compatibility
+  - Improved `PotionEffectType.getByName()` usage with NamespacedKey fallback
+  - Replaced deprecated `getMaxHealth()` with Attribute system where available
+  - Improved `getOfflinePlayer(String)` usage with better error handling
+  - Added `@SuppressWarnings` annotations for necessary deprecated method usage
+  - Cleaned up unused imports and improved code organization
+
+---
+
 ## [1.2.4-SNAPSHOT] - 2025-12-29
 
 ### Added
@@ -25,9 +255,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Issue #43 - Experience Synchronization Error**: Fixed experience synchronization issues
-  - Changed from reset + `giveExp()` to direct `setTotalExperience()` method
+  - Initial fix for experience synchronization problems
   - Added validation for negative experience values
-  - More reliable experience restoration across all versions
 - **Issue #42 - Vault Reset on Server Restart**: Fixed economy balance not being restored on server restart
   - Economy integration is now reconfigured during shutdown to ensure availability
   - Balance restoration with 5-tick delay and retry mechanism

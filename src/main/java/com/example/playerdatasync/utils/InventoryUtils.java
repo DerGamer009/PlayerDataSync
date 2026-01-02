@@ -1,5 +1,6 @@
 package com.example.playerdatasync.utils;
 
+import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
@@ -53,7 +54,7 @@ public class InventoryUtils {
                     items[i] = (ItemStack) dataInput.readObject();
                 } catch (Exception e) {
                     if (isVersionDowngradeIssue(e)) {
-                        System.err.println("[PlayerDataSync] Version compatibility issue detected for item " + i
+                        Bukkit.getLogger().warning("[PlayerDataSync] Version compatibility issue detected for item " + i
                             + ": " + collectCompatibilityMessage(e) + ". Skipping unsupported item.");
                         items[i] = null;
                     } else {
@@ -97,7 +98,7 @@ public class InventoryUtils {
                 return (ItemStack) dataInput.readObject();
             } catch (Exception e) {
                 if (isVersionDowngradeIssue(e)) {
-                    System.err.println("[PlayerDataSync] Version compatibility issue detected for single item: "
+                    Bukkit.getLogger().warning("[PlayerDataSync] Version compatibility issue detected for single item: "
                         + collectCompatibilityMessage(e) + ". Returning null.");
                     return null;
                 } else {
@@ -128,7 +129,7 @@ public class InventoryUtils {
     }
     
     /**
-     * Sanitize ItemStack array (remove invalid items)
+     * Sanitize ItemStack array (remove invalid items and validate)
      */
     public static ItemStack[] sanitizeItemStackArray(ItemStack[] items) {
         if (items == null) return null;
@@ -137,11 +138,32 @@ public class InventoryUtils {
         for (int i = 0; i < items.length; i++) {
             try {
                 ItemStack item = items[i];
-                if (item != null && item.getType() != null && item.getAmount() > 0) {
-                    sanitized[i] = item.clone();
+                if (item != null) {
+                    // Validate item type and amount
+                    if (item.getType() != null && item.getType() != org.bukkit.Material.AIR) {
+                        int amount = item.getAmount();
+                        // Ensure amount is within valid range (1-64 for most items, up to 127 for stackable items)
+                        if (amount > 0 && amount <= item.getMaxStackSize()) {
+                            sanitized[i] = item.clone();
+                        } else {
+                            // Fix invalid stack sizes
+                            if (amount <= 0) {
+                                sanitized[i] = null; // Remove invalid items with 0 or negative amount
+                            } else {
+                                // Clamp to max stack size
+                                ItemStack fixed = item.clone();
+                                fixed.setAmount(Math.min(amount, item.getMaxStackSize()));
+                                sanitized[i] = fixed;
+                            }
+                        }
+                    } else {
+                        sanitized[i] = null; // Remove AIR items
+                    }
+                } else {
+                    sanitized[i] = null;
                 }
             } catch (Exception e) {
-                // Skip invalid items
+                // Skip invalid items that cause exceptions
                 sanitized[i] = null;
             }
         }
@@ -215,7 +237,7 @@ public class InventoryUtils {
         try {
             return itemStackArrayFromBase64(data);
         } catch (Exception e) {
-            System.err.println("[PlayerDataSync] Failed to deserialize ItemStack array: "
+            Bukkit.getLogger().warning("[PlayerDataSync] Failed to deserialize ItemStack array: "
                 + collectCompatibilityMessage(e));
             return new ItemStack[0];
         }
@@ -231,7 +253,7 @@ public class InventoryUtils {
         try {
             return itemStackFromBase64(data);
         } catch (Exception e) {
-            System.err.println("[PlayerDataSync] Failed to deserialize single ItemStack: "
+            Bukkit.getLogger().warning("[PlayerDataSync] Failed to deserialize single ItemStack: "
                 + collectCompatibilityMessage(e));
             return null;
         }

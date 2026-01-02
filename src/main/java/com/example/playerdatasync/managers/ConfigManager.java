@@ -91,7 +91,7 @@ public class ConfigManager {
             
         } catch (Exception e) {
             plugin.getLogger().severe("Configuration migration failed: " + e.getMessage());
-            e.printStackTrace();
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e);
         }
     }
     

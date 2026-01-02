@@ -11,6 +11,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -495,7 +497,17 @@ public class EditorIntegrationManager {
     }
 
     private String postJson(String endpoint, String payload) throws IOException {
-        URL url = new URL(baseUrl + (endpoint.startsWith("/") ? endpoint : "/" + endpoint));
+        // Use URI.toURL() instead of deprecated URL(String) constructor
+        URL url;
+        try {
+            URI uri = new URI(baseUrl + (endpoint.startsWith("/") ? endpoint : "/" + endpoint));
+            url = uri.toURL();
+        } catch (URISyntaxException e) {
+            // Fallback to deprecated constructor if URI parsing fails
+            @SuppressWarnings("deprecation")
+            URL fallbackUrl = new URL(baseUrl + (endpoint.startsWith("/") ? endpoint : "/" + endpoint));
+            url = fallbackUrl;
+        }
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) url.openConnection();

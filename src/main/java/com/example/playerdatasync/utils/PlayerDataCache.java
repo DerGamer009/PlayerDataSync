@@ -14,6 +14,8 @@ import com.example.playerdatasync.core.PlayerDataSync;
  * Provides in-memory caching with TTL, LRU eviction, and performance metrics
  */
 public class PlayerDataCache {
+    // Plugin reference kept for potential future use
+    @SuppressWarnings("unused")
     private final PlayerDataSync plugin;
     private final ConcurrentHashMap<UUID, CachedPlayerData> cache;
     private final AtomicLong hits = new AtomicLong(0);

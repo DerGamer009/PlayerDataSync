@@ -539,7 +539,23 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§7Location: §f" + 
             String.format("%.1f, %.1f, %.1f", player.getLocation().getX(), 
                 player.getLocation().getY(), player.getLocation().getZ()));
-        sender.sendMessage("§7Health: §f" + String.format("%.1f/%.1f", player.getHealth(), player.getMaxHealth()));
+        // Get max health safely
+        double maxHealth = 20.0;
+        try {
+            if (com.example.playerdatasync.utils.VersionCompatibility.isAttributesSupported()) {
+                org.bukkit.attribute.AttributeInstance attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+                if (attr != null) {
+                    maxHealth = attr.getValue();
+                }
+            } else {
+                @SuppressWarnings("deprecation")
+                double tempMax = player.getMaxHealth();
+                maxHealth = tempMax;
+            }
+        } catch (Exception e) {
+            maxHealth = 20.0;
+        }
+        sender.sendMessage("§7Health: §f" + String.format("%.1f/%.1f", player.getHealth(), maxHealth));
         sender.sendMessage("§7Food Level: §f" + player.getFoodLevel() + "/20");
         sender.sendMessage("§7XP Level: §f" + player.getLevel());
         sender.sendMessage("§7Game Mode: §f" + player.getGameMode().toString());

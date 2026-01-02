@@ -272,7 +272,7 @@ public class PlayerDataSync extends JavaPlugin {
             getCommand("sync").setExecutor(syncCommand);
             getCommand("sync").setTabCompleter(syncCommand);
         }
-        new UpdateChecker(this, 123166, messageManager).check();
+        new UpdateChecker(this, messageManager).check();
         
         getLogger().info("PlayerDataSync enabled successfully!");
     }
@@ -293,37 +293,65 @@ public class PlayerDataSync extends JavaPlugin {
         }
         
         // Save all online players before shutdown
-        // Fix for Issue #42: Ensure economy is saved before shutdown
+        // Fix for Issue #42 and #46: Ensure economy is saved before shutdown
         if (databaseManager != null) {
             try {
                 int savedCount = 0;
                 long startTime = System.currentTimeMillis();
                 
                 // Reconfigure economy integration to ensure it's available during shutdown
+                // This is critical for Issue #46: Vault Balance de-sync on server shutdown
                 if (syncEconomy) {
+                    getLogger().info("Reconfiguring economy integration for shutdown save...");
                     configureEconomyIntegration();
+                    
+                    // Wait a tick to ensure Vault is fully initialized
+                    try {
+                        Thread.sleep(100); // Small delay to ensure Vault is ready
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
                 }
                 
+                // Save all players synchronously to ensure data is persisted
+                // This prevents race conditions where economy balance might not be saved
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     try {
+                        // Force economy balance refresh before save
+                        if (syncEconomy && economyProvider != null) {
+                            // Trigger a balance read to ensure Vault has latest balance
+                            try {
+                                double currentBalance = economyProvider.getBalance(player);
+                                getLogger().fine("Current balance for " + player.getName() + " before shutdown save: " + currentBalance);
+                            } catch (Exception e) {
+                                getLogger().warning("Could not read balance for " + player.getName() + " before shutdown: " + e.getMessage());
+                            }
+                        }
+                        
+                        // Save player data (including economy balance)
                         if (databaseManager.savePlayer(player)) {
                             savedCount++;
+                            getLogger().fine("Saved data for " + player.getName() + " during shutdown");
                         } else {
                             getLogger().severe("Failed to save data for " + player.getName()
                                 + " during shutdown: See previous log entries for details.");
                         }
                     } catch (Exception e) {
                         getLogger().severe("Failed to save data for " + player.getName() + " during shutdown: " + e.getMessage());
+                        getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e);
                     }
                 }
                 
                 long endTime = System.currentTimeMillis();
                 if (savedCount > 0) {
                     getLogger().info("Saved data for " + savedCount + " players during shutdown in " + 
-                        (endTime - startTime) + "ms");
+                        (endTime - startTime) + "ms (including economy balances)");
+                } else {
+                    getLogger().warning("No players were saved during shutdown - this may cause data loss!");
                 }
             } catch (Exception e) {
                 getLogger().severe("Error saving players during shutdown: " + e.getMessage());
+                getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e);
             }
         }
         
@@ -995,7 +1023,7 @@ public class PlayerDataSync extends JavaPlugin {
             
         } catch (Exception e) {
             getLogger().severe("Failed to create emergency configuration: " + e.getMessage());
-            e.printStackTrace();
+            getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e);
         }
     }
 
