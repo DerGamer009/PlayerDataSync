@@ -3,8 +3,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.example</groupId>
-    <artifactId>PlayerDataSync</artifactId>
-    <version>1.2.9-RELEASE</version>
+    <artifactId>PlayerDataSync-Premium</artifactId>
+    <version>1.0.0-PREMIUM</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -357,19 +357,19 @@
                             <relocations>
                                 <relocation>
                                     <pattern>org.bstats</pattern>
-                                    <shadedPattern>com.example.playerdatasync.libs.bstats</shadedPattern>
+                                    <shadedPattern>com.example.playerdatasync.premium.libs.bstats</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>com.zaxxer.hikari</pattern>
-                                    <shadedPattern>com.example.playerdatasync.libs.hikari</shadedPattern>
+                                    <shadedPattern>com.example.playerdatasync.premium.libs.hikari</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>com.google.gson</pattern>
-                                    <shadedPattern>com.example.playerdatasync.libs.gson</shadedPattern>
+                                    <shadedPattern>com.example.playerdatasync.premium.libs.gson</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.apache.commons</pattern>
-                                    <shadedPattern>com.example.playerdatasync.libs.commons</shadedPattern>
+                                    <shadedPattern>com.example.playerdatasync.premium.libs.commons</shadedPattern>
                                 </relocation>
                             </relocations>
                         </configuration>

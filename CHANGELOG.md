@@ -5,6 +5,297 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.9-RELEASE] - 2026-01-25
+
+### 🎯 Custom-Enchantment-Support & Database Upgrade / Custom-Enchantment-Support & Datenbank-Upgrade
+
+### 🔧 Fixed
+
+- **Database Truncation Error (Critical Fix) / Datenbank-Truncation-Fehler (Critical Fix)**: 
+  - **EN:** Fixes "Data too long for column" errors with large inventories
+  - **DE:** Behebt "Data too long for column" Fehler bei großen Inventaren
+  - ✅ **EN:** Automatic upgrade from `TEXT` to `LONGTEXT` for `inventory`, `enderchest`, `armor`, and `offhand` columns
+  - ✅ **DE:** Automatisches Upgrade von `TEXT` zu `LONGTEXT` für `inventory`, `enderchest`, `armor` und `offhand` Spalten
+  - ✅ **EN:** Now supports inventories with many custom enchantments (e.g., ExcellentEnchants)
+  - ✅ **DE:** Unterstützt jetzt Inventare mit vielen Custom-Enchantments (z.B. ExcellentEnchants)
+  - ✅ **EN:** Upgrade is performed automatically on server start
+  - ✅ **DE:** Upgrade wird automatisch beim Server-Start durchgeführt
+  - ✅ **EN:** Runtime upgrade attempt on truncation errors
+  - ✅ **DE:** Runtime-Upgrade-Versuch bei Truncation-Fehlern
+  - ✅ **EN:** Improved error messages with solution suggestions
+  - ✅ **DE:** Verbesserte Fehlermeldungen mit Lösungsvorschlägen
+  - 🔧 **EN:** Fixes issues with large inventories and custom enchantments
+  - 🔧 **DE:** Behebt Probleme mit großen Inventaren und Custom-Enchantments
+
+- **Custom-Enchantment Deserialization / Custom-Enchantment-Deserialisierung**: 
+  - **EN:** Robust error handling for custom enchantments
+  - **DE:** Robuste Fehlerbehandlung für Custom-Enchantments
+  - ✅ **EN:** Improved detection of custom enchantment errors (e.g., `minecraft:venom`)
+  - ✅ **DE:** Verbesserte Erkennung von Custom-Enchantment-Fehlern (z.B. `minecraft:venom`)
+  - ✅ **EN:** Items are skipped instead of causing plugin crashes
+  - ✅ **DE:** Items werden übersprungen statt Plugin-Absturz zu verursachen
+  - ✅ **EN:** Data remains preserved in the database
+  - ✅ **DE:** Daten bleiben in der Datenbank erhalten
+  - ✅ **EN:** Detailed logging with enchantment names
+  - ✅ **DE:** Detailliertes Logging mit Enchantment-Namen
+  - ✅ **EN:** Support for ExcellentEnchants and similar plugins
+  - ✅ **DE:** Unterstützung für ExcellentEnchants und ähnliche Plugins
+  - 🔧 **EN:** Prevents crashes with unrecognized custom enchantments
+  - 🔧 **DE:** Verhindert Abstürze bei nicht erkannten Custom-Enchantments
+
+- **Stale Player Data / Veraltete Spielerdaten**: 
+  - **EN:** Fixes issue with outdated player data
+  - **DE:** Behebt Problem mit nicht aktualisierten Spielerdaten
+  - ✅ **EN:** Database upgrade enables successful saves
+  - ✅ **DE:** Datenbank-Upgrade ermöglicht erfolgreiche Speicherungen
+  - ✅ **EN:** Improved error handling prevents data loss
+  - ✅ **DE:** Verbesserte Fehlerbehandlung verhindert Datenverlust
+  - ✅ **EN:** Automatic recovery after database upgrade
+  - ✅ **DE:** Automatische Wiederherstellung nach Datenbank-Upgrade
+
+### ✨ Added
+
+- **Custom-Enchantment Synchronization / Custom-Enchantment-Synchronisation**: 
+  - **EN:** Full support for custom enchantments
+  - **DE:** Vollständige Unterstützung für Custom-Enchantments
+  - ✅ **EN:** Preservation of all NBT data including custom enchantments during serialization
+  - ✅ **DE:** Erhaltung aller NBT-Daten inklusive Custom-Enchantments beim Serialisieren
+  - ✅ **EN:** Refresh mechanism after loading inventories (2-tick delay)
+  - ✅ **DE:** Refresh-Mechanismus nach dem Laden von Inventaren (2-Tick-Delay)
+  - ✅ **EN:** Explicit re-setting of items so plugins can process enchantments
+  - ✅ **DE:** Explizites Neusetzen von Items, damit Plugins Enchantments verarbeiten können
+  - ✅ **EN:** Works for main inventory, armor, offhand, and enderchest
+  - ✅ **DE:** Funktioniert für Hauptinventar, Rüstung, Offhand und Enderchest
+  - 📝 **EN:** Supports plugins like ExcellentEnchants that use custom enchantments
+  - 📝 **DE:** Unterstützt Plugins wie ExcellentEnchants, die Custom-Enchantments verwenden
+
+- **Deserialization Statistics & Monitoring / Deserialisierungs-Statistiken & Monitoring**: 
+  - **EN:** Comprehensive monitoring system
+  - **DE:** Umfassendes Monitoring-System
+  - ✅ **EN:** Counters for custom enchantment errors, version compatibility errors, and other errors
+  - ✅ **DE:** Zähler für Custom-Enchantment-Fehler, Versionskompatibilitäts-Fehler und andere Fehler
+  - ✅ **EN:** `getDeserializationStats()` method for statistics
+  - ✅ **DE:** `getDeserializationStats()` Methode für Statistiken
+  - ✅ **EN:** `resetDeserializationStats()` method to reset statistics
+  - ✅ **DE:** `resetDeserializationStats()` Methode zum Zurücksetzen
+  - ✅ **EN:** Integration into `/sync cache` command
+  - ✅ **DE:** Integration in `/sync cache` Befehl
+  - ✅ **EN:** Detailed error logging with enchantment names
+  - ✅ **DE:** Detaillierte Fehlerprotokollierung mit Enchantment-Namen
+  - 📝 **EN:** Admins can now easily monitor custom enchantment issues
+  - 📝 **DE:** Admins können jetzt Probleme mit Custom-Enchantments einfach überwachen
+
+- **Improved Error Handling / Verbesserte Fehlerbehandlung**: 
+  - **EN:** Extended error detection and handling
+  - **DE:** Erweiterte Fehlererkennung und -behandlung
+  - ✅ **EN:** Automatic extraction of enchantment names from error messages
+  - ✅ **DE:** Automatische Extraktion von Enchantment-Namen aus Fehlermeldungen
+  - ✅ **EN:** Detailed error chain analysis (up to 3 levels)
+  - ✅ **DE:** Detaillierte Fehlerketten-Analyse (bis zu 3 Ebenen)
+  - ✅ **EN:** Contextual error messages with solution suggestions
+  - ✅ **DE:** Kontextuelle Fehlermeldungen mit Lösungsvorschlägen
+  - ✅ **EN:** Better detection of various error types (IllegalStateException, NullPointerException, etc.)
+  - ✅ **DE:** Bessere Erkennung verschiedener Fehlertypen (IllegalStateException, NullPointerException, etc.)
+  - ✅ **EN:** Pattern-based detection of custom enchantment errors
+  - ✅ **DE:** Pattern-basierte Erkennung von Custom-Enchantment-Fehlern
+
+### 🔄 Changed
+
+- **Database Schema / Datenbank-Schema**: 
+  - **EN:** Automatic upgrade for existing installations
+  - **DE:** Automatisches Upgrade für bestehende Installationen
+  - ✅ **EN:** `inventory`: TEXT → LONGTEXT (max. ~4GB instead of ~65KB)
+  - ✅ **DE:** `inventory`: TEXT → LONGTEXT (max. ~4GB statt ~65KB)
+  - ✅ **EN:** `enderchest`: TEXT → LONGTEXT
+  - ✅ **DE:** `enderchest`: TEXT → LONGTEXT
+  - ✅ **EN:** `armor`: TEXT → LONGTEXT
+  - ✅ **DE:** `armor`: TEXT → LONGTEXT
+  - ✅ **EN:** `offhand`: TEXT → LONGTEXT
+  - ✅ **DE:** `offhand`: TEXT → LONGTEXT
+  - ✅ **EN:** Upgrade is performed automatically on server start
+  - ✅ **DE:** Upgrade wird beim Server-Start automatisch durchgeführt
+  - 📝 **EN:** Existing data is preserved, no data migration needed
+  - 📝 **DE:** Bestehende Daten bleiben erhalten, keine Datenmigration nötig
+
+- **EditorIntegration Removed / EditorIntegration entfernt**: 
+  - **EN:** Preparation for website update
+  - **DE:** Vorbereitung für Website-Update
+  - ✅ **EN:** EditorIntegrationManager completely removed
+  - ✅ **DE:** EditorIntegrationManager komplett entfernt
+  - ✅ **EN:** All editor-related commands removed
+  - ✅ **DE:** Alle Editor-bezogenen Befehle entfernt
+  - ✅ **EN:** Code cleanup for future editor integration
+  - ✅ **DE:** Code-Bereinigung für zukünftige Editor-Integration
+  - 📝 **EN:** New editor integration will be added in a future version
+  - 📝 **DE:** Neue Editor-Integration wird in zukünftiger Version hinzugefügt
+
+### 📊 Technical Details
+
+#### Database Upgrade Process / Datenbank-Upgrade-Prozess
+
+**EN:** The plugin automatically performs an upgrade of database columns on startup:
+
+**DE:** Das Plugin führt beim Start automatisch ein Upgrade der Datenbank-Spalten durch:
+
+1. **EN:** **Check**: Verifies the current data type of each column
+   **DE:** **Prüfung**: Überprüft den aktuellen Datentyp jeder Spalte
+2. **EN:** **Upgrade**: Converts `TEXT` to `LONGTEXT` if necessary
+   **DE:** **Upgrade**: Konvertiert `TEXT` zu `LONGTEXT` wenn nötig
+3. **EN:** **Logging**: Logs all upgrades for transparency
+   **DE:** **Logging**: Protokolliert alle Upgrades für Transparenz
+4. **EN:** **Runtime Upgrade**: Also attempts to upgrade during runtime if an error occurs
+   **DE:** **Runtime-Upgrade**: Versucht auch während des Betriebs zu upgraden, wenn ein Fehler auftritt
+
+**EN:** **Why LONGTEXT?**  
+**DE:** **Warum LONGTEXT?**
+- `TEXT`: Max. ~65KB (65,535 bytes)
+- `LONGTEXT`: Max. ~4GB (4,294,967,295 bytes)
+- **EN:** Custom enchantments with extensive NBT data can become very large
+- **DE:** Custom-Enchantments mit vielen NBT-Daten können sehr groß werden
+- **EN:** Large inventories with many items and enchantments require more space
+- **DE:** Große Inventare mit vielen Items und Enchantments benötigen mehr Platz
+
+#### Custom-Enchantment Error Handling / Custom-Enchantment-Fehlerbehandlung
+
+**EN:** The improved error handling recognizes various error types:
+
+**DE:** Die verbesserte Fehlerbehandlung erkennt verschiedene Fehlertypen:
+
+- **IllegalStateException** with DataResult/Codec/Decoder
+- **NullPointerException** in enchantment-related classes
+- **EN:** Error messages with "enchantment not found/unknown/invalid"
+- **DE:** Fehlermeldungen mit "enchantment not found/unknown/invalid"
+- **EN:** Pattern-based detection of custom enchantment names
+- **DE:** Pattern-basierte Erkennung von Custom-Enchantment-Namen
+
+**EN:** **Error Handling Flow:**  
+**DE:** **Fehlerbehandlung-Flow:**
+1. **EN:** Attempt normal deserialization
+   **DE:** Versuch der normalen Deserialisierung
+2. **EN:** On error: Check if it's a custom enchantment problem
+   **DE:** Bei Fehler: Prüfung ob es ein Custom-Enchantment-Problem ist
+3. **EN:** Extract enchantment name from error message
+   **DE:** Extraktion des Enchantment-Namens aus der Fehlermeldung
+4. **EN:** Detailed logging with context
+   **DE:** Detailliertes Logging mit Kontext
+5. **EN:** Item is skipped (null), but data remains in database
+   **DE:** Item wird übersprungen (null), aber Daten bleiben in DB
+6. **EN:** Statistics are updated
+   **DE:** Statistiken werden aktualisiert
+
+#### Refresh Mechanism / Refresh-Mechanismus
+
+**EN:** After loading inventories, a refresh mechanism is executed:
+
+**DE:** Nach dem Laden von Inventaren wird ein Refresh-Mechanismus ausgeführt:
+
+1. **EN:** **Initial Load**: ItemStacks are loaded from database
+   **DE:** **Initiales Laden**: ItemStacks werden aus der Datenbank geladen
+2. **EN:** **2-Tick Delay**: Waits 2 ticks to give plugins time to initialize
+   **DE:** **2-Tick-Delay**: Wartet 2 Ticks, damit Plugins Zeit haben zu initialisieren
+3. **EN:** **Refresh**: Explicitly re-sets items to trigger plugin processing
+   **DE:** **Refresh**: Setzt Items explizit neu, um Plugin-Verarbeitung zu triggern
+4. **EN:** **Update**: Calls `updateInventory()` for client synchronization
+   **DE:** **Update**: Ruft `updateInventory()` auf für Client-Synchronisation
+
+**EN:** **Why 2 Ticks?**  
+**DE:** **Warum 2 Ticks?**
+- **EN:** Gives custom enchantment plugins time to register their enchantments
+- **DE:** Gibt Custom-Enchantment-Plugins Zeit, ihre Enchantments zu registrieren
+- **EN:** Enables plugin event handlers to react to item changes
+- **DE:** Ermöglicht Plugin-Event-Handler, auf Item-Änderungen zu reagieren
+- **EN:** Prevents race conditions between plugin loading and item loading
+- **DE:** Verhindert Race-Conditions zwischen Plugin-Loading und Item-Loading
+
+#### Statistics System / Statistiken-System
+
+**EN:** The new statistics system collects information about deserialization errors:
+
+**DE:** Das neue Statistiken-System sammelt Informationen über Deserialisierungs-Fehler:
+
+- **EN:** **Custom Enchantment Errors**: Counts items skipped due to unrecognized custom enchantments
+- **DE:** **Custom-Enchantment-Fehler**: Zählt Items, die wegen nicht erkannter Custom-Enchantments übersprungen wurden
+- **EN:** **Version Compatibility Errors**: Counts items with version compatibility issues
+- **DE:** **Versionskompatibilitäts-Fehler**: Zählt Items mit Versionskompatibilitätsproblemen
+- **EN:** **Other Errors**: Counts all other deserialization errors
+- **DE:** **Andere Fehler**: Zählt alle anderen Deserialisierungs-Fehler
+
+**EN:** **Usage:**  
+**DE:** **Verwendung:**
+```bash
+/sync cache          # EN: Shows all statistics / DE: Zeigt alle Statistiken
+/sync cache clear    # EN: Resets statistics / DE: Setzt Statistiken zurück
+```
+
+### 🔍 Monitoring & Debugging
+
+**EN:** Admins can now easily monitor custom enchantment issues:
+
+**DE:** Admins können jetzt einfach Probleme mit Custom-Enchantments überwachen:
+
+1. **EN:** **View Statistics**: `/sync cache` shows deserialization statistics
+   **DE:** **Statistiken anzeigen**: `/sync cache` zeigt Deserialisierungs-Statistiken
+2. **EN:** **Analyze Errors**: Detailed logs show exactly which enchantments cause problems
+   **DE:** **Fehler analysieren**: Detaillierte Logs zeigen genau, welche Enchantments Probleme verursachen
+3. **EN:** **Fix Issues**: Clear error messages with solution suggestions
+   **DE:** **Probleme beheben**: Klare Fehlermeldungen mit Lösungsvorschlägen
+
+**EN:** **Example Output:**  
+**DE:** **Beispiel-Output:**
+```
+Deserialization Stats: Deserialization failures: 5 total 
+(Custom Enchantments: 3, Version Issues: 1, Other: 1)
+⚠ If you see custom enchantment failures, ensure enchantment plugins 
+(e.g., ExcellentEnchants) are loaded and all enchantments are registered.
+```
+
+### ⚠️ Important Notes / Wichtige Hinweise
+
+- **EN:** **Database Upgrade**: On first start after update, columns are automatically upgraded
+  **DE:** **Datenbank-Upgrade**: Beim ersten Start nach dem Update werden die Spalten automatisch geupgradet
+- **EN:** **Custom Enchantments**: Ensure enchantment plugins (e.g., ExcellentEnchants) are installed and active on both servers
+  **DE:** **Custom-Enchantments**: Stellen Sie sicher, dass Enchantment-Plugins (z.B. ExcellentEnchants) auf beiden Servern installiert und aktiv sind
+- **EN:** **Plugin Load Order**: Enchantment plugins should load before PlayerDataSync (check `plugin.yml`)
+  **DE:** **Plugin-Load-Reihenfolge**: Enchantment-Plugins sollten vor PlayerDataSync geladen werden (in `plugin.yml` prüfen)
+- **EN:** **EditorIntegration**: EditorIntegration has been removed and will be re-implemented in a future version
+  **DE:** **EditorIntegration**: Die EditorIntegration wurde entfernt und wird in einer zukünftigen Version neu implementiert
+
+### 📝 Migration Guide
+
+**EN:** **For Existing Installations:**
+
+**DE:** **Für bestehende Installationen:**
+
+1. **EN:** **Automatic Upgrade**: No manual action needed - plugin performs upgrade automatically
+   **DE:** **Automatisches Upgrade**: Keine manuelle Aktion nötig - das Plugin führt das Upgrade automatisch durch
+2. **EN:** **Restart Server**: Restart server after update to perform database upgrade
+   **DE:** **Server neu starten**: Nach dem Update den Server neu starten, damit das Datenbank-Upgrade durchgeführt wird
+3. **EN:** **Check Logs**: Verify logs for upgrade messages:
+   **DE:** **Logs prüfen**: Überprüfen Sie die Logs auf Upgrade-Meldungen:
+   ```
+   [INFO] Upgraded inventory column from TEXT to LONGTEXT to support large inventories
+   [INFO] Upgraded enderchest column from TEXT to LONGTEXT to support large inventories
+   [INFO] Upgraded armor column from TEXT to LONGTEXT to support large inventories
+   [INFO] Upgraded offhand column from TEXT to LONGTEXT to support large inventories
+   ```
+4. **EN:** **Check Custom Enchantments**: Ensure all enchantment plugins are loaded correctly
+   **DE:** **Custom-Enchantments prüfen**: Stellen Sie sicher, dass alle Enchantment-Plugins korrekt geladen sind
+
+**EN:** **Troubleshooting:**
+
+**DE:** **Bei Problemen:**
+
+- **EN:** Check `/sync cache` for deserialization statistics
+  **DE:** Prüfen Sie `/sync cache` für Deserialisierungs-Statistiken
+- **EN:** Review logs for custom enchantment errors
+  **DE:** Überprüfen Sie die Logs auf Custom-Enchantment-Fehler
+- **EN:** Ensure enchantment plugins are installed on both servers
+  **DE:** Stellen Sie sicher, dass Enchantment-Plugins auf beiden Servern installiert sind
+- **EN:** Check plugin load order in `plugin.yml`
+  **DE:** Prüfen Sie die Plugin-Load-Reihenfolge in `plugin.yml`
+
+---
+
 ## [1.2.7-RELEASE] - 2025-12-29
 
 ### 🔧 Critical Fixes & New Features

@@ -1,4 +1,4 @@
-package com.example.playerdatasync.managers;
+package com.example.playerdatasync.premium.managers;
 
 import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
@@ -22,15 +22,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-import com.example.playerdatasync.core.PlayerDataSync;
-import com.example.playerdatasync.utils.SchedulerUtils;
+import com.example.playerdatasync.premium.core.PlayerDataSyncPremium;
 
 /**
  * Handles advancement synchronization in a staged manner so we can
  * import large advancement sets without blocking the main server thread.
  */
 public class AdvancementSyncManager implements Listener {
-    private final PlayerDataSync plugin;
+    private final PlayerDataSyncPremium plugin;
     private final Map<UUID, PlayerAdvancementState> states = new ConcurrentHashMap<>();
     private final CopyOnWriteArrayList<NamespacedKey> cachedAdvancements = new CopyOnWriteArrayList<>();
 
@@ -38,13 +37,13 @@ public class AdvancementSyncManager implements Listener {
     private volatile boolean globalImportCompleted = false;
     private BukkitTask globalImportTask;
 
-    public AdvancementSyncManager(PlayerDataSync plugin) {
+    public AdvancementSyncManager(PlayerDataSyncPremium plugin) {
         this.plugin = plugin;
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
         if (plugin.getConfig().getBoolean("performance.preload_advancements_on_startup", true)) {
             // Delay by one tick so Bukkit finished loading advancements.
-            SchedulerUtils.runTask(plugin, () -> startGlobalImport(false));
+            SchedulerUtils.runTask(plugin, player, () -> startGlobalImport(false));
         }
     }
 

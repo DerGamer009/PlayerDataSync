@@ -1,4 +1,4 @@
-package com.example.playerdatasync.integration;
+package com.example.playerdatasync.premium.integration;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -24,11 +24,11 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
-import com.example.playerdatasync.core.PlayerDataSync;
-import com.example.playerdatasync.database.DatabaseManager;
-import com.example.playerdatasync.managers.MessageManager;
-import com.example.playerdatasync.utils.OfflinePlayerData;
-import com.example.playerdatasync.utils.SchedulerUtils;
+import com.example.playerdatasync.premium.core.PlayerDataSyncPremium;
+import com.example.playerdatasync.premium.database.DatabaseManager;
+import com.example.playerdatasync.premium.managers.MessageManager;
+import com.example.playerdatasync.premium.utils.OfflinePlayerData;
+import com.example.playerdatasync.premium.utils.SchedulerUtils;
 
 /**
  * Provides compatibility with inventory viewing plugins such as InvSee++ and OpenInv.
@@ -41,14 +41,14 @@ public class InventoryViewerIntegrationManager implements Listener {
     private static final Set<String> OPENINV_COMMANDS = new HashSet<>(Arrays.asList("openinv", "oi"));
     private static final Set<String> OPENINV_ENDER_COMMANDS = new HashSet<>(Arrays.asList("openender", "enderchest", "openec", "ec"));
 
-    private final PlayerDataSync plugin;
+    private final PlayerDataSyncPremium plugin;
     private final DatabaseManager databaseManager;
     private final MessageManager messageManager;
     private boolean invSeeEnabled;
     private boolean openInvEnabled;
     private final ItemStack fillerItem;
 
-    public InventoryViewerIntegrationManager(PlayerDataSync plugin, DatabaseManager databaseManager,
+    public InventoryViewerIntegrationManager(PlayerDataSyncPremium plugin, DatabaseManager databaseManager,
         boolean invSeeEnabled, boolean openInvEnabled) {
         this.plugin = plugin;
         this.databaseManager = databaseManager;
@@ -177,7 +177,7 @@ public class InventoryViewerIntegrationManager implements Listener {
             if (data == null) {
                 String message = messageManager.get("prefix") + " "
                     + messageManager.get("inventory_view_open_failed").replace("{player}", displayName);
-                SchedulerUtils.runTask(plugin, viewer, () -> {
+                SchedulerUtils.runTask(plugin, player, () -> {
                     if (viewer.isOnline()) {
                         viewer.sendMessage(message);
                     }
@@ -186,7 +186,7 @@ public class InventoryViewerIntegrationManager implements Listener {
             }
 
             OfflinePlayerData finalData = data;
-            SchedulerUtils.runTask(plugin, viewer, () -> {
+            SchedulerUtils.runTask(plugin, player, () -> {
                 if (!viewer.isOnline()) {
                     return;
                 }
@@ -326,15 +326,13 @@ public class InventoryViewerIntegrationManager implements Listener {
     }
 
     private void notifySaveFailure(UUID viewerId, String playerName) {
-        Player viewer = Bukkit.getPlayer(viewerId);
-        if (viewer != null) {
-            SchedulerUtils.runTask(plugin, viewer, () -> {
-                if (viewer.isOnline()) {
-                    viewer.sendMessage(messageManager.get("prefix") + " "
-                        + messageManager.get("inventory_view_save_failed").replace("{player}", playerName));
-                }
-            });
-        }
+        SchedulerUtils.runTask(plugin, player, () -> {
+            Player viewer = Bukkit.getPlayer(viewerId);
+            if (viewer != null && viewer.isOnline()) {
+                viewer.sendMessage(messageManager.get("prefix") + " "
+                    + messageManager.get("inventory_view_save_failed").replace("{player}", playerName));
+            }
+        });
     }
 
     private ItemStack createFillerItem() {
@@ -343,7 +341,7 @@ public class InventoryViewerIntegrationManager implements Listener {
         // GRAY_STAINED_GLASS_PANE only exists in 1.13+
         // For 1.8-1.12, use STAINED_GLASS_PANE with durability/data value 7 (gray)
         try {
-            if (com.example.playerdatasync.utils.VersionCompatibility.isAtLeast(1, 13, 0)) {
+            if (com.example.playerdatasync.premium.utils.VersionCompatibility.isAtLeast(1, 13, 0)) {
                 paneMaterial = Material.GRAY_STAINED_GLASS_PANE;
             } else {
                 // For 1.8-1.12, use STAINED_GLASS_PANE
@@ -358,7 +356,7 @@ public class InventoryViewerIntegrationManager implements Listener {
         ItemStack pane = new ItemStack(paneMaterial);
         
         // Set durability/data value for 1.8-1.12 (7 = gray color)
-        if (!com.example.playerdatasync.utils.VersionCompatibility.isAtLeast(1, 13, 0)) {
+        if (!com.example.playerdatasync.premium.utils.VersionCompatibility.isAtLeast(1, 13, 0)) {
             try {
                 // setDurability is deprecated but necessary for 1.8-1.12 compatibility
                 pane.setDurability((short) 7); // Gray color

@@ -1,4 +1,4 @@
-package com.example.playerdatasync.listeners;
+package com.example.playerdatasync.premium.listeners;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -8,10 +8,9 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.inventory.ItemStack;
 
-import com.example.playerdatasync.core.PlayerDataSync;
-import com.example.playerdatasync.database.DatabaseManager;
-import com.example.playerdatasync.managers.MessageManager;
-import com.example.playerdatasync.utils.SchedulerUtils;
+import com.example.playerdatasync.premium.core.PlayerDataSyncPremium;
+import com.example.playerdatasync.premium.database.DatabaseManager;
+import com.example.playerdatasync.premium.managers.MessageManager;
 
 /**
  * Handles server switch requests that originate from in-game commands.
@@ -19,11 +18,11 @@ import com.example.playerdatasync.utils.SchedulerUtils;
  * and prevents duplication by clearing the inventory only after a successful save.
  */
 public class ServerSwitchListener implements Listener {
-    private final PlayerDataSync plugin;
+    private final PlayerDataSyncPremium plugin;
     private final DatabaseManager databaseManager;
     private final MessageManager messageManager;
 
-    public ServerSwitchListener(PlayerDataSync plugin, DatabaseManager databaseManager) {
+    public ServerSwitchListener(PlayerDataSyncPremium plugin, DatabaseManager databaseManager) {
         this.plugin = plugin;
         this.databaseManager = databaseManager;
         this.messageManager = plugin.getMessageManager();

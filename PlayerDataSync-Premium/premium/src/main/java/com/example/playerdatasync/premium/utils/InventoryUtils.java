@@ -1,4 +1,4 @@
-package com.example.playerdatasync.utils;
+package com.example.playerdatasync.premium.utils;
 
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;

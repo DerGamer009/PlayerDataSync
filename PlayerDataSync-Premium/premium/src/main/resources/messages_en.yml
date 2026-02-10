@@ -1,0 +1,181 @@
+# =====================================
+# PlayerDataSync English Messages
+# =====================================
+
+# General
+prefix: "&8[&bPlayerDataSync&8]"
+no_permission: "&cYou don't have permission to execute this command."
+player_not_found: "&cPlayer '{player}' not found."
+invalid_syntax: "&cInvalid syntax. Use: {usage}"
+feature_disabled: "&cThis feature is currently disabled."
+
+# Data Synchronization Messages
+loading: "&aData is being synchronized..."
+loaded: "&aPlayer data loaded successfully."
+load_failed: "&cFailed to load player data."
+saving: "&eSaving player data..."
+sync_complete: "&aData synchronization completed successfully."
+sync_failed: "&cFailed to synchronize data: {error}"
+manual_save_success: "&aPlayer data saved successfully."
+manual_save_failed: "&cFailed to save player data: {error}"
+
+# Configuration Messages
+reloaded: "&aConfiguration reloaded successfully."
+reload_failed: "&cFailed to reload configuration: {error}"
+config_updated: "&aConfiguration setting '{setting}' updated to '{value}'."
+
+# Sync Option Messages
+sync_enabled: "&aSync for '{option}' has been enabled."
+sync_disabled: "&cSync for '{option}' has been disabled."
+sync_status: "&7{option}: {status}"
+sync_status_enabled: "&aEnabled"
+sync_status_disabled: "&cDisabled"
+
+# Status Messages
+status_header: "&8&m----------&r &bPlayerDataSync Status &8&m----------"
+status_footer: "&8&m----------------------------------------"
+status_version: "&7Version: &f{version}"
+status_database: "&7Database: &f{type} &8(&7{status}&8)"
+status_connected_players: "&7Connected Players: &f{count}"
+status_total_records: "&7Total Records: &f{count}"
+status_last_backup: "&7Last Backup: &f{time}"
+status_autosave: "&7Autosave: &f{status} &8(&7{interval}m&8)"
+
+# Database Messages
+database_connected: "&aSuccessfully connected to {type} database."
+database_disconnected: "&eDisconnected from database."
+database_error: "&cDatabase error: {error}"
+database_reconnected: "&aReconnected to database."
+database_migration: "&eUpdating database schema..."
+database_migration_complete: "&aDatabase migration completed."
+
+# Backup Messages
+backup_created: "&aBackup created successfully: {id}"
+backup_restored: "&aData restored from backup: {id}"
+backup_failed: "&cBackup operation failed: {error}"
+backup_not_found: "&cBackup '{id}' not found."
+backup_list_header: "&8&m----------&r &bBackups for {player} &8&m----------"
+backup_list_entry: "&7{id} &8- &f{date} &8(&7{size}&8)"
+backup_list_empty: "&eNo backups found for {player}."
+
+# Import/Export Messages
+import_started: "&aStarting import from {format}..."
+import_complete: "&aImport completed successfully. {count} records processed."
+import_failed: "&cImport failed: {error}"
+export_started: "&aStarting export to {format}..."
+export_complete: "&aExport completed successfully. File: {file}"
+export_failed: "&cExport failed: {error}"
+
+# Error Messages
+error_player_offline: "&cPlayer must be online for this operation."
+error_no_data: "&cNo data found for player '{player}'."
+error_invalid_backup_id: "&cInvalid backup ID format."
+error_permission_denied: "&cPermission denied."
+error_command_disabled: "&cThis command is currently disabled."
+error_database_offline: "&cDatabase is currently offline."
+error_validation_failed: "&cData validation failed: {reason}"
+
+# Performance Messages
+performance_warning: "&eWarning: High database latency detected ({ms}ms)"
+performance_lag: "&cDatabase operations are causing server lag. Consider optimizing."
+cache_cleared: "&aPlayer data cache cleared."
+cache_stats: "&7Cache Statistics: {hits} hits, {misses} misses, {size} entries"
+
+# Security Messages
+security_audit_log: "&7[AUDIT] {action} by {player}: {details}"
+security_encryption_enabled: "&aData encryption is enabled."
+security_encryption_disabled: "&eData encryption is disabled."
+
+# Integration Messages
+integration_placeholderapi_enabled: "&aPlaceholderAPI integration enabled."
+integration_vault_enabled: "&aVault integration enabled."
+integration_vault_disabled: "&eVault integration disabled."
+integration_luckperms_enabled: "&aLuckPerms integration enabled."
+integration_luckperms_disabled: "&eLuckPerms integration disabled."
+integration_bungeecord_enabled: "&aBungeeCord mode enabled."
+inventory_view_usage_inventory: "&cUsage: /invsee <player>"
+inventory_view_usage_ender: "&cUsage: /endersee <player>"
+inventory_view_loading: "&7Loading stored data for &b{player}&7..."
+inventory_view_no_data: "&eNo stored data found for &b{player}&e. Showing empty inventory."
+inventory_view_open_failed: "&cUnable to load stored data for &b{player}&c."
+inventory_view_save_failed: "&cFailed to save changes for &b{player}&c. Check console for details."
+inventory_view_title_inventory: "&8Inventory » &b{player}"
+inventory_view_title_ender: "&8Ender Chest » &b{player}"
+
+# Editor Integration Messages
+editor_disabled: "&cThe web editor integration is not configured. Set PDS_EDITOR_API_KEY or the system property pds.editor.apiKey."
+editor_player_required: "&cYou must provide a player when running this command from console."
+editor_token_generating: "&7Requesting editor access for &b{player}&7..."
+editor_token_success: "&aEditor link:&r {url}"
+editor_token_value: "&7Token:&r {token} &8({expires})"
+editor_token_expires: "&7expires in {seconds}s"
+editor_token_expires_unknown: "&7expiration unknown"
+editor_token_failed: "&cFailed to generate editor token: {error}"
+editor_snapshot_start: "&7Uploading server snapshot..."
+editor_snapshot_success: "&aServer snapshot sent successfully."
+editor_snapshot_failed: "&cFailed to send server snapshot: {error}"
+editor_heartbeat_usage: "&cUsage: /sync editor heartbeat <online|offline>"
+editor_heartbeat_success: "&aHeartbeat sent. Server marked as {status}."
+editor_heartbeat_failed: "&cFailed to send heartbeat: {error}"
+editor_usage: "&cUsage: /sync editor <token|snapshot|heartbeat>"
+editor_status_online: "&aonline"
+editor_status_offline: "&coffline"
+
+# Update Messages
+update_available: "&aA new version is available: {version}"
+update_current: "&aYou are running the latest version."
+update_check_failed: "&cFailed to check for updates: {error}"
+update_check_disabled: "&eUpdate checking is disabled."
+update_check_timeout: "&eUpdate check timed out."
+update_check_no_internet: "&eNo internet connection for update check."
+update_download_url: "&7Download at: {url}"
+
+# Server Switch Messages
+server_switch_save: "&eSaving data before server switch..."
+server_switch_saved: "&aData saved before server switch."
+server_switch_load: "&aLoading data after server switch..."
+server_switch_loaded: "&aData loaded after server switch."
+
+# Help Messages
+help_header: "&8&m----------&r &bPlayerDataSync Help &8&m----------"
+help_footer: "&8&m----------------------------------------"
+help_sync: "&b/sync &8- &7View or change sync options"
+help_sync_option: "&b/sync <option> <true|false> &8- &7Toggle sync option"
+help_sync_reload: "&b/sync reload &8- &7Reload configuration"
+help_sync_save: "&b/sync save [player] &8- &7Manually save player data"
+help_status: "&b/pdsstatus [player] &8- &7Check sync status"
+help_backup: "&b/pdsbackup <action> &8- &7Manage backups"
+help_import: "&b/pdsimport <format> &8- &7Import player data"
+help_export: "&b/pdsexport <format> &8- &7Export player data"
+
+# Command Completion Messages
+tab_complete_options: ["coordinates", "position", "xp", "gamemode", "inventory", "enderchest", "armor", "offhand", "health", "hunger", "effects", "achievements", "statistics", "attributes", "permissions", "economy"]
+tab_complete_boolean: ["true", "false"]
+tab_complete_backup_actions: ["create", "restore", "list", "delete"]
+tab_complete_formats: ["json", "yaml", "csv", "sql"]
+
+# Validation Messages
+validation_invalid_world: "&cWorld '{world}' does not exist."
+validation_invalid_gamemode: "&cInvalid gamemode: {gamemode}"
+validation_invalid_coordinates: "&cInvalid coordinates: {coordinates}"
+validation_data_corrupted: "&cPlayer data appears to be corrupted."
+validation_version_mismatch: "&eData version mismatch. Attempting migration..."
+
+# Migration Messages
+migration_started: "&eStarting data migration..."
+migration_progress: "&7Migration progress: {current}/{total} ({percent}%)"
+migration_complete: "&aMigration completed successfully."
+migration_failed: "&cMigration failed: {error}"
+
+# Cleanup Messages
+cleanup_started: "&eStarting cleanup of inactive player data..."
+cleanup_complete: "&aCleanup completed. Removed {count} inactive records."
+cleanup_failed: "&cCleanup failed: {error}"
+
+# Statistics Messages
+stats_blocks_broken: "&7Blocks Broken: &f{count}"
+stats_blocks_placed: "&7Blocks Placed: &f{count}"
+stats_distance_traveled: "&7Distance Traveled: &f{distance}m"
+stats_time_played: "&7Time Played: &f{time}"
+stats_deaths: "&7Deaths: &f{count}"
+stats_kills: "&7Kills: &f{count}"

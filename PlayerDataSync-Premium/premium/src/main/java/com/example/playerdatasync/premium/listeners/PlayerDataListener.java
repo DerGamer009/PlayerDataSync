@@ -1,4 +1,4 @@
-package com.example.playerdatasync.listeners;
+package com.example.playerdatasync.premium.listeners;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -13,18 +13,17 @@ import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
-import com.example.playerdatasync.core.PlayerDataSync;
-import com.example.playerdatasync.database.DatabaseManager;
-import com.example.playerdatasync.managers.AdvancementSyncManager;
-import com.example.playerdatasync.managers.MessageManager;
-import com.example.playerdatasync.utils.SchedulerUtils;
+import com.example.playerdatasync.premium.core.PlayerDataSyncPremium;
+import com.example.playerdatasync.premium.database.DatabaseManager;
+import com.example.playerdatasync.premium.managers.AdvancementSyncManager;
+import com.example.playerdatasync.premium.managers.MessageManager;
 
 public class PlayerDataListener implements Listener {
-    private final PlayerDataSync plugin;
+    private final PlayerDataSyncPremium plugin;
     private final DatabaseManager dbManager;
     private final MessageManager messageManager;
 
-    public PlayerDataListener(PlayerDataSync plugin, DatabaseManager dbManager) {
+    public PlayerDataListener(PlayerDataSyncPremium plugin, DatabaseManager dbManager) {
         this.plugin = plugin;
         this.dbManager = dbManager;
         this.messageManager = plugin.getMessageManager();

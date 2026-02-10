@@ -1,0 +1,201 @@
+name: PlayerDataSync-Premium
+main: com.example.playerdatasync.premium.core.PlayerDataSyncPremium
+version: ${project.version}
+api-version: "1.13"
+load: STARTUP
+authors: [DerGamer09]
+description: Premium version of PlayerDataSync with license validation and enhanced features
+website: https://craftingstudiopro.de/plugins/playerdatasync-premium
+softdepend: [Vault, LuckPerms, PlaceholderAPI]
+
+commands:
+  sync:
+    description: View or change sync options
+    usage: /<command> [<option> <true|false>] | /<command> reload | /<command> status | /<command> save [player] | /<command> license [validate|info] | /<command> update [check]
+    permission: playerdatasync.premium.admin
+    aliases: [pds, playerdatasync, pdspremium]
+  
+  pdsstatus:
+    description: Check PlayerDataSync Premium status and statistics
+    usage: /<command> [player]
+    permission: playerdatasync.premium.status
+    aliases: [pdsstats]
+  
+  pdsbackup:
+    description: Manage player data backups
+    usage: /<command> create | /<command> restore <player> [backup_id] | /<command> list [player]
+    permission: playerdatasync.premium.backup
+  
+  pdsimport:
+    description: Import player data from other plugins or formats
+    usage: /<command> <format> [options]
+    permission: playerdatasync.premium.import
+  
+  pdsexport:
+    description: Export player data to various formats
+    usage: /<command> <format> [player] [options]
+    permission: playerdatasync.premium.export
+
+permissions:
+  # Premium Administrative permissions
+  playerdatasync.premium.admin.*:
+    description: Allows all PlayerDataSync Premium admin commands and features
+    default: op
+    children:
+      playerdatasync.premium.admin.coordinates: true
+      playerdatasync.premium.admin.position: true
+      playerdatasync.premium.admin.xp: true
+      playerdatasync.premium.admin.gamemode: true
+      playerdatasync.premium.admin.enderchest: true
+      playerdatasync.premium.admin.inventory: true
+      playerdatasync.premium.admin.armor: true
+      playerdatasync.premium.admin.offhand: true
+      playerdatasync.premium.admin.health: true
+      playerdatasync.premium.admin.hunger: true
+      playerdatasync.premium.admin.effects: true
+      playerdatasync.premium.admin.achievements: true
+      playerdatasync.premium.admin.statistics: true
+      playerdatasync.premium.admin.attributes: true
+      playerdatasync.premium.admin.permissions: true
+      playerdatasync.premium.admin.economy: true
+      playerdatasync.premium.admin.reload: true
+      playerdatasync.premium.admin.save: true
+      playerdatasync.premium.admin.license: true
+      playerdatasync.premium.admin.update: true
+      playerdatasync.premium.integration.invsee: true
+      playerdatasync.premium.integration.enderchest: true
+      playerdatasync.premium.backup: true
+      playerdatasync.premium.import: true
+      playerdatasync.premium.export: true
+      playerdatasync.premium.status: true
+
+  # Individual sync feature permissions
+  playerdatasync.premium.admin.coordinates:
+    description: Allows toggling coordinate synchronization
+    default: op
+  playerdatasync.premium.admin.position:
+    description: Allows toggling position synchronization
+    default: op
+  playerdatasync.premium.admin.xp:
+    description: Allows toggling experience synchronization
+    default: op
+  playerdatasync.premium.admin.gamemode:
+    description: Allows toggling gamemode synchronization
+    default: op
+  playerdatasync.premium.admin.enderchest:
+    description: Allows toggling enderchest synchronization
+    default: op
+  playerdatasync.premium.admin.inventory:
+    description: Allows toggling inventory synchronization
+    default: op
+  playerdatasync.premium.admin.armor:
+    description: Allows toggling armor synchronization
+    default: op
+  playerdatasync.premium.admin.offhand:
+    description: Allows toggling offhand synchronization
+    default: op
+  playerdatasync.premium.admin.health:
+    description: Allows toggling health synchronization
+    default: op
+  playerdatasync.premium.admin.hunger:
+    description: Allows toggling hunger synchronization
+    default: op
+  playerdatasync.premium.admin.effects:
+    description: Allows toggling potion effects synchronization
+    default: op
+  playerdatasync.premium.admin.achievements:
+    description: Allows toggling achievements synchronization
+    default: op
+  playerdatasync.premium.admin.statistics:
+    description: Allows toggling statistics synchronization
+    default: op
+  playerdatasync.premium.admin.attributes:
+    description: Allows toggling attributes synchronization
+    default: op
+  playerdatasync.premium.admin.permissions:
+    description: Allows toggling permissions synchronization
+    default: op
+  playerdatasync.premium.admin.economy:
+    description: Allows toggling economy synchronization
+    default: op
+  playerdatasync.premium.admin.reload:
+    description: Allows reloading the plugin configuration
+    default: op
+  playerdatasync.premium.admin.save:
+    description: Allows manually saving player data
+    default: op
+  playerdatasync.premium.admin.license:
+    description: Allows managing license validation
+    default: op
+  playerdatasync.premium.admin.update:
+    description: Allows checking for updates
+    default: op
+
+  # Status and monitoring permissions
+  playerdatasync.premium.status:
+    description: Allows checking plugin status and statistics
+    default: op
+  playerdatasync.premium.status.others:
+    description: Allows checking other players' sync status
+    default: op
+
+  # Backup management permissions
+  playerdatasync.premium.backup:
+    description: Allows managing player data backups
+    default: op
+  playerdatasync.premium.backup.create:
+    description: Allows creating backups
+    default: op
+  playerdatasync.premium.backup.restore:
+    description: Allows restoring from backups
+    default: op
+  playerdatasync.premium.backup.others:
+    description: Allows managing other players' backups
+    default: op
+
+  # Import/Export permissions
+  playerdatasync.premium.import:
+    description: Allows importing player data
+    default: op
+  playerdatasync.premium.export:
+    description: Allows exporting player data
+    default: op
+
+  # Message permissions
+  playerdatasync.premium.message.show.loading:
+    description: Allows player to see loading messages
+    default: true
+  playerdatasync.premium.message.show.saving:
+    description: Allows player to see saving messages
+    default: true
+  playerdatasync.premium.message.show.errors:
+    description: Allows player to see error messages
+    default: true
+  playerdatasync.premium.message.show.sync:
+    description: Allows player to see sync notifications
+    default: false
+
+  # Bypass permissions
+  playerdatasync.premium.bypass.sync:
+    description: Bypass automatic data synchronization
+    default: false
+  playerdatasync.premium.bypass.autosave:
+    description: Bypass automatic saves
+    default: false
+  playerdatasync.premium.bypass.validation:
+    description: Bypass data validation checks
+    default: false
+
+  # Integration permissions
+  playerdatasync.premium.integration.vault:
+    description: Allow Vault economy integration
+    default: false
+  playerdatasync.premium.integration.luckperms:
+    description: Allow LuckPerms integration
+    default: false
+  playerdatasync.premium.integration.invsee:
+    description: Allows viewing and editing stored player inventories through InvSee/OpenInv integration
+    default: op
+  playerdatasync.premium.integration.enderchest:
+    description: Allows viewing and editing stored player ender chests through InvSee/OpenInv integration
+    default: op

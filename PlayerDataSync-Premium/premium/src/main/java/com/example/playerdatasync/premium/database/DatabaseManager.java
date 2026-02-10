@@ -1,4 +1,4 @@
-package com.example.playerdatasync.database;
+package com.example.playerdatasync.premium.database;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -20,16 +20,16 @@ import java.util.concurrent.Future;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 
-import com.example.playerdatasync.core.PlayerDataSync;
-import com.example.playerdatasync.managers.AdvancementSyncManager;
-import com.example.playerdatasync.managers.ConfigManager;
-import com.example.playerdatasync.utils.InventoryUtils;
-import com.example.playerdatasync.utils.OfflinePlayerData;
-import com.example.playerdatasync.utils.PlayerDataCache;
-import com.example.playerdatasync.utils.SchedulerUtils;
+import com.example.playerdatasync.premium.core.PlayerDataSyncPremium;
+import com.example.playerdatasync.premium.managers.AdvancementSyncManager;
+import com.example.playerdatasync.premium.managers.ConfigManager;
+import com.example.playerdatasync.premium.utils.InventoryUtils;
+import com.example.playerdatasync.premium.utils.SchedulerUtils;
+import com.example.playerdatasync.premium.utils.OfflinePlayerData;
+import com.example.playerdatasync.premium.utils.PlayerDataCache;
 
 public class DatabaseManager {
-    private final PlayerDataSync plugin;
+    private final PlayerDataSyncPremium plugin;
     // Cache is initialized but not yet used in current implementation
     @SuppressWarnings("unused")
     private final PlayerDataCache cache;
@@ -42,7 +42,7 @@ public class DatabaseManager {
     private long lastPerformanceLog = 0;
     private final long PERFORMANCE_LOG_INTERVAL = 300000; // 5 minutes
 
-    public DatabaseManager(PlayerDataSync plugin) {
+    public DatabaseManager(PlayerDataSyncPremium plugin) {
         this.plugin = plugin;
         this.cache = new PlayerDataCache(plugin);
     }
@@ -338,7 +338,7 @@ public class DatabaseManager {
                 : null;
             // Offhand requires 1.9+
             snapshot.offhandData = null;
-            if (plugin.isSyncOffhand() && com.example.playerdatasync.utils.VersionCompatibility.isOffhandSupported()) {
+            if (plugin.isSyncOffhand() && com.example.playerdatasync.premium.utils.VersionCompatibility.isOffhandSupported()) {
                 try {
                     snapshot.offhandData = InventoryUtils.itemStackToBase64(player.getInventory().getItemInOffHand());
                 } catch (NoSuchMethodError e) {
@@ -362,7 +362,7 @@ public class DatabaseManager {
         // Get max health safely (getMaxHealth() is deprecated but required for 1.8 compatibility)
         double maxHealth = 20.0;
         try {
-            if (com.example.playerdatasync.utils.VersionCompatibility.isAttributesSupported()) {
+            if (com.example.playerdatasync.premium.utils.VersionCompatibility.isAttributesSupported()) {
                 org.bukkit.attribute.AttributeInstance attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
                 if (attr != null) {
                     maxHealth = attr.getValue();
@@ -581,7 +581,7 @@ public class DatabaseManager {
                                 // Get max health safely
                                 double maxHealth = 20.0;
                                 try {
-                                    if (com.example.playerdatasync.utils.VersionCompatibility.isAttributesSupported()) {
+                                    if (com.example.playerdatasync.premium.utils.VersionCompatibility.isAttributesSupported()) {
                                         org.bukkit.attribute.AttributeInstance attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
                                         if (attr != null) {
                                             maxHealth = attr.getValue();
@@ -640,7 +640,7 @@ public class DatabaseManager {
                                 }
                             }
                         }
-                        if (plugin.isSyncOffhand() && com.example.playerdatasync.utils.VersionCompatibility.isOffhandSupported()) {
+                        if (plugin.isSyncOffhand() && com.example.playerdatasync.premium.utils.VersionCompatibility.isOffhandSupported()) {
                             String offhandData = rs.getString("offhand");
                             if (offhandData != null) {
                                 try {

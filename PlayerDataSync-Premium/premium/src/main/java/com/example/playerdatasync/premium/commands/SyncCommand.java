@@ -1,4 +1,4 @@
-package com.example.playerdatasync.commands;
+package com.example.playerdatasync.premium.commands;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -12,18 +12,20 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.example.playerdatasync.core.PlayerDataSync;
-import com.example.playerdatasync.managers.AdvancementSyncManager;
-import com.example.playerdatasync.managers.BackupManager;
-import com.example.playerdatasync.managers.MessageManager;
-import com.example.playerdatasync.utils.InventoryUtils;
+import com.example.playerdatasync.premium.core.PlayerDataSyncPremium;
+import com.example.playerdatasync.premium.commands.PremiumCommandHandler;
+import com.example.playerdatasync.premium.managers.AdvancementSyncManager;
+import com.example.playerdatasync.premium.managers.BackupManager;
+import com.example.playerdatasync.premium.managers.MessageManager;
+import com.example.playerdatasync.premium.utils.InventoryUtils;
 
 /**
  * Enhanced sync command with expanded functionality
  */
 public class SyncCommand implements CommandExecutor, TabCompleter {
-    private final PlayerDataSync plugin;
+    private final PlayerDataSyncPremium plugin;
     private final MessageManager messageManager;
+    private final PremiumCommandHandler premiumHandler;
     
     // Available sync options
     private static final List<String> SYNC_OPTIONS = Arrays.asList(
@@ -34,12 +36,13 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
     
     // Available sub-commands
     private static final List<String> SUB_COMMANDS = Arrays.asList(
-        "reload", "status", "save", "help", "cache", "validate", "backup", "restore", "achievements"
+        "reload", "status", "save", "help", "cache", "validate", "backup", "restore", "achievements", "license", "update"
     );
     
-    public SyncCommand(PlayerDataSync plugin) {
+    public SyncCommand(PlayerDataSyncPremium plugin) {
         this.plugin = plugin;
         this.messageManager = plugin.getMessageManager();
+        this.premiumHandler = new PremiumCommandHandler(plugin);
     }
     
     @Override
@@ -77,6 +80,12 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
 
             case "achievements":
                 return handleAchievements(sender, args);
+                
+            case "license":
+                return premiumHandler.handleLicense(sender, args);
+                
+            case "update":
+                return premiumHandler.handleUpdate(sender, args);
 
             default:
                 // Try to parse as sync option
@@ -92,7 +101,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Show current sync status
      */
     private boolean showStatus(CommandSender sender) {
-        if (!hasPermission(sender, "playerdatasync.admin")) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.premium.admin")) return true;
         
         sender.sendMessage(messageManager.get("status_header"));
         sender.sendMessage(messageManager.get("status_version").replace("{version}", plugin.getDescription().getVersion()));
@@ -114,7 +123,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Handle reload command
      */
     private boolean handleReload(CommandSender sender) {
-        if (!hasPermission(sender, "playerdatasync.admin.reload")) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.admin.reload")) return true;
         
         try {
             plugin.reloadPlugin();
@@ -130,11 +139,11 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Handle status command for specific player
      */
     private boolean handleStatus(CommandSender sender, String[] args) {
-        if (!hasPermission(sender, "playerdatasync.status")) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.status")) return true;
         
         Player target;
         if (args.length > 1) {
-            if (!hasPermission(sender, "playerdatasync.status.others")) return true;
+            if (!hasPermission(sender, "playerdatasync.premium.status.others")) return true;
             target = Bukkit.getPlayer(args[1]);
             if (target == null) {
                 sender.sendMessage(messageManager.get("prefix") + " " + 
@@ -157,7 +166,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Handle save command
      */
     private boolean handleSave(CommandSender sender, String[] args) {
-        if (!hasPermission(sender, "playerdatasync.admin.save")) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.admin.save")) return true;
         
         if (args.length > 1) {
             // Save specific player
@@ -204,7 +213,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Handle cache command
      */
     private boolean handleCache(CommandSender sender, String[] args) {
-        if (!hasPermission(sender, "playerdatasync.admin")) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.premium.admin")) return true;
         
         if (args.length > 1 && args[1].equalsIgnoreCase("clear")) {
             // Clear performance stats
@@ -239,7 +248,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Handle validate command
      */
     private boolean handleValidate(CommandSender sender, String[] args) {
-        if (!hasPermission(sender, "playerdatasync.admin")) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.premium.admin")) return true;
         
         // Perform data validation (placeholder)
         sender.sendMessage(messageManager.get("prefix") + " Data validation completed.");
@@ -250,7 +259,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Handle backup command
      */
     private boolean handleBackup(CommandSender sender, String[] args) {
-        if (!hasPermission(sender, "playerdatasync.admin.backup")) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.admin.backup")) return true;
         
         String backupType = args.length > 1 ? args[1] : "manual";
         
@@ -272,7 +281,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Handle restore command
      */
     private boolean handleRestore(CommandSender sender, String[] args) {
-        if (!hasPermission(sender, "playerdatasync.admin.restore")) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.admin.restore")) return true;
         
         if (args.length < 2) {
             // List available backups
@@ -304,7 +313,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
     }
 
     private boolean handleAchievements(CommandSender sender, String[] args) {
-        if (!hasPermission(sender, "playerdatasync.admin.achievements")) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.admin.achievements")) return true;
 
         AdvancementSyncManager advancementSyncManager = plugin.getAdvancementSyncManager();
         if (advancementSyncManager == null) {
@@ -377,7 +386,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Handle sync option changes
      */
     private boolean handleSyncOption(CommandSender sender, String option, String value) {
-        if (!hasPermission(sender, "playerdatasync.admin." + option)) return true;
+        if (!hasPermission(sender, "playerdatasync.premium.admin." + option)) return true;
         
         if (!value.equalsIgnoreCase("true") && !value.equalsIgnoreCase("false")) {
             sender.sendMessage(messageManager.get("prefix") + " " + 
@@ -430,7 +439,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
         // Get max health safely
         double maxHealth = 20.0;
         try {
-            if (com.example.playerdatasync.utils.VersionCompatibility.isAttributesSupported()) {
+            if (com.example.playerdatasync.premium.utils.VersionCompatibility.isAttributesSupported()) {
                 org.bukkit.attribute.AttributeInstance attr = player.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
                 if (attr != null) {
                     maxHealth = attr.getValue();
@@ -504,7 +513,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
      * Check if sender has permission
      */
     private boolean hasPermission(CommandSender sender, String permission) {
-        if (sender.hasPermission(permission) || sender.hasPermission("playerdatasync.admin.*")) {
+        if (sender.hasPermission(permission) || sender.hasPermission("playerdatasync.premium.admin.*")) {
             return true;
         }
         sender.sendMessage(messageManager.get("prefix") + " " + messageManager.get("no_permission"));

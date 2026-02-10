@@ -1,4 +1,4 @@
-package com.example.playerdatasync.managers;
+package com.example.playerdatasync.premium.managers;
 
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
@@ -12,19 +12,18 @@ import java.util.concurrent.CompletableFuture;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import com.example.playerdatasync.core.PlayerDataSync;
-import com.example.playerdatasync.utils.SchedulerUtils;
+import com.example.playerdatasync.premium.core.PlayerDataSyncPremium;
 
 /**
  * Advanced backup and restore system for PlayerDataSync
  * Supports automatic backups, compression, and data integrity verification
  */
 public class BackupManager {
-    private final PlayerDataSync plugin;
+    private final PlayerDataSyncPremium plugin;
     private BukkitTask backupTask;
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss");
     
-    public BackupManager(PlayerDataSync plugin) {
+    public BackupManager(PlayerDataSyncPremium plugin) {
         this.plugin = plugin;
     }
     

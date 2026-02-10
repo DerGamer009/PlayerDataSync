@@ -1,0 +1,175 @@
+# =====================================
+# PlayerDataSync Premium Configuration
+# Compatible with Minecraft 1.8 - 1.21.11
+# =====================================
+
+# =====================================
+# LICENSE CONFIGURATION (REQUIRED)
+# =====================================
+# IMPORTANT: You must enter your license key to use PlayerDataSync Premium
+# Get your license key from: https://craftingstudiopro.de
+license:
+  key: YOUR-LICENSE-KEY-HERE  # Enter your license key from CraftingStudio Pro
+  # The license key will be validated against the CraftingStudio Pro API
+  # API Documentation: https://www.craftingstudiopro.de/docs/api
+
+# =====================================
+# UPDATE CHECKER CONFIGURATION
+# =====================================
+update_checker:
+  enabled: true              # Enable automatic update checking
+  notify_ops: true           # Notify operators when updates are available
+  auto_download: false       # Automatically download updates (not implemented yet)
+  timeout: 10000            # Timeout in milliseconds for update check requests
+
+# =====================================
+# PREMIUM FEATURES CONFIGURATION
+# =====================================
+premium:
+  # License revalidation interval (in hours)
+  # License will be revalidated periodically to ensure it's still valid
+  revalidation_interval_hours: 24
+  
+  # Cache license validation results to reduce API calls
+  # License validation is cached for 30 minutes by default
+  cache_validation: true
+  
+  # Enable premium-specific features
+  enable_premium_features: true
+
+# =====================================
+# SERVER CONFIGURATION
+# =====================================
+server:
+  id: default  # Unique identifier for this server instance
+
+# =====================================
+# DATABASE CONFIGURATION
+# =====================================
+database:
+  type: mysql # Available options: mysql, sqlite
+  table_prefix: player_data_premium # Prefix used for all plugin tables
+
+  # MySQL Database Configuration
+  mysql:
+    host: localhost
+    port: 3306
+    database: minecraft
+    user: root
+    password: password
+    ssl: false
+    connection_timeout: 5000 # milliseconds
+    max_connections: 10
+    
+  # SQLite Database Configuration  
+  sqlite:
+    file: plugins/PlayerDataSync-Premium/playerdata.db
+
+# =====================================
+# PLAYER DATA SYNCHRONIZATION SETTINGS
+# =====================================
+sync:
+  # Basic Player Data
+  coordinates: true      # Player's current coordinates
+  position: true         # Player's position (world, x, y, z, yaw, pitch)
+  xp: true              # Experience points and levels
+  gamemode: true        # Current gamemode
+  
+  # Inventory and Storage
+  inventory: true       # Main inventory contents
+  enderchest: true     # Ender chest contents
+  armor: true          # Equipped armor pieces
+  offhand: true        # Offhand item
+  
+  # Player Status
+  health: true          # Current health
+  hunger: true          # Hunger and saturation
+  effects: true         # Active potion effects
+  
+  # Progress and Achievements
+  achievements: true    # Player advancements/achievements (WARNING: May cause lag with 1000+ achievements)
+  statistics: true      # Player statistics (blocks broken, distance traveled, etc.)
+  
+  # Advanced Features
+  attributes: true      # Player attributes (max health, speed, etc.)
+  permissions: false    # Sync permissions (requires LuckPerms integration)
+  economy: true         # Sync economy balance (requires Vault)
+
+# =====================================
+# AUTOMATIC SAVE CONFIGURATION
+# =====================================
+autosave:
+  enabled: true
+  interval: 1           # seconds between automatic saves, 0 to disable
+  on_world_change: true # save when player changes world
+  on_death: true        # save when player dies
+  on_server_switch: true # save when player switches servers (BungeeCord/Velocity)
+  on_kick: true         # save when player is kicked (might be server switch)
+  async: true           # perform saves asynchronously
+
+# =====================================
+# INTEGRATION SETTINGS
+# =====================================
+integrations:
+  bungeecord: false     # enable BungeeCord/Velocity support
+  invsee: true          # enable InvSee integration
+  openinv: true         # enable OpenInv integration
+
+# =====================================
+# LOGGING CONFIGURATION
+# =====================================
+logging:
+  level: INFO           # Logging level: ALL, SEVERE, WARNING, INFO, CONFIG, FINE, FINER, FINEST
+  log_database: false   # Log database queries (for debugging)
+  log_performance: false # Log performance metrics
+  debug_mode: false     # Enable debug mode (more verbose logging)
+
+# =====================================
+# METRICS CONFIGURATION
+# =====================================
+metrics:
+  bstats: true          # Enable bStats metrics
+  custom_metrics: true  # Enable custom metrics
+
+# =====================================
+# MESSAGES CONFIGURATION
+# =====================================
+messages:
+  enabled: true
+  language: en          # Available: en, de
+  prefix: "&8[&6PDS Premium&8]"
+  colors: true
+
+# =====================================
+# PERFORMANCE CONFIGURATION
+# =====================================
+performance:
+  batch_size: 50
+  cache_size: 100
+  cache_ttl: 300000
+  cache_compression: true
+  connection_pooling: true
+  async_loading: true
+  disable_achievement_sync_on_large_amounts: true
+  achievement_batch_size: 50
+  achievement_timeout_ms: 5000
+  max_achievements_per_player: 2000
+
+# =====================================
+# COMPATIBILITY CONFIGURATION
+# =====================================
+compatibility:
+  safe_attribute_sync: true
+  disable_attributes_on_error: false
+  version_check: true
+  legacy_1_20_support: true
+  modern_1_21_support: true
+  disable_achievements_on_critical_error: true
+
+# =====================================
+# SECURITY CONFIGURATION
+# =====================================
+security:
+  encrypt_data: false
+  hash_uuids: false
+  audit_log: true
