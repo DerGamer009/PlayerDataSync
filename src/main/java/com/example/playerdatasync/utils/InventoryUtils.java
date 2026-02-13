@@ -13,7 +13,7 @@ import java.util.Base64;
 /**
  * Enhanced inventory utilities for PlayerDataSync
  * Supports serialization of various inventory types and single items
- * Includes robust handling for custom enchantments from plugins like ExcellentEnchants
+ * Includes robust handling for custom enchantments from plugins like ExcellentEnchants and EcoEnchants
  */
 public class InventoryUtils {
 
@@ -27,7 +27,7 @@ public class InventoryUtils {
     
     /**
      * Convert ItemStack array to Base64 string with validation
-     * Preserves custom enchantments and NBT data from plugins like ExcellentEnchants
+     * Preserves custom enchantments and NBT data from plugins like ExcellentEnchants and EcoEnchants
      */
     public static String itemStackArrayToBase64(ItemStack[] items) throws IOException {
         if (items == null) return "";
@@ -41,7 +41,7 @@ public class InventoryUtils {
             dataOutput.writeInt(sanitizedItems.length);
             for (ItemStack item : sanitizedItems) {
                 // BukkitObjectOutputStream serializes the entire ItemStack including all NBT data,
-                // which should preserve custom enchantments from plugins like ExcellentEnchants
+                // which should preserve custom enchantments from plugins like ExcellentEnchants and EcoEnchants
                 dataOutput.writeObject(item);
             }
         }
@@ -50,7 +50,7 @@ public class InventoryUtils {
 
     /**
      * Convert Base64 string to ItemStack array with validation and version compatibility
-     * Preserves all NBT data including custom enchantments from plugins like ExcellentEnchants
+     * Preserves all NBT data including custom enchantments from plugins like ExcellentEnchants and EcoEnchants
      */
     public static ItemStack[] itemStackArrayFromBase64(String data) throws IOException, ClassNotFoundException {
         if (data == null || data.isEmpty()) return new ItemStack[0];
@@ -99,7 +99,7 @@ public class InventoryUtils {
                         items[i] = null;
                         
                         Bukkit.getLogger().info("[PlayerDataSync] Item " + i + " skipped. Data preserved in database. " +
-                            "Ensure the enchantment plugin (e.g., ExcellentEnchants) is loaded and the enchantment is registered.");
+                            "Ensure the enchantment plugin (e.g., ExcellentEnchants/EcoEnchants) is loaded and the enchantment is registered.");
                     } else {
                         otherDeserializationFailures++;
                         String errorType = e.getClass().getSimpleName();
@@ -137,7 +137,7 @@ public class InventoryUtils {
 
     /**
      * Convert Base64 string to single ItemStack with version compatibility
-     * Preserves all NBT data including custom enchantments from plugins like ExcellentEnchants
+     * Preserves all NBT data including custom enchantments from plugins like ExcellentEnchants and EcoEnchants
      */
     public static ItemStack itemStackFromBase64(String data) throws IOException, ClassNotFoundException {
         if (data == null || data.isEmpty()) return null;
@@ -171,7 +171,7 @@ public class InventoryUtils {
                         Bukkit.getLogger().fine("[PlayerDataSync] Error details: " + errorDetails);
                     }
                     Bukkit.getLogger().info("[PlayerDataSync] Item skipped. Data preserved in database. " +
-                        "Ensure the enchantment plugin (e.g., ExcellentEnchants) is loaded and the enchantment is registered.");
+                        "Ensure the enchantment plugin (e.g., ExcellentEnchants/EcoEnchants) is loaded and the enchantment is registered.");
                     return null;
                 } else {
                     otherDeserializationFailures++;
@@ -207,7 +207,7 @@ public class InventoryUtils {
     /**
      * Sanitize ItemStack array (remove invalid items and validate)
      * IMPORTANT: Uses clone() which preserves all NBT data including custom enchantments
-     * from plugins like ExcellentEnchants. The clone operation maintains the complete
+     * from plugins like ExcellentEnchants and EcoEnchants. The clone operation maintains the complete
      * ItemStack state including PersistentDataContainer entries.
      */
     public static ItemStack[] sanitizeItemStackArray(ItemStack[] items) {
@@ -376,7 +376,7 @@ public class InventoryUtils {
     
     /**
      * Check if the error is related to custom enchantments not being recognized
-     * This happens when plugins like ExcellentEnchants store enchantments that aren't
+     * This happens when plugins like ExcellentEnchants and EcoEnchants store enchantments that aren't
      * recognized during deserialization
      */
     private static boolean isCustomEnchantmentIssue(Throwable throwable) {
@@ -390,6 +390,8 @@ public class InventoryUtils {
                     message.contains("missed input") ||
                     (message.contains("minecraft:") && (message.contains("venom") || 
                      message.contains("enchantments") || message.contains("enchant"))) ||
+                    (lowerMessage.contains("excellentenchants") || lowerMessage.contains("ecoenchants") ||
+                     lowerMessage.contains("ecoenchant")) ||
                     (message.contains("Cannot invoke") && message.contains("getClass()")) ||
                     (current instanceof IllegalStateException && message.contains("Failed to get element")) ||
                     lowerMessage.contains("enchantment") && (lowerMessage.contains("not found") || 
@@ -450,7 +452,7 @@ public class InventoryUtils {
                     }
                 }
                 // Look for enchantment names in quotes or braces
-                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("[\"']([a-z0-9_:-]+enchant[a-z0-9_:-]*|venom|curse|soul|telepathy)[\"']", 
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("[\"']([a-z0-9_:-]+enchant[a-z0-9_:-]*|excellentenchants:[a-z0-9_:-]+|ecoenchants:[a-z0-9_:-]+|ecoenchant:[a-z0-9_:-]+|venom|curse|soul|telepathy)[\"']", 
                     java.util.regex.Pattern.CASE_INSENSITIVE);
                 java.util.regex.Matcher matcher = pattern.matcher(message);
                 if (matcher.find()) {

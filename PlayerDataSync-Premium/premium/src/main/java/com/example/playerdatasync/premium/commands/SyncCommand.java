@@ -238,7 +238,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
             if (deserializationStats.contains("Custom Enchantments:") && 
                 !deserializationStats.contains("Custom Enchantments: 0")) {
                 sender.sendMessage("§e⚠ If you see custom enchantment failures, ensure enchantment plugins " +
-                    "(e.g., ExcellentEnchants) are loaded and all enchantments are registered.");
+                    "(e.g., ExcellentEnchants/EcoEnchants) are loaded and all enchantments are registered.");
             }
         }
         return true;

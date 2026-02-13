@@ -158,17 +158,21 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
             String deserializationStats = InventoryUtils.getDeserializationStats();
             sender.sendMessage(messageManager.get("prefix") + " Deserialization Stats: " + deserializationStats);
 
-            // ExcellentEnchants check
+            // Enchantment plugin checks
             Plugin eePlugin = Bukkit.getPluginManager().getPlugin("ExcellentEnchants");
+            Plugin ecoEnchantsPlugin = Bukkit.getPluginManager().getPlugin("EcoEnchants");
+            boolean hasCustomEnchantmentFailures = deserializationStats.contains("Custom Enchantments:") &&
+                    !deserializationStats.contains("Custom Enchantments: 0");
             if (eePlugin != null && eePlugin.isEnabled()) {
                 Set<CustomEnchantment> customs = EnchantRegistry.getRegistered();
-                if (customs.isEmpty() && deserializationStats.contains("Custom Enchantments:") &&
-                        !deserializationStats.contains("Custom Enchantments: 0")) {
+                if (customs.isEmpty() && hasCustomEnchantmentFailures) {
                     sender.sendMessage("§e⚠ ExcellentEnchants loaded but no custom enchantments found!");
                 }
-            } else if (deserializationStats.contains("Custom Enchantments:") &&
-                    !deserializationStats.contains("Custom Enchantments: 0")) {
-                sender.sendMessage("§e⚠ Custom enchantment failures detected. Ensure plugins like ExcellentEnchants are loaded.");
+            }
+
+            if (!((eePlugin != null && eePlugin.isEnabled()) || (ecoEnchantsPlugin != null && ecoEnchantsPlugin.isEnabled()))
+                    && hasCustomEnchantmentFailures) {
+                sender.sendMessage("§e⚠ Custom enchantment failures detected. Ensure plugins like ExcellentEnchants/EcoEnchants are loaded.");
             }
         }
         return true;

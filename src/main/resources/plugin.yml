@@ -6,7 +6,7 @@ load: STARTUP
 authors: [DerGamer09]
 description: Advanced player data synchronization plugin for Minecraft servers
 website: https://github.com/DerGamer09/PlayerDataSync
-softdepend: [Vault, LuckPerms, PlaceholderAPI]
+softdepend: [Vault, LuckPerms, PlaceholderAPI, ExcellentEnchants, EcoEnchants]
 
 commands:
   sync:
