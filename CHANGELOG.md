@@ -5,6 +5,23 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-RELEASE] - 2026-02-13
+
+### 🔄 Reworked Update Checker
+- Complete rewrite of version check flow with robust semantic comparison for tags like `-RELEASE`/`-BETA`
+- Uses configurable request timeout (`update_checker.timeout`) for reliable network behavior
+- Smarter latest-version detection avoids false positive update notifications
+
+### ⚡ XP Synchronization Improvements
+- Optimized XP apply flow with bounded correction attempts for more stable cross-version results
+- Improved mismatch handling to prevent repeated over/under-correction on join/load
+- More precise debug and warning logs for diagnosing XP sync edge-cases
+
+### 💰 Economy Sync Optimization
+- Optimized balance transfer with normalized precision for smooth and reliable Vault synchronization
+- Added post-transfer verification and auto re-adjustment attempts to reduce desyncs
+- Improved fallback logic when provider-specific `setBalance` implementations are inconsistent
+
 ## [1.2.9-RELEASE] - 2026-01-25
 
 ### 🎯 Custom-Enchantment-Support & Database Upgrade / Custom-Enchantment-Support & Datenbank-Upgrade
