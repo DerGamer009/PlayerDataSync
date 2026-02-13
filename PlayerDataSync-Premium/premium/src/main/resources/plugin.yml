@@ -6,7 +6,7 @@ load: STARTUP
 authors: [DerGamer09]
 description: Premium version of PlayerDataSync with license validation and enhanced features
 website: https://craftingstudiopro.de/plugins/playerdatasync-premium
-softdepend: [Vault, LuckPerms, PlaceholderAPI]
+softdepend: [Vault, LuckPerms, PlaceholderAPI, ExcellentEnchants, EcoEnchants]
 
 commands:
   sync:
