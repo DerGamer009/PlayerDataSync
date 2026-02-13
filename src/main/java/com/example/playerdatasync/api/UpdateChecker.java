@@ -11,8 +11,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Update checker for PlayerDataSync using CraftingStudio Pro API
@@ -22,6 +23,7 @@ public class UpdateChecker {
 
     private static final String API_BASE_URL = "https://craftingstudiopro.de/api";
     private static final String PLUGIN_SLUG = "playerdatasync";
+    private static final Pattern VERSION_TOKEN_PATTERN = Pattern.compile("(\\d+)");
 
     private final JavaPlugin plugin;
     private final MessageManager messageManager;
@@ -43,8 +45,9 @@ public class UpdateChecker {
                 String apiUrl = API_BASE_URL + "/plugins/" + PLUGIN_SLUG + "/latest";
                 connection = (HttpURLConnection) new URI(apiUrl).toURL().openConnection();
 
-                connection.setConnectTimeout(10000);
-                connection.setReadTimeout(10000);
+                int timeout = Math.max(1000, plugin.getConfig().getInt("update_checker.timeout", 10000));
+                connection.setConnectTimeout(timeout);
+                connection.setReadTimeout(timeout);
                 connection.setRequestMethod("GET");
                 connection.setRequestProperty("User-Agent", "PlayerDataSync/" + plugin.getDescription().getVersion());
                 connection.setRequestProperty("Accept", "application/json");
@@ -114,7 +117,9 @@ public class UpdateChecker {
 
         String currentVersion = plugin.getDescription().getVersion();
 
-        if (currentVersion.equalsIgnoreCase(latestVersion)) {
+        int comparison = compareVersions(currentVersion, latestVersion);
+
+        if (comparison >= 0) {
             if (plugin.getConfig().getBoolean("update_checker.notify_ops", true)) {
                 plugin.getLogger().info(messageManager.get("update_current"));
             }
@@ -122,5 +127,52 @@ public class UpdateChecker {
             plugin.getLogger().info(messageManager.get("update_available", latestVersion));
             plugin.getLogger().info(messageManager.get("update_download_url", downloadUrl));
         }
+    }
+
+    /**
+     * Compare two versions while gracefully handling suffixes like -RELEASE, -BETA, etc.
+     * @return < 0 if current < latest, 0 if equal, > 0 if current > latest
+     */
+    private int compareVersions(String currentVersion, String latestVersion) {
+        int[] currentParts = toVersionParts(currentVersion);
+        int[] latestParts = toVersionParts(latestVersion);
+
+        int max = Math.max(currentParts.length, latestParts.length);
+        for (int i = 0; i < max; i++) {
+            int currentPart = i < currentParts.length ? currentParts[i] : 0;
+            int latestPart = i < latestParts.length ? latestParts[i] : 0;
+
+            if (currentPart != latestPart) {
+                return currentPart - latestPart;
+            }
+        }
+
+        return 0;
+    }
+
+    private int[] toVersionParts(String version) {
+        if (version == null || version.trim().isEmpty()) {
+            return new int[] {0};
+        }
+
+        Matcher matcher = VERSION_TOKEN_PATTERN.matcher(version);
+        java.util.List<Integer> parts = new java.util.ArrayList<Integer>();
+        while (matcher.find()) {
+            try {
+                parts.add(Integer.parseInt(matcher.group(1)));
+            } catch (NumberFormatException ignored) {
+                // Ignore malformed numeric chunks and continue
+            }
+        }
+
+        if (parts.isEmpty()) {
+            return new int[] {0};
+        }
+
+        int[] result = new int[parts.size()];
+        for (int i = 0; i < parts.size(); i++) {
+            result[i] = parts.get(i);
+        }
+        return result;
     }
 }

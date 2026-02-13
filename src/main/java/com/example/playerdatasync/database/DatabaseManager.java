@@ -805,43 +805,43 @@ public class DatabaseManager {
             
             // Use giveExp() method which is more reliable across all Minecraft versions (1.8-1.21.11)
             // It automatically calculates level and exp bar correctly without version-specific bugs
-            if (total > 0) {
-                player.giveExp(total);
-                
-                // Verify the experience was set correctly
+            if (total <= 0) {
+                return;
+            }
+
+            final int maxCorrectionAttempts = 2;
+            int remaining = total;
+
+            for (int attempt = 1; attempt <= maxCorrectionAttempts && remaining > 0; attempt++) {
+                player.giveExp(remaining);
+
                 int actualTotal = player.getTotalExperience();
-                if (actualTotal != total) {
-                    plugin.getLogger().warning("Experience mismatch for " + player.getName() + 
-                        ": expected " + total + ", got " + actualTotal + " (old: " + oldTotal + ", level " + oldLevel + ")");
-                    
-                    // If we got less than expected, add the difference
-                    if (actualTotal < total) {
-                        int difference = total - actualTotal;
-                        player.giveExp(difference);
-                        
-                        // Verify again after correction
-                        int newTotal = player.getTotalExperience();
-                        if (newTotal != total) {
-                            plugin.getLogger().warning("Experience correction failed for " + player.getName() + 
-                                ": expected " + total + ", got " + newTotal);
-                        } else {
-                            plugin.getLogger().fine("Experience corrected successfully for " + player.getName() + 
-                                ": " + total + " XP (level " + player.getLevel() + ")");
-                        }
-                    } else if (actualTotal > total) {
-                        // If we got more (shouldn't happen with giveExp, but handle it anyway)
-                        plugin.getLogger().warning("Experience exceeded expected value for " + player.getName() + 
-                            ": expected " + total + ", got " + actualTotal);
-                        // Reset and try again
-                        player.setExp(0.0f);
-                        player.setLevel(0);
-                        player.setTotalExperience(0);
-                        player.giveExp(total);
-                    }
-                } else {
-                    plugin.getLogger().fine("Experience set successfully for " + player.getName() + 
+                int difference = total - actualTotal;
+                if (difference == 0) {
+                    plugin.getLogger().fine("Experience set successfully for " + player.getName() +
                         ": " + total + " XP (level " + player.getLevel() + ", was " + oldLevel + ")");
+                    return;
                 }
+
+                if (difference < 0) {
+                    plugin.getLogger().warning("Experience exceeded expected value for " + player.getName() +
+                        ": expected " + total + ", got " + actualTotal + " (attempt " + attempt + ")");
+                    player.setExp(0.0f);
+                    player.setLevel(0);
+                    player.setTotalExperience(0);
+                    remaining = total;
+                    continue;
+                }
+
+                plugin.getLogger().fine("Experience mismatch for " + player.getName() +
+                    ": expected " + total + ", got " + actualTotal + " (remaining " + difference + ", attempt " + attempt + ")");
+                remaining = difference;
+            }
+
+            int finalTotal = player.getTotalExperience();
+            if (finalTotal != total) {
+                plugin.getLogger().warning("Experience correction failed for " + player.getName() +
+                    ": expected " + total + ", got " + finalTotal + " (old: " + oldTotal + ", level " + oldLevel + ")");
             }
         } catch (Exception e) {
             plugin.getLogger().severe("Error applying experience to " + player.getName() + ": " + e.getMessage());
@@ -1385,7 +1385,8 @@ public class DatabaseManager {
             return;
         }
 
-        plugin.logDebug("Attempting to set balance for " + player.getName() + " to " + balance);
+        double normalizedBalance = normalizeBalance(balance);
+        plugin.logDebug("Attempting to set balance for " + player.getName() + " to " + normalizedBalance);
 
         try {
             if (!economy.hasAccount(player)) {
@@ -1397,45 +1398,71 @@ public class DatabaseManager {
             try {
                 java.lang.reflect.Method setBalanceMethod =
                     economy.getClass().getMethod("setBalance", org.bukkit.OfflinePlayer.class, double.class);
-                setBalanceMethod.invoke(economy, player, balance);
-                plugin.logDebug("Set balance for " + player.getName() + " to " + balance + " using setBalance method");
-                return;
+                setBalanceMethod.invoke(economy, player, normalizedBalance);
+                if (isBalanceWithinTolerance(economy.getBalance(player), normalizedBalance)) {
+                    plugin.logDebug("Set balance for " + player.getName() + " to " + normalizedBalance + " using setBalance method");
+                    return;
+                }
+                plugin.logDebug("setBalance method executed but verification failed, falling back to deposit/withdraw strategy");
             } catch (NoSuchMethodException e) {
                 plugin.logDebug("setBalance method not available, using deposit/withdraw approach");
             } catch (ReflectiveOperationException reflectiveError) {
                 plugin.getLogger().warning("Failed to invoke setBalance on economy provider " + economy.getName() + ": " + reflectiveError.getMessage());
             }
 
-            double currentBalance = economy.getBalance(player);
-            double difference = balance - currentBalance;
+            double currentBalance = normalizeBalance(economy.getBalance(player));
+            double difference = normalizeBalance(normalizedBalance - currentBalance);
 
-            plugin.logDebug("Current balance: " + currentBalance + ", Target balance: " + balance + ", Difference: " + difference);
+            plugin.logDebug("Current balance: " + currentBalance + ", Target balance: " + normalizedBalance + ", Difference: " + difference);
 
             if (Math.abs(difference) < 0.01) {
                 plugin.logDebug("Balance is already correct (within tolerance)");
                 return;
             }
 
-            EconomyResponse response;
-            if (difference > 0) {
-                response = economy.depositPlayer(player, difference);
-                if (!response.transactionSuccess()) {
-                    plugin.getLogger().warning("Failed to deposit funds for " + player.getName() + ": " + response.errorMessage);
+            final int maxAdjustmentAttempts = 3;
+            for (int attempt = 1; attempt <= maxAdjustmentAttempts; attempt++) {
+                EconomyResponse response;
+                if (difference > 0) {
+                    response = economy.depositPlayer(player, difference);
+                    if (!response.transactionSuccess()) {
+                        plugin.getLogger().warning("Failed to deposit funds for " + player.getName() + ": " + response.errorMessage);
+                        return;
+                    }
+                    plugin.logDebug("Added " + difference + " to " + player.getName() + "'s balance (attempt " + attempt + ")");
+                } else {
+                    response = economy.withdrawPlayer(player, Math.abs(difference));
+                    if (!response.transactionSuccess()) {
+                        plugin.getLogger().warning("Failed to withdraw funds for " + player.getName() + ": " + response.errorMessage);
+                        return;
+                    }
+                    plugin.logDebug("Removed " + Math.abs(difference) + " from " + player.getName() + "'s balance (attempt " + attempt + ")");
+                }
+
+                double updatedBalance = normalizeBalance(economy.getBalance(player));
+                if (isBalanceWithinTolerance(updatedBalance, normalizedBalance)) {
+                    plugin.logDebug("Balance synchronized for " + player.getName() + ": " + updatedBalance);
                     return;
                 }
-                plugin.logDebug("Added " + difference + " to " + player.getName() + "'s balance (now: " + balance + ")");
-            } else {
-                response = economy.withdrawPlayer(player, Math.abs(difference));
-                if (!response.transactionSuccess()) {
-                    plugin.getLogger().warning("Failed to withdraw funds for " + player.getName() + ": " + response.errorMessage);
-                    return;
-                }
-                plugin.logDebug("Removed " + Math.abs(difference) + " from " + player.getName() + "'s balance (now: " + balance + ")");
+
+                difference = normalizeBalance(normalizedBalance - updatedBalance);
+                plugin.logDebug("Balance re-adjustment needed for " + player.getName() + " (difference: " + difference + ")");
             }
+
+            plugin.getLogger().warning("Could not fully synchronize balance for " + player.getName() +
+                ". Expected: " + normalizedBalance + ", actual: " + normalizeBalance(economy.getBalance(player)));
 
         } catch (Exception e) {
             plugin.getLogger().warning("Error setting player balance for " + player.getName() + ": " + e.getMessage());
         }
+    }
+
+    private double normalizeBalance(double balance) {
+        return Math.round(balance * 100.0D) / 100.0D;
+    }
+
+    private boolean isBalanceWithinTolerance(double actual, double expected) {
+        return Math.abs(normalizeBalance(actual) - normalizeBalance(expected)) < 0.01D;
     }
 
     public OfflinePlayerData loadOfflinePlayerData(UUID uuid, String fallbackName) {
