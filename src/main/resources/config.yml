@@ -1,21 +1,19 @@
 # =====================================
 # PlayerDataSync Configuration
 # Compatible with Minecraft 1.8 - 1.21.11
-# Note: Some features require newer versions:
+# Some features require newer versions:
 #   - Offhand sync: 1.9+
 #   - Attribute sync: 1.9+
 #   - Advancement sync: 1.12+
 # =====================================
 
-# Server Configuration
 server:
-  id: default  # Unique identifier for this server instance
+  id: default              # Unique identifier for this server instance
 
 database:
-  type: mysql # Available options: mysql, sqlite, postgresql
-  table_prefix: player_data # Prefix used for all plugin tables
+  type: mysql              # Available: mysql, sqlite, postgresql
+  table_prefix: player_data
 
-  # MySQL Database Configuration
   mysql:
     host: localhost
     port: 3306
@@ -23,15 +21,13 @@ database:
     user: root
     password: password
     ssl: false
-    connection_timeout: 5000 # milliseconds
+    connection_timeout: 5000  # milliseconds
     max_connections: 10
-    
-  # SQLite Database Configuration  
+
   sqlite:
     file: plugins/PlayerDataSync/playerdata.db
-    
-  # PostgreSQL Database Configuration (experimental)
-  postgresql:
+
+  postgresql:               # experimental
     host: localhost
     port: 5432
     database: minecraft
@@ -39,128 +35,114 @@ database:
     password: password
     ssl: false
 
-# Player Data Synchronization Settings
 sync:
   # Basic Player Data
-  coordinates: true      # Player's current coordinates
-  position: true         # Player's position (world, x, y, z, yaw, pitch)
-  xp: true              # Experience points and levels
-  gamemode: true        # Current gamemode
-  
-  # Inventory and Storage
-  inventory: true       # Main inventory contents
-  enderchest: true      # Ender chest contents
-  armor: true           # Equipped armor pieces
-  offhand: true         # Offhand item
-  
-  # Player Status
-  health: true          # Current health
-  hunger: true          # Hunger and saturation
-  effects: true         # Active potion effects
-  
-  # Progress and Achievements
-  achievements: true    # Player advancements/achievements (WARNING: May cause lag with 1000+ achievements)
-  statistics: true      # Player statistics (blocks broken, distance traveled, etc.)
-  
-  # Advanced Features
-  attributes: true      # Player attributes (max health, speed, etc.)
-  permissions: false    # Sync permissions (requires LuckPerms integration)
-  economy: true         # Sync economy balance (requires Vault)
+  coordinates: true
+  position: true
+  xp: true
+  gamemode: true
 
-# Automatic Save Configuration
+  # Inventory & Equipment
+  inventory: true
+  enderchest: true
+  armor: true
+  offhand: true
+
+  # Player Status
+  health: true
+  hunger: true
+  effects: true
+
+  # Progress & Achievements
+  achievements: true
+  statistics: true
+
+  # Advanced Features
+  attributes: true
+  permissions: false       # requires LuckPerms
+  economy: true            # requires Vault
+
 autosave:
   enabled: true
-  interval: 1           # seconds between automatic saves, 0 to disable
-  on_world_change: true # save when player changes world
-  on_death: true        # save when player dies
-  on_server_switch: true # save when player switches servers (BungeeCord/Velocity)
-  on_kick: true         # save when player is kicked (might be server switch)
-  async: true           # perform saves asynchronously
+  interval: 1              # seconds, 0 = disabled
+  on_world_change: true
+  on_death: true
+  on_server_switch: true   # BungeeCord/Velocity
+  on_kick: true
+  async: true
 
-# Data Management
 data_management:
   cleanup:
-    enabled: false      # automatically clean old player data
-    days_inactive: 90   # remove data for players inactive for X days
+    enabled: false
+    days_inactive: 90
   backup:
-    enabled: true       # create backups of player data
-    interval: 1440      # backup interval in minutes (1440 = daily)
-    keep_backups: 7     # number of backups to keep
+    enabled: true
+    interval: 1440         # minutes (1440 = daily)
+    keep_backups: 7
   validation:
-    enabled: true       # validate data before saving/loading
-    strict_mode: false  # strict validation (may cause issues with custom items)
+    enabled: true
+    strict_mode: false
 
-# Performance Settings
 performance:
-  batch_size: 50        # number of players to process in one batch
-  cache_size: 100       # number of player data entries to cache
-  cache_ttl: 300000     # cache time-to-live in milliseconds (5 minutes)
-  cache_compression: true # enable cache compression for memory optimization
-  connection_pooling: true # use connection pooling for better performance
-  async_loading: true   # load player data asynchronously on join
-  disable_achievement_sync_on_large_amounts: true # disable achievement sync if more than 1500 achievements exist
-  achievement_batch_size: 50 # number of achievements to process in one batch to prevent lag
-  achievement_timeout_ms: 5000 # timeout for achievement serialization to prevent server freeze (milliseconds)
-  max_achievements_per_player: 2000 # hard limit to prevent infinite loops (increased for Minecraft's 1000+ achievements)
-  preload_advancements_on_startup: true # pre-cache the server's advancement registry on startup
-  advancement_import_batch_size: 250 # number of advancements scanned per tick while caching definitions
-  player_advancement_import_batch_size: 150 # number of advancements checked per tick when importing a player
-  automatic_player_advancement_import: true # automatically queue imports for players without cached advancement data
+  batch_size: 50
+  cache_size: 100
+  cache_ttl: 300000         # ms (5 minutes)
+  cache_compression: true
+  connection_pooling: true
+  async_loading: true
+  disable_achievement_sync_on_large_amounts: true
+  achievement_batch_size: 50
+  achievement_timeout_ms: 5000
+  max_achievements_per_player: 2000
+  preload_advancements_on_startup: true
+  advancement_import_batch_size: 250
+  player_advancement_import_batch_size: 150
+  automatic_player_advancement_import: true
 
-# Compatibility Settings
 compatibility:
-  safe_attribute_sync: true  # use reflection-based attribute syncing for better version compatibility
-  disable_attributes_on_error: false # automatically disable attribute sync if errors occur
-  version_check: true        # perform version compatibility checks on startup
-  legacy_1_20_support: true # enable additional compatibility features for Minecraft 1.20.x
-  modern_1_21_support: true # enable additional compatibility features for Minecraft 1.21.x
-  disable_achievements_on_critical_error: true # automatically disable achievement sync on critical errors to prevent server freeze
+  safe_attribute_sync: true
+  disable_attributes_on_error: false
+  version_check: true
+  legacy_1_20_support: true
+  modern_1_21_support: true
+  disable_achievements_on_critical_error: true
 
-# Security Settings
 security:
-  encrypt_data: false   # encrypt sensitive data in database
-  hash_uuids: false     # hash player UUIDs for privacy
-  audit_log: true       # log all data operations
+  encrypt_data: false
+  hash_uuids: false
+  audit_log: true
 
-# Integration Settings
 integrations:
-  bungeecord: false     # enable BungeeCord/Velocity support
-  luckperms: false      # enable LuckPerms integration
-  vault: true           # enable Vault integration for economy
-  placeholderapi: false # enable PlaceholderAPI support
-  invsee: true          # enable InvSee++ style inventory viewing integration
-  openinv: true         # enable OpenInv style inventory viewing integration
+  bungeecord: false
+  luckperms: false
+  vault: true
+  placeholderapi: false
+  invsee: true
+  openinv: true
 
-# Respawn to Lobby Feature
-# Sends players to a lobby server after death/respawn
-# Requires BungeeCord or Velocity integration to be enabled
 respawn_to_lobby:
-  enabled: false        # enable respawn to lobby feature
-  server: lobby         # name of the lobby server (must match BungeeCord/Velocity server name)
+  enabled: false
+  server: lobby             # must match BungeeCord/Velocity server name
 
-# Message Configuration
 messages:
-  enabled: true         # enable player messages
-  show_sync_messages: true  # show sync messages when loading/saving data (set to false to disable all sync notifications)
-  language: en          # default language (en, de, fr, es, etc.)
-  prefix: "&8[&bPDS&8]" # message prefix
-  colors: true          # enable color codes in messages
-  
-# Logging and Debugging
+  enabled: true
+  show_sync_messages: true
+  language: en
+  prefix: "&8[&bPDS&8]"
+  colors: true
+
 logging:
-  level: INFO           # Log level: DEBUG, INFO, WARN, ERROR (also accepts WARNING/SEVERE/OFF)
-  log_database: false   # log database operations
-  log_performance: false # log performance metrics
-  debug_mode: false     # enable verbose debug messages (set to true only when troubleshooting)
+  level: INFO               # DEBUG, INFO, WARN, ERROR
+  log_database: false
+  log_performance: false
+  debug_mode: false
 
-# Update Checker
 update_checker:
-  enabled: true         # check for plugin updates
-  notify_ops: true      # notify operators about updates
-  auto_download: false  # automatically download updates (not recommended)
-  timeout: 10000        # connection timeout in milliseconds
+  enabled: true
+  notify_ops: true
+  auto_download: false
+  timeout: 10000
 
-# Metrics and Analytics
 metrics:
-  bstats: true          # Enable bStats metrics collection
-  custom_metrics: true  # Enable custom plugin metrics
+  bstats: true
+  custom_metrics: true

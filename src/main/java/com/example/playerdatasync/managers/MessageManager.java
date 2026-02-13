@@ -1,17 +1,17 @@
 package com.example.playerdatasync.managers;
 
+import com.example.playerdatasync.core.PlayerDataSync;
+import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.ChatColor;
 
 import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 
-import com.example.playerdatasync.core.PlayerDataSync;
-
 public class MessageManager {
+
     private final PlayerDataSync plugin;
     private FileConfiguration messages;
 
@@ -19,92 +19,109 @@ public class MessageManager {
         this.plugin = plugin;
     }
 
-	public void load(String language) {
-		String normalized = normalizeLanguage(language);
+    /**
+     * Loads a language file, falling back to English defaults for missing keys.
+     *
+     * @param language Language code (e.g., "en", "de")
+     */
+    public void load(String language) {
+        String lang = normalizeLanguage(language);
 
-		// Always load English as base defaults (from JAR first, else data folder)
-		YamlConfiguration baseEn = new YamlConfiguration();
-		InputStream enStream = plugin.getResource("messages_en.yml");
-		if (enStream != null) {
-			baseEn = YamlConfiguration.loadConfiguration(new InputStreamReader(enStream, StandardCharsets.UTF_8));
-		} else {
-			File enFile = new File(plugin.getDataFolder(), "messages_en.yml");
-			if (enFile.exists()) {
-				baseEn = YamlConfiguration.loadConfiguration(enFile);
-			}
-		}
+        FileConfiguration baseEn = loadLanguageFile("en"); // always load English defaults
+        FileConfiguration selected = loadLanguageFile(lang);
 
-		// Now try to load the requested language, overlaying on top of English defaults
-		YamlConfiguration selected = null;
-		File file = new File(plugin.getDataFolder(), "messages_" + normalized + ".yml");
-		try {
-			if (!file.exists()) {
-				plugin.saveResource("messages_" + normalized + ".yml", false);
-			}
-		} catch (IllegalArgumentException ignored) {
-			// Resource not embedded for this language
-		}
+        if (selected == null) {
+            // If requested language is unavailable, use English directly
+            this.messages = baseEn;
+            return;
+        }
 
-		if (file.exists()) {
-			selected = YamlConfiguration.loadConfiguration(file);
-		} else {
-			InputStream jarStream = plugin.getResource("messages_" + normalized + ".yml");
-			if (jarStream != null) {
-				selected = YamlConfiguration.loadConfiguration(new InputStreamReader(jarStream, StandardCharsets.UTF_8));
-			}
-		}
+        // Overlay English defaults so missing keys fall back
+        selected.setDefaults(baseEn);
+        selected.options().copyDefaults(true);
+        this.messages = selected;
+    }
 
-		if (selected == null) {
-			// If requested language isn't available, use English directly
-			this.messages = baseEn;
-			return;
-		}
+    /**
+     * Loads the language specified in config.
+     */
+    public void loadFromConfig() {
+        String lang = plugin.getConfig().getString("messages.language", "en");
+        load(lang);
+    }
 
-		// Apply English as defaults so missing keys fall back
-		selected.setDefaults(baseEn);
-		selected.options().copyDefaults(true);
-		this.messages = selected;
-	}
+    /**
+     * Returns a normalized language code (e.g., "de", "en").
+     */
+    private String normalizeLanguage(String language) {
+        if (language == null || language.isBlank()) return "en";
+        String lang = language.trim().toLowerCase().replace('-', '_');
+        if (lang.startsWith("de")) return "de";
+        if (lang.startsWith("en")) return "en";
+        return lang;
+    }
 
-	public void loadFromConfig() {
-		String lang = plugin.getConfig().getString("messages.language", "en");
-		load(lang);
-	}
+    /**
+     * Loads a language file from JAR or data folder.
+     */
+    private FileConfiguration loadLanguageFile(String lang) {
+        YamlConfiguration config = null;
 
-	private String normalizeLanguage(String language) {
-		if (language == null || language.trim().isEmpty()) return "en";
-		String lang = language.trim().toLowerCase().replace('-', '_');
-		// Map common locale variants to base language files
-		if (lang.startsWith("de")) return "de";
-		if (lang.startsWith("en")) return "en";
-		return lang;
-	}
+        // Try from plugin JAR
+        InputStream jarStream = plugin.getResource("messages_" + lang + ".yml");
+        if (jarStream != null) {
+            config = YamlConfiguration.loadConfiguration(new InputStreamReader(jarStream, StandardCharsets.UTF_8));
+        } else {
+            // Try from plugin data folder
+            File file = new File(plugin.getDataFolder(), "messages_" + lang + ".yml");
+            if (!file.exists() && plugin.getResource("messages_" + lang + ".yml") != null) {
+                plugin.saveResource("messages_" + lang + ".yml", false);
+            }
+            if (file.exists()) {
+                config = YamlConfiguration.loadConfiguration(file);
+            }
+        }
 
+        return config;
+    }
+
+    /**
+     * Gets a message by key, applying color codes.
+     *
+     * @param key Message key
+     * @return Formatted message or key if missing
+     */
     public String get(String key) {
         if (messages == null) return key;
         String raw = messages.getString(key, key);
         return ChatColor.translateAlternateColorCodes('&', raw);
     }
-    
+
+    /**
+     * Gets a message by key and replaces placeholders.
+     * Positional placeholders: {0}, {1}, ...
+     * Named placeholders: {version}, {url}, {error} (first param used)
+     *
+     * @param key    Message key
+     * @param params Placeholder values
+     * @return Formatted message
+     */
     public String get(String key, String... params) {
         if (messages == null) return key;
         String raw = messages.getString(key, key);
-        
-        // Replace placeholders with parameters
+
+        // Replace positional placeholders {0}, {1}, ...
         for (int i = 0; i < params.length; i++) {
-            String placeholder = "{" + i + "}";
-            if (raw.contains(placeholder)) {
-                raw = raw.replace(placeholder, params[i] != null ? params[i] : "");
-            }
+            raw = raw.replace("{" + i + "}", params[i] != null ? params[i] : "");
         }
-        
-        // Also support named placeholders for common cases
-        if (params.length > 0) {
-            raw = raw.replace("{version}", params[0] != null ? params[0] : "");
-            raw = raw.replace("{error}", params[0] != null ? params[0] : "");
-            raw = raw.replace("{url}", params[0] != null ? params[0] : "");
+
+        // Replace common named placeholders with first parameter if available
+        if (params.length > 0 && params[0] != null) {
+            raw = raw.replace("{version}", params[0])
+                    .replace("{url}", params[0])
+                    .replace("{error}", params[0]);
         }
-        
+
         return ChatColor.translateAlternateColorCodes('&', raw);
     }
 }
