@@ -1,6 +1,6 @@
 # =====================================
 # PlayerDataSync Premium Configuration
-# Compatible with Minecraft 1.8 - 1.21.11
+# Compatible with Minecraft 1.8 - 1.26.2
 # =====================================
 
 # =====================================
@@ -103,6 +103,7 @@ autosave:
   interval: 1           # seconds between automatic saves, 0 to disable
   on_world_change: true # save when player changes world
   on_death: true        # save when player dies
+  on_xp_change: true    # save immediately when XP changes (gain/spend)
   on_server_switch: true # save when player switches servers (BungeeCord/Velocity)
   on_kick: true         # save when player is kicked (might be server switch)
   async: true           # perform saves asynchronously

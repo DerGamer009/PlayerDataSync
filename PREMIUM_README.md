@@ -37,8 +37,8 @@
 
 ### Requirements / Anforderungen
 
-- **EN:** Minecraft Server 1.8 - 1.21.11
-- **DE:** Minecraft Server 1.8 - 1.21.11
+- **EN:** Minecraft Server 1.8 - 1.26.2
+- **DE:** Minecraft Server 1.8 - 1.26.2
 - **EN:** Valid license key from CraftingStudio Pro
 - **DE:** Gültiger Lizenzschlüssel von CraftingStudio Pro
 - **EN:** Internet connection for license validation
@@ -134,10 +134,10 @@ GET https://craftingstudiopro.de/api/plugins/playerdatasync-premium/latest
 **Response:**
 ```json
 {
-  "version": "1.2.9-RELEASE",
+  "version": "PlayerDataSync-26.2-RELEASE",
   "downloadUrl": "https://...",
   "createdAt": "2025-01-01T00:00:00Z",
-  "title": "Release 1.2.9",
+  "title": "Release 26.2",
   "releaseType": "release",
   "pluginTitle": "PlayerDataSync Premium",
   "pluginSlug": "playerdatasync-premium"
