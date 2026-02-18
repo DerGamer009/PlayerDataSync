@@ -1,6 +1,6 @@
 # =====================================
 # PlayerDataSync Configuration
-# Compatible with Minecraft 1.8 - 1.21.11
+# Compatible with Minecraft 1.8 - 1.26.2
 # Some features require newer versions:
 #   - Offhand sync: 1.9+
 #   - Attribute sync: 1.9+
@@ -67,6 +67,7 @@ autosave:
   interval: 1              # seconds, 0 = disabled
   on_world_change: true
   on_death: true
+  on_xp_change: true      # save immediately after XP changes (gain/spend)
   on_server_switch: true   # BungeeCord/Velocity
   on_kick: true
   async: true

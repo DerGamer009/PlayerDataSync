@@ -5,6 +5,9 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +53,9 @@ public class ConfigManager {
             migrateConfig(configVersion);
         }
         
+        // Ensure newly introduced settings are appended without overwriting existing values
+        ensureMissingConfigDefaults();
+
         // Validate configuration values
         validateConfiguration();
         
@@ -117,6 +123,7 @@ public class ConfigManager {
         addDefaultIfMissing("autosave.enabled", true);
         addDefaultIfMissing("autosave.on_world_change", true);
         addDefaultIfMissing("autosave.on_death", true);
+        addDefaultIfMissing("autosave.on_xp_change", true);
         addDefaultIfMissing("autosave.async", true);
         
         addDefaultIfMissing("performance.batch_size", 50);
@@ -210,6 +217,7 @@ public class ConfigManager {
         addDefaultIfMissing("autosave.interval", 1);
         addDefaultIfMissing("autosave.on_world_change", true);
         addDefaultIfMissing("autosave.on_death", true);
+        addDefaultIfMissing("autosave.on_xp_change", true);
         addDefaultIfMissing("autosave.async", true);
         
         // Performance configuration
@@ -271,6 +279,53 @@ public class ConfigManager {
         plugin.getLogger().info("Default configuration initialized successfully!");
     }
     
+
+    /**
+     * Merge missing keys from bundled config.yml into user config without overwriting existing values.
+     */
+    private void ensureMissingConfigDefaults() {
+        try (InputStream in = plugin.getResource("config.yml")) {
+            if (in == null) {
+                plugin.getLogger().warning("Could not load bundled config.yml for default merge.");
+                return;
+            }
+
+            YamlConfiguration defaults = YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8));
+            mergeMissingConfigKeys(config, defaults, "");
+        } catch (Exception e) {
+            plugin.getLogger().warning("Failed to merge missing config defaults: " + e.getMessage());
+        }
+    }
+
+    private void mergeMissingConfigKeys(org.bukkit.configuration.ConfigurationSection target,
+                                        org.bukkit.configuration.ConfigurationSection defaults,
+                                        String parentPath) {
+        for (String key : defaults.getKeys(false)) {
+            String fullPath = parentPath.isEmpty() ? key : parentPath + "." + key;
+
+            if (defaults.isConfigurationSection(key)) {
+                if (!target.contains(key)) {
+                    target.createSection(key);
+                } else if (!target.isConfigurationSection(key)) {
+                    // Do not overwrite existing non-section values
+                    plugin.getLogger().warning("Skipping default section '" + fullPath +
+                        "' because the existing config contains a non-section value.");
+                    continue;
+                }
+
+                org.bukkit.configuration.ConfigurationSection targetSection = target.getConfigurationSection(key);
+                org.bukkit.configuration.ConfigurationSection defaultSection = defaults.getConfigurationSection(key);
+                if (targetSection != null && defaultSection != null) {
+                    mergeMissingConfigKeys(targetSection, defaultSection, fullPath);
+                }
+                continue;
+            }
+
+            if (!target.contains(key)) {
+                target.set(key, defaults.get(key));
+            }
+        }
+    }
     /**
      * Add default value if key is missing
      */

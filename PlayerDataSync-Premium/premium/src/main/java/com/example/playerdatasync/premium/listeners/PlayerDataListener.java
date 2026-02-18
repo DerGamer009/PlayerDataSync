@@ -10,8 +10,15 @@ import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerExpChangeEvent;
+import org.bukkit.event.player.PlayerLevelChangeEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.event.enchantment.EnchantItemEvent;
+
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.example.playerdatasync.premium.core.PlayerDataSyncPremium;
 import com.example.playerdatasync.premium.database.DatabaseManager;
@@ -22,6 +29,8 @@ public class PlayerDataListener implements Listener {
     private final PlayerDataSyncPremium plugin;
     private final DatabaseManager dbManager;
     private final MessageManager messageManager;
+    private final Map<UUID, Long> lastXpSaveTime = new ConcurrentHashMap<UUID, Long>();
+    private static final long XP_SAVE_DEBOUNCE_MS = 250L;
 
     public PlayerDataListener(PlayerDataSyncPremium plugin, DatabaseManager dbManager) {
         this.plugin = plugin;
@@ -66,6 +75,7 @@ public class PlayerDataListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
+        lastXpSaveTime.remove(player.getUniqueId());
         
         // Save data synchronously so the database is updated before the player
         // joins another server. Using an async task here can lead to race
@@ -108,6 +118,29 @@ public class PlayerDataListener implements Listener {
                     " on world change: " + e.getMessage());
             }
         });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerExpChange(PlayerExpChangeEvent event) {
+        if (event.getAmount() == 0) {
+            return;
+        }
+
+        queueImmediateXpSave(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onPlayerLevelChange(PlayerLevelChangeEvent event) {
+        if (event.getOldLevel() == event.getNewLevel()) {
+            return;
+        }
+
+        queueImmediateXpSave(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEnchantItem(EnchantItemEvent event) {
+        queueImmediateXpSave(event.getEnchanter());
     }
     
     @EventHandler
@@ -240,6 +273,27 @@ public class PlayerDataListener implements Listener {
             } catch (Exception e) {
                 plugin.getLogger().severe("Error saving data for " + player.getName() + " before respawn to lobby: " + e.getMessage());
                 plugin.getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e);
+            }
+        });
+    }
+
+    private void queueImmediateXpSave(Player player) {
+        if (!plugin.isSyncXp() || !plugin.getConfig().getBoolean("autosave.on_xp_change", true)) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        Long lastSave = lastXpSaveTime.get(player.getUniqueId());
+        if (lastSave != null && now - lastSave < XP_SAVE_DEBOUNCE_MS) {
+            return;
+        }
+
+        lastXpSaveTime.put(player.getUniqueId(), now);
+        SchedulerUtils.runTaskAsync(plugin, () -> {
+            try {
+                dbManager.savePlayer(player);
+            } catch (Exception e) {
+                plugin.getLogger().warning("Failed immediate XP autosave for " + player.getName() + ": " + e.getMessage());
             }
         });
     }

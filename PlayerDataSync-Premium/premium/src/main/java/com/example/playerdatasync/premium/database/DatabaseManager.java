@@ -323,7 +323,7 @@ public class DatabaseManager {
             snapshot.pitch = loc.getPitch();
         }
 
-        snapshot.totalExperience = plugin.isSyncXp() ? player.getTotalExperience() : 0;
+        snapshot.totalExperience = plugin.isSyncXp() ? calculateTotalExperience(player) : 0;
         snapshot.gamemode = plugin.isSyncGamemode() ? player.getGameMode().name() : null;
 
         try {
@@ -862,6 +862,31 @@ public class DatabaseManager {
                 plugin.getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e2);
             }
         }
+    }
+
+    /**
+     * Calculates total experience using level + progress.
+     */
+    private int calculateTotalExperience(Player player) {
+        if (player == null) {
+            return 0;
+        }
+
+        int level = Math.max(0, player.getLevel());
+        float progress = player.getExp();
+        int total = getExpAtLevel(level) + Math.round(progress * player.getExpToLevel());
+
+        return Math.max(total, 0);
+    }
+
+    private int getExpAtLevel(int level) {
+        if (level <= 16) {
+            return level * level + 6 * level;
+        }
+        if (level <= 31) {
+            return (int) (2.5 * level * level - 40.5 * level + 360);
+        }
+        return (int) (4.5 * level * level - 162.5 * level + 2220);
     }
 
     private String serializeAdvancements(Player player) {

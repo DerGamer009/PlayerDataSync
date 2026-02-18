@@ -5,6 +5,17 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [PlayerDataSync-26.2-RELEASE] - 2026-02-18
+
+### 🛠 XP Sync Fixes
+- Fixed an edge-case where spent XP (for example after enchanting) could be restored on relog due to stale total XP capture.
+- Added immediate autosave hooks for XP/level changes and enchanting to persist XP updates right away.
+- Added new config toggle `autosave.on_xp_change` (default: `true`) for instant XP persistence.
+
+### 🗃 Database & Compatibility
+- Kept automatic schema update behavior on startup and runtime upgrade attempts for safe database migrations.
+- Prepared compatibility messaging/docs for upcoming 1.26.1/1.26.2 cycle.
+
 ## [1.3.0-RELEASE] - 2026-02-13
 
 ### 🔄 Reworked Update Checker
