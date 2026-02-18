@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.example</groupId>
     <artifactId>PlayerDataSync</artifactId>
-    <version>PlayerDataSync-26.2-RELEASE</version>
+    <version>26.2-RELEASE</version>
     <packaging>jar</packaging>
 
     <name>PlayerDataSync</name>
