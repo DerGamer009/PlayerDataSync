@@ -11,13 +11,13 @@ Player inventories, experience, health, achievements, economy balance, and more 
 - **Economy Integration**: Vault economy balance synchronization
 - **Achievements & Statistics**: Sync player advancements and statistics
 - **Respawn to Lobby**: Automatically send players to lobby server after death/respawn
-- **Version Compatibility**: Supports Minecraft 1.8 - 1.26.2 with automatic feature detection
+- **Version Compatibility**: Supports Minecraft 1.8 - 26.2 with automatic feature detection
 - **Performance Optimized**: Async operations, connection pooling, batch processing
 - **Database Support**: MySQL, SQLite, PostgreSQL
 
 ## 📋 Supported Versions
 
-This plugin supports Minecraft versions **1.8 to 1.26.2**. Some features are automatically disabled on older versions:
+This plugin supports Minecraft versions **1.8 to 26.2**. Some features are automatically disabled on older versions:
 - **Offhand sync**: Requires 1.9+
 - **Attribute sync**: Requires 1.9+
 - **Advancement sync**: Requires 1.12+
@@ -146,7 +146,8 @@ mvn clean package -Pmc-1.8    # Minecraft 1.8 (Java 8)
 mvn clean package -Pmc-1.9    # Minecraft 1.9-1.16 (Java 8)
 mvn clean package -Pmc-1.17   # Minecraft 1.17 (Java 16)
 mvn clean package -Pmc-1.18   # Minecraft 1.18-1.20 (Java 17)
-mvn clean package -Pmc-1.21   # Minecraft 1.26+ (Java 21)
+mvn clean package -Pmc-1.21   # Minecraft 1.21+ (Java 21)
+mvn clean package -Pmc-26.2   # Minecraft 26.2 (Java 25)
 ```
 
 The resulting jar file will be in the `target/` directory.
@@ -245,9 +246,9 @@ sync:
 ## 📝 Version Compatibility
 
 ### Tested Versions
-- ✅ **Minecraft 1.8 - 1.26.2**: Full compatibility with automatic feature detection
-- ✅ **Paper 1.20.4 - 1.26.2**: Full compatibility
-- ✅ **Spigot 1.8 - 1.26.2**: Full compatibility
+- ✅ **Minecraft 1.8 - 26.2**: Full compatibility with automatic feature detection
+- ✅ **Paper 1.20.4 - 26.2**: Full compatibility
+- ✅ **Spigot 1.8 - 26.2**: Full compatibility
 
 ### Compatibility Settings
 
@@ -301,7 +302,7 @@ See [CHANGELOG.md](CHANGELOG.md) for a detailed list of changes.
 
 ### Experience & Level Sync
 - Reliable XP synchronization using `giveExp()` method
-- Works across all Minecraft versions (1.8-1.26.2)
+- Works across all Minecraft versions (1.8-26.2)
 - Automatic verification and correction if XP doesn't match
 
 ### Economy Sync (Vault)
