@@ -1,6 +1,6 @@
 # PlayerDataSync
 
-A comprehensive Bukkit/Spigot plugin for Minecraft **1.8 to 1.26.2** that synchronizes player data across multiple servers using MySQL, SQLite, or PostgreSQL databases. Perfect for multi-server networks with BungeeCord or Velocity.
+A comprehensive Bukkit/Spigot plugin for Minecraft **1.8 to 26.2** that synchronizes player data across multiple servers using MySQL, SQLite, or PostgreSQL databases. Perfect for multi-server networks with BungeeCord or Velocity.
 
 Player inventories, experience, health, achievements, economy balance, and more are stored in a shared database whenever they leave a server and restored when they join again.
 
