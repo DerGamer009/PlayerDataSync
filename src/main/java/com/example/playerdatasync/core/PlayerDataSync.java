@@ -30,6 +30,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.io.File;
 import java.io.FileWriter;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.StringJoiner;
 import java.util.logging.Level;
 
 public class PlayerDataSync extends JavaPlugin {
@@ -165,14 +168,16 @@ public class PlayerDataSync extends JavaPlugin {
                 String database = getConfig().getString("database.mysql.database", "minecraft");
                 databaseUser = getConfig().getString("database.mysql.user", "root");
                 databasePassword = getConfig().getString("database.mysql.password", "");
+                int connectionTimeout = Math.max(1000, getConfig().getInt("database.mysql.connection_timeout", 5000));
                 
-                // Add connection parameters for better reliability
-                databaseUrl = String.format("jdbc:mysql://%s:%d/%s?useSSL=%s&autoReconnect=true&failOverReadOnly=false&maxReconnects=3", 
-                    host, port, database, getConfig().getBoolean("database.mysql.ssl", false));
+                databaseUrl = buildMysqlJdbcUrl(host, port, database, connectionTimeout,
+                    getConfig().getBoolean("database.mysql.ssl", false));
+                DriverManager.setLoginTimeout(Math.max(1, connectionTimeout / 1000));
                 
                 // Create initial connection for testing
                 connection = DriverManager.getConnection(databaseUrl, databaseUser, databasePassword);
-                getLogger().info("Connected to MySQL database at " + host + ":" + port + "/" + database);
+                getLogger().info("Connected to MySQL database at " + host + ":" + port + "/" + database +
+                    " (timeout=" + connectionTimeout + "ms)");
                 
                 // Initialize connection pool if enabled
                 if (getConfig().getBoolean("performance.connection_pooling", true)) {
@@ -279,6 +284,24 @@ public class PlayerDataSync extends JavaPlugin {
         }
         
         getLogger().info("PlayerDataSync enabled successfully!");
+    }
+
+    private String buildMysqlJdbcUrl(String host, int port, String database, int connectionTimeout, boolean sslEnabled) {
+        Map<String, String> params = new LinkedHashMap<>();
+        params.put("useSSL", String.valueOf(sslEnabled));
+        params.put("allowPublicKeyRetrieval", "true");
+        params.put("connectTimeout", String.valueOf(connectionTimeout));
+        params.put("socketTimeout", String.valueOf(connectionTimeout));
+        params.put("tcpKeepAlive", "true");
+        params.put("serverTimezone", "UTC");
+        params.put("characterEncoding", "utf8");
+        params.put("useUnicode", "true");
+
+        StringJoiner query = new StringJoiner("&");
+        for (Map.Entry<String, String> entry : params.entrySet()) {
+            query.add(entry.getKey() + "=" + entry.getValue());
+        }
+        return String.format("jdbc:mysql://%s:%d/%s?%s", host, port, database, query.toString());
     }
 
     @Override
