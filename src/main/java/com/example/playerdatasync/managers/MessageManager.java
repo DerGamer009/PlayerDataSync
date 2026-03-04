@@ -54,35 +54,39 @@ public class MessageManager {
      * Returns a normalized language code (e.g., "de", "en").
      */
     private String normalizeLanguage(String language) {
-        if (language == null || language.isBlank()) return "en";
+        if (language == null || language.isBlank())
+            return "en";
         String lang = language.trim().toLowerCase().replace('-', '_');
-        if (lang.startsWith("de")) return "de";
-        if (lang.startsWith("en")) return "en";
+        if (lang.startsWith("de"))
+            return "de";
+        if (lang.startsWith("en"))
+            return "en";
         return lang;
     }
 
-    /**
-     * Loads a language file from JAR or data folder.
-     */
     private FileConfiguration loadLanguageFile(String lang) {
-        YamlConfiguration config = null;
+        String fileName = "messages_" + lang + ".yml";
+        File file = new File(plugin.getDataFolder(), fileName);
 
-        // Try from plugin JAR
-        InputStream jarStream = plugin.getResource("messages_" + lang + ".yml");
-        if (jarStream != null) {
-            config = YamlConfiguration.loadConfiguration(new InputStreamReader(jarStream, StandardCharsets.UTF_8));
-        } else {
-            // Try from plugin data folder
-            File file = new File(plugin.getDataFolder(), "messages_" + lang + ".yml");
-            if (!file.exists() && plugin.getResource("messages_" + lang + ".yml") != null) {
-                plugin.saveResource("messages_" + lang + ".yml", false);
-            }
-            if (file.exists()) {
-                config = YamlConfiguration.loadConfiguration(file);
+        // If it doesn't exist in the plugin folder, try saving it from the JAR
+        if (!file.exists()) {
+            if (plugin.getResource(fileName) != null) {
+                plugin.saveResource(fileName, false);
             }
         }
 
-        return config;
+        // Load the file from the plugin folder if it exists
+        if (file.exists()) {
+            return YamlConfiguration.loadConfiguration(file);
+        }
+
+        // Fallback to loading directly from JAR if it couldn't be saved for some reason
+        InputStream jarStream = plugin.getResource(fileName);
+        if (jarStream != null) {
+            return YamlConfiguration.loadConfiguration(new InputStreamReader(jarStream, StandardCharsets.UTF_8));
+        }
+
+        return null;
     }
 
     /**
@@ -92,7 +96,8 @@ public class MessageManager {
      * @return Formatted message or key if missing
      */
     public String get(String key) {
-        if (messages == null) return key;
+        if (messages == null)
+            return key;
         String raw = messages.getString(key, key);
         return ChatColor.translateAlternateColorCodes('&', raw);
     }
@@ -107,7 +112,8 @@ public class MessageManager {
      * @return Formatted message
      */
     public String get(String key, String... params) {
-        if (messages == null) return key;
+        if (messages == null)
+            return key;
         String raw = messages.getString(key, key);
 
         // Replace positional placeholders {0}, {1}, ...

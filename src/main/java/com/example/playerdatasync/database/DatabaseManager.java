@@ -21,7 +21,7 @@ public interface DatabaseManager {
 
     OfflinePlayerData loadOfflinePlayerData(UUID uuid, String fallbackName);
 
-    void saveOfflineInventoryData(OfflinePlayerData data);
+    boolean saveOfflineInventoryData(OfflinePlayerData data);
 
-    void saveOfflineEnderChestData(OfflinePlayerData data);
+    boolean saveOfflineEnderChestData(OfflinePlayerData data);
 }

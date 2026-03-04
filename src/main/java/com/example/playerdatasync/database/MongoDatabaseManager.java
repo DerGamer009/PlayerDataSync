@@ -235,23 +235,41 @@ public class MongoDatabaseManager implements DatabaseManager {
             return null;
 
         OfflinePlayerData data = new OfflinePlayerData(uuid, fallbackName);
-        data.setInventoryData(doc.getString("inventory"));
-        data.setArmorData(doc.getString("armor"));
-        data.setEnderChestData(doc.getString("enderchest"));
-
+        try {
+            if (doc.getString("inventory") != null)
+                data.setInventoryContents(InventoryUtils.safeItemStackArrayFromBase64(doc.getString("inventory")));
+            if (doc.getString("armor") != null)
+                data.setArmorContents(InventoryUtils.safeItemStackArrayFromBase64(doc.getString("armor")));
+            if (doc.getString("enderchest") != null)
+                data.setEnderChestContents(InventoryUtils.safeItemStackArrayFromBase64(doc.getString("enderchest")));
+        } catch (Exception e) {
+        }
         return data;
     }
 
     @Override
-    public void saveOfflineInventoryData(OfflinePlayerData data) {
-        collection.updateOne(Filters.eq("uuid", data.getUuid().toString()),
-                new Document("$set", new Document("inventory", data.getInventoryData())
-                        .append("armor", data.getArmorData())));
+    public boolean saveOfflineInventoryData(OfflinePlayerData data) {
+        try {
+            collection.updateOne(Filters.eq("uuid", data.getUuid().toString()),
+                    new Document("$set",
+                            new Document("inventory",
+                                    InventoryUtils.itemStackArrayToBase64(data.getInventoryContents()))
+                                    .append("armor", InventoryUtils.itemStackArrayToBase64(data.getArmorContents()))));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
-    public void saveOfflineEnderChestData(OfflinePlayerData data) {
-        collection.updateOne(Filters.eq("uuid", data.getUuid().toString()),
-                new Document("$set", new Document("enderchest", data.getEnderChestData())));
+    public boolean saveOfflineEnderChestData(OfflinePlayerData data) {
+        try {
+            collection.updateOne(Filters.eq("uuid", data.getUuid().toString()),
+                    new Document("$set", new Document("enderchest",
+                            InventoryUtils.itemStackArrayToBase64(data.getEnderChestContents()))));
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

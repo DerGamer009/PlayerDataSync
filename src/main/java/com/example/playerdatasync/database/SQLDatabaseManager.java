@@ -1477,7 +1477,7 @@ public class SQLDatabaseManager implements DatabaseManager {
     /**
      * Get player balance using Vault API
      */
-    private double getPlayerBalance(Player player) {
+    public double getPlayerBalance(Player player) {
         Economy economy = plugin.getEconomyProvider();
         if (economy == null) {
             plugin.getLogger()
@@ -1502,7 +1502,7 @@ public class SQLDatabaseManager implements DatabaseManager {
     /**
      * Set player balance using Vault API
      */
-    private void setPlayerBalance(Player player, double balance) {
+    public void setPlayerBalance(Player player, double balance) {
         Economy economy = plugin.getEconomyProvider();
         if (economy == null) {
             plugin.getLogger()
