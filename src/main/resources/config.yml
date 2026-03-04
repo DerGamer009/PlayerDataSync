@@ -35,6 +35,11 @@ database:
     password: password
     ssl: false
 
+  mongodb:
+    uri: "mongodb://localhost:27017"
+    database: "minecraft"
+    collection_prefix: "player_data"
+
 sync:
   # Basic Player Data
   coordinates: true

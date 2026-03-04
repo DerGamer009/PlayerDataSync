@@ -5,7 +5,7 @@ api-version: "1.13"
 load: STARTUP
 authors: [DerGamer09]
 description: Advanced player data synchronization plugin for Minecraft servers
-website: https://github.com/DerGamer09/PlayerDataSync
+website: https://github.com/DerGamer009/PlayerDataSync
 softdepend: [Vault, LuckPerms, PlaceholderAPI, ExcellentEnchants, EcoEnchants]
 
 commands:

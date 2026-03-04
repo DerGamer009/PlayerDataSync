@@ -74,6 +74,13 @@
             <version>42.7.1</version>
         </dependency>
 
+        <!-- MongoDB Driver -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongodb-driver-sync</artifactId>
+            <version>4.11.1</version>
+        </dependency>
+
         <!-- Connection Pooling -->
         <dependency>
             <groupId>com.zaxxer</groupId>

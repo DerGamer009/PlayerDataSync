@@ -37,7 +37,8 @@ import java.util.logging.Level;
 /**
  * PlayerDataSync Premium - Premium version with license validation
  * 
- * This is the premium version of PlayerDataSync that requires a valid license key
+ * This is the premium version of PlayerDataSync that requires a valid license
+ * key
  * from CraftingStudio Pro to function.
  */
 public class PlayerDataSyncPremium extends JavaPlugin {
@@ -48,7 +49,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
     private String databaseUser;
     private String databasePassword;
     private String tablePrefix;
-    
+
     // Basic sync options
     private boolean syncCoordinates;
     private boolean syncXp;
@@ -59,7 +60,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
     private boolean syncHunger;
     private boolean syncPosition;
     private boolean syncAchievements;
-    
+
     // Extended sync options
     private boolean syncArmor;
     private boolean syncOffhand;
@@ -81,7 +82,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
     private BukkitTask autosaveTask;
     private MessageManager messageManager;
     private Metrics metrics;
-    
+
     // Premium components
     private LicenseManager licenseManager;
     private PremiumUpdateChecker updateChecker;
@@ -91,27 +92,27 @@ public class PlayerDataSyncPremium extends JavaPlugin {
         getLogger().info("================================================");
         getLogger().info("Enabling PlayerDataSync Premium...");
         getLogger().info("================================================");
-        
+
         // Check server version compatibility
         checkVersionCompatibility();
-        
+
         // Initialize configuration first
         getLogger().info("Saving default configuration...");
         saveDefaultConfig();
-        
+
         // Ensure config file exists and is not empty
         if (getConfig().getKeys(false).isEmpty()) {
             getLogger().warning("Configuration file is empty! Recreating from defaults...");
             reloadConfig();
             saveDefaultConfig();
-            
+
             if (getConfig().getKeys(false).isEmpty()) {
                 getLogger().severe("CRITICAL: Failed to load configuration! Plugin will be disabled.");
                 getServer().getPluginManager().disablePlugin(this);
                 return;
             }
         }
-        
+
         configManager = new ConfigManager(this);
         tablePrefix = configManager.getTablePrefix();
 
@@ -120,7 +121,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             configuredLevel = Level.FINE;
         }
         getLogger().setLevel(configuredLevel);
-        
+
         // Initialize message manager
         messageManager = new MessageManager(this);
         String lang = getConfig().getString("messages.language", "en");
@@ -149,14 +150,14 @@ public class PlayerDataSyncPremium extends JavaPlugin {
         getLogger().info("Initializing license validation...");
         licenseManager = new LicenseManager(this);
         licenseManager.initialize();
-        
+
         // Wait a bit for license validation to complete (async)
         try {
             Thread.sleep(3000); // Wait 3 seconds for initial validation
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        
+
         // Check if license is valid
         if (!licenseManager.isLicenseValid()) {
             getLogger().severe("================================================");
@@ -167,7 +168,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             getLogger().severe("  key: YOUR-LICENSE-KEY-HERE");
             getLogger().severe("================================================");
             getLogger().severe("The plugin will be disabled in 30 seconds if the license is not valid.");
-            
+
             // Disable plugin after 30 seconds if license is still invalid
             SchedulerUtils.runTaskLater(this, () -> {
                 if (!licenseManager.isLicenseValid()) {
@@ -175,14 +176,14 @@ public class PlayerDataSyncPremium extends JavaPlugin {
                     getServer().getPluginManager().disablePlugin(this);
                 }
             }, 600L); // 30 seconds
-            
+
             // Don't continue initialization if license is invalid
             // But allow some time for validation to complete
             return;
         }
-        
+
         getLogger().info("License validated successfully! Continuing initialization...");
-        
+
         // Initialize database connection
         databaseType = getConfig().getString("database.type", "mysql");
         try {
@@ -192,20 +193,23 @@ public class PlayerDataSyncPremium extends JavaPlugin {
                 String database = getConfig().getString("database.mysql.database", "minecraft");
                 databaseUser = getConfig().getString("database.mysql.user", "root");
                 databasePassword = getConfig().getString("database.mysql.password", "");
-                
-                databaseUrl = String.format("jdbc:mysql://%s:%d/%s?useSSL=%s&autoReconnect=true&failOverReadOnly=false&maxReconnects=3", 
-                    host, port, database, getConfig().getBoolean("database.mysql.ssl", false));
-                
+
+                databaseUrl = String.format(
+                        "jdbc:mysql://%s:%d/%s?useSSL=%s&autoReconnect=true&failOverReadOnly=false&maxReconnects=3",
+                        host, port, database, getConfig().getBoolean("database.mysql.ssl", false));
+
                 connection = DriverManager.getConnection(databaseUrl, databaseUser, databasePassword);
                 getLogger().info("Connected to MySQL database at " + host + ":" + port + "/" + database);
-                
+
                 if (getConfig().getBoolean("performance.connection_pooling", true)) {
                     int maxConnections = getConfig().getInt("database.mysql.max_connections", 10);
-                    connectionPool = new ConnectionPool(this, databaseUrl, databaseUser, databasePassword, maxConnections);
+                    connectionPool = new ConnectionPool(this, databaseUrl, databaseUser, databasePassword,
+                            maxConnections);
                     connectionPool.initialize();
                 }
             } else if (databaseType.equalsIgnoreCase("sqlite")) {
-                String file = getConfig().getString("database.sqlite.file", "plugins/PlayerDataSync-Premium/playerdata.db");
+                String file = getConfig().getString("database.sqlite.file",
+                        "plugins/PlayerDataSync-Premium/playerdata.db");
                 java.io.File dbFile = new java.io.File(file);
                 if (!dbFile.getParentFile().exists()) {
                     dbFile.getParentFile().mkdirs();
@@ -243,24 +247,25 @@ public class PlayerDataSyncPremium extends JavaPlugin {
                 try {
                     int savedCount = 0;
                     long startTime = System.currentTimeMillis();
-                    
+
                     for (Player player : Bukkit.getOnlinePlayers()) {
                         try {
                             if (databaseManager.savePlayer(player)) {
                                 savedCount++;
                             } else {
                                 getLogger().warning("Failed to autosave data for " + player.getName()
-                                    + ": See previous log entries for details.");
+                                        + ": See previous log entries for details.");
                             }
                         } catch (Exception e) {
-                            getLogger().warning("Failed to autosave data for " + player.getName() + ": " + e.getMessage());
+                            getLogger()
+                                    .warning("Failed to autosave data for " + player.getName() + ": " + e.getMessage());
                         }
                     }
-                    
+
                     long endTime = System.currentTimeMillis();
                     if (savedCount > 0 && isPerformanceLoggingEnabled()) {
                         getLogger().info("Autosaved data for " + savedCount + " players in " +
-                            (endTime - startTime) + "ms");
+                                (endTime - startTime) + "ms");
                     }
                 } catch (Exception e) {
                     getLogger().severe("Error during autosave: " + e.getMessage());
@@ -269,22 +274,26 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             getLogger().info("Autosave task scheduled with interval: " + autosaveIntervalSeconds + " seconds");
         }
 
-        databaseManager = new DatabaseManager(this);
+        if (databaseType.equalsIgnoreCase("mongodb")) {
+            // databaseManager = new MongoDatabaseManager(this); // To be implemented
+        } else {
+            databaseManager = new com.example.playerdatasync.premium.database.SQLDatabaseManager(this);
+        }
         databaseManager.initialize();
 
         boolean invSeeIntegration = getConfig().getBoolean("integrations.invsee", true);
         boolean openInvIntegration = getConfig().getBoolean("integrations.openinv", true);
         if (invSeeIntegration || openInvIntegration) {
             inventoryViewerIntegrationManager = new InventoryViewerIntegrationManager(this, databaseManager,
-                invSeeIntegration, openInvIntegration);
+                    invSeeIntegration, openInvIntegration);
         }
 
         configureEconomyIntegration();
-        
+
         // Initialize backup manager
         backupManager = new BackupManager(this);
         backupManager.startAutomaticBackups();
-        
+
         getServer().getPluginManager().registerEvents(new PlayerDataListener(this, databaseManager), this);
         getServer().getPluginManager().registerEvents(new ServerSwitchListener(this, databaseManager), this);
         if (getCommand("sync") != null) {
@@ -292,17 +301,17 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             getCommand("sync").setExecutor(syncCommand);
             getCommand("sync").setTabCompleter(syncCommand);
         }
-        
+
         // ========================================
         // PREMIUM: Initialize Update Checker
         // ========================================
         updateChecker = new PremiumUpdateChecker(this);
         updateChecker.check();
-        
+
         if (SchedulerUtils.isFolia()) {
             getLogger().info("Folia detected - using Folia-compatible schedulers");
         }
-        
+
         getLogger().info("================================================");
         getLogger().info("PlayerDataSync Premium enabled successfully!");
         getLogger().info("Version: " + getDescription().getVersion());
@@ -324,52 +333,55 @@ public class PlayerDataSyncPremium extends JavaPlugin {
         if (bungeecordIntegrationEnabled) {
             getServer().getMessenger().unregisterOutgoingPluginChannel(this);
         }
-        
+
         // Save all online players before shutdown
         if (databaseManager != null) {
             try {
                 int savedCount = 0;
                 long startTime = System.currentTimeMillis();
-                
+
                 if (syncEconomy) {
                     getLogger().info("Reconfiguring economy integration for shutdown save...");
                     configureEconomyIntegration();
-                    
+
                     try {
                         Thread.sleep(100);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
                     }
                 }
-                
+
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     try {
                         if (syncEconomy && economyProvider != null) {
                             try {
                                 double currentBalance = economyProvider.getBalance(player);
-                                getLogger().fine("Current balance for " + player.getName() + " before shutdown save: " + currentBalance);
+                                getLogger().fine("Current balance for " + player.getName() + " before shutdown save: "
+                                        + currentBalance);
                             } catch (Exception e) {
-                                getLogger().warning("Could not read balance for " + player.getName() + " before shutdown: " + e.getMessage());
+                                getLogger().warning("Could not read balance for " + player.getName()
+                                        + " before shutdown: " + e.getMessage());
                             }
                         }
-                        
+
                         if (databaseManager.savePlayer(player)) {
                             savedCount++;
                             getLogger().fine("Saved data for " + player.getName() + " during shutdown");
                         } else {
                             getLogger().severe("Failed to save data for " + player.getName()
-                                + " during shutdown: See previous log entries for details.");
+                                    + " during shutdown: See previous log entries for details.");
                         }
                     } catch (Exception e) {
-                        getLogger().severe("Failed to save data for " + player.getName() + " during shutdown: " + e.getMessage());
+                        getLogger().severe(
+                                "Failed to save data for " + player.getName() + " during shutdown: " + e.getMessage());
                         getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e);
                     }
                 }
-                
+
                 long endTime = System.currentTimeMillis();
                 if (savedCount > 0) {
-                    getLogger().info("Saved data for " + savedCount + " players during shutdown in " + 
-                        (endTime - startTime) + "ms (including economy balances)");
+                    getLogger().info("Saved data for " + savedCount + " players during shutdown in " +
+                            (endTime - startTime) + "ms (including economy balances)");
                 } else {
                     getLogger().warning("No players were saved during shutdown - this may cause data loss!");
                 }
@@ -378,7 +390,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
                 getLogger().log(java.util.logging.Level.SEVERE, "Stack trace:", e);
             }
         }
-        
+
         // Stop backup manager
         if (backupManager != null) {
             backupManager.stopAutomaticBackups();
@@ -406,7 +418,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             connectionPool.shutdown();
             connectionPool = null;
         }
-        
+
         // Close database connection
         if (connection != null) {
             try {
@@ -420,13 +432,14 @@ public class PlayerDataSyncPremium extends JavaPlugin {
                 getLogger().severe("Error closing database connection: " + e.getMessage());
             }
         }
-        
+
         getLogger().info("PlayerDataSync Premium disabled successfully");
     }
 
     // ... (Copy all other methods from PlayerDataSync.java)
-    // For brevity, I'll include the essential methods and refer to the original file for the rest
-    
+    // For brevity, I'll include the essential methods and refer to the original
+    // file for the rest
+
     private Connection createConnection() throws SQLException {
         if (databaseType.equalsIgnoreCase("mysql")) {
             return DriverManager.getConnection(databaseUrl, databaseUser, databasePassword);
@@ -439,7 +452,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             if (connectionPool != null) {
                 return connectionPool.getConnection();
             }
-            
+
             if (connection == null || connection.isClosed() || !connection.isValid(2)) {
                 connection = createConnection();
                 getLogger().info("Reconnected to database");
@@ -449,16 +462,18 @@ public class PlayerDataSyncPremium extends JavaPlugin {
         }
         return connection;
     }
-    
+
     public void returnConnection(Connection conn) {
         if (connectionPool != null && conn != null) {
             connectionPool.returnConnection(conn);
         }
     }
 
-    // ... (Include all sync option getters/setters and other methods from PlayerDataSync.java)
-    // For now, I'll create a simplified version - you'll need to copy the full implementation
-    
+    // ... (Include all sync option getters/setters and other methods from
+    // PlayerDataSync.java)
+    // For now, I'll create a simplified version - you'll need to copy the full
+    // implementation
+
     private void loadSyncSettings() {
         syncCoordinates = getConfig().getBoolean("sync.coordinates", true);
         syncXp = getConfig().getBoolean("sync.xp", true);
@@ -468,36 +483,36 @@ public class PlayerDataSyncPremium extends JavaPlugin {
         syncHealth = getConfig().getBoolean("sync.health", true);
         syncHunger = getConfig().getBoolean("sync.hunger", true);
         syncPosition = getConfig().getBoolean("sync.position", true);
-        
+
         syncArmor = getConfig().getBoolean("sync.armor", true);
-        
-        syncOffhand = VersionCompatibility.isOffhandSupported() && 
-                     getConfig().getBoolean("sync.offhand", true);
+
+        syncOffhand = VersionCompatibility.isOffhandSupported() &&
+                getConfig().getBoolean("sync.offhand", true);
         if (!VersionCompatibility.isOffhandSupported() && getConfig().getBoolean("sync.offhand", true)) {
             getLogger().info("Offhand sync disabled - requires Minecraft 1.9+");
             getConfig().set("sync.offhand", false);
         }
-        
+
         syncEffects = getConfig().getBoolean("sync.effects", true);
         syncStatistics = getConfig().getBoolean("sync.statistics", true);
-        
-        syncAttributes = VersionCompatibility.isAttributesSupported() && 
-                        getConfig().getBoolean("sync.attributes", true);
+
+        syncAttributes = VersionCompatibility.isAttributesSupported() &&
+                getConfig().getBoolean("sync.attributes", true);
         if (!VersionCompatibility.isAttributesSupported() && getConfig().getBoolean("sync.attributes", true)) {
             getLogger().info("Attribute sync disabled - requires Minecraft 1.9+");
             getConfig().set("sync.attributes", false);
         }
-        
-        syncAchievements = VersionCompatibility.isAdvancementsSupported() && 
-                          getConfig().getBoolean("sync.achievements", true);
+
+        syncAchievements = VersionCompatibility.isAdvancementsSupported() &&
+                getConfig().getBoolean("sync.achievements", true);
         if (!VersionCompatibility.isAdvancementsSupported() && getConfig().getBoolean("sync.achievements", true)) {
             getLogger().info("Advancement sync disabled - requires Minecraft 1.12+");
             getConfig().set("sync.achievements", false);
         }
-        
+
         syncPermissions = getConfig().getBoolean("sync.permissions", false);
         syncEconomy = getConfig().getBoolean("sync.economy", false);
-        
+
         saveConfig();
     }
 
@@ -506,17 +521,17 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             getLogger().info("Version compatibility checking is disabled in config");
             return;
         }
-        
+
         try {
             String serverVersion = Bukkit.getServer().getBukkitVersion();
             String pluginApiVersion = getDescription().getAPIVersion();
-            
+
             getLogger().info("Server version: " + serverVersion);
             getLogger().info("Plugin API version: " + pluginApiVersion);
-            
+
             boolean isSupportedVersion = false;
             String versionInfo = "";
-            
+
             if (VersionCompatibility.isVersion1_8()) {
                 isSupportedVersion = true;
                 versionInfo = "Minecraft 1.8 - Full compatibility confirmed";
@@ -539,7 +554,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
                 isSupportedVersion = true;
                 versionInfo = "Minecraft 1.21+ - Full compatibility confirmed";
             }
-            
+
             if (isSupportedVersion) {
                 getLogger().info("✅ " + versionInfo);
             } else {
@@ -550,7 +565,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
                 getLogger().warning("Some features may not work correctly");
                 getLogger().warning("================================================");
             }
-            
+
             if (VersionCompatibility.isAttributesSupported()) {
                 try {
                     org.bukkit.attribute.Attribute.values();
@@ -561,17 +576,17 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             } else {
                 getLogger().info("Attribute API not available (requires 1.9+) - attribute sync will be disabled");
             }
-            
+
             if (!VersionCompatibility.isOffhandSupported()) {
                 getLogger().info("ℹ️  Offhand sync disabled (requires 1.9+)");
             }
             if (!VersionCompatibility.isAdvancementsSupported()) {
                 getLogger().info("ℹ️  Advancements sync disabled (requires 1.12+)");
             }
-            
-            getLogger().info("✅ Running on Minecraft " + VersionCompatibility.getVersionString() + 
-                " - Full compatibility confirmed");
-            
+
+            getLogger().info("✅ Running on Minecraft " + VersionCompatibility.getVersionString() +
+                    " - Full compatibility confirmed");
+
         } catch (Exception e) {
             getLogger().warning("Could not perform version compatibility check: " + e.getMessage());
         }
@@ -602,10 +617,11 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             return false;
         }
 
-        RegisteredServiceProvider<Economy> registration =
-            getServer().getServicesManager().getRegistration(Economy.class);
+        RegisteredServiceProvider<Economy> registration = getServer().getServicesManager()
+                .getRegistration(Economy.class);
         if (registration == null) {
-            getLogger().warning("No Vault economy provider registration found. Economy sync requires an economy plugin.");
+            getLogger()
+                    .warning("No Vault economy provider registration found. Economy sync requires an economy plugin.");
             return false;
         }
 
@@ -621,23 +637,70 @@ public class PlayerDataSyncPremium extends JavaPlugin {
     }
 
     // Getter methods
-    public boolean isSyncCoordinates() { return syncCoordinates; }
-    public boolean isSyncXp() { return syncXp; }
-    public boolean isSyncGamemode() { return syncGamemode; }
-    public boolean isSyncEnderchest() { return syncEnderchest; }
-    public boolean isSyncInventory() { return syncInventory; }
-    public boolean isSyncHealth() { return syncHealth; }
-    public boolean isSyncHunger() { return syncHunger; }
-    public boolean isSyncPosition() { return syncPosition; }
-    public boolean isSyncAchievements() { return syncAchievements; }
-    public boolean isSyncArmor() { return syncArmor; }
-    public boolean isSyncOffhand() { return syncOffhand; }
-    public boolean isSyncEffects() { return syncEffects; }
-    public boolean isSyncStatistics() { return syncStatistics; }
-    public boolean isSyncAttributes() { return syncAttributes; }
-    public boolean isSyncPermissions() { return syncPermissions; }
-    public boolean isSyncEconomy() { return syncEconomy; }
-    
+    public boolean isSyncCoordinates() {
+        return syncCoordinates;
+    }
+
+    public boolean isSyncXp() {
+        return syncXp;
+    }
+
+    public boolean isSyncGamemode() {
+        return syncGamemode;
+    }
+
+    public boolean isSyncEnderchest() {
+        return syncEnderchest;
+    }
+
+    public boolean isSyncInventory() {
+        return syncInventory;
+    }
+
+    public boolean isSyncHealth() {
+        return syncHealth;
+    }
+
+    public boolean isSyncHunger() {
+        return syncHunger;
+    }
+
+    public boolean isSyncPosition() {
+        return syncPosition;
+    }
+
+    public boolean isSyncAchievements() {
+        return syncAchievements;
+    }
+
+    public boolean isSyncArmor() {
+        return syncArmor;
+    }
+
+    public boolean isSyncOffhand() {
+        return syncOffhand;
+    }
+
+    public boolean isSyncEffects() {
+        return syncEffects;
+    }
+
+    public boolean isSyncStatistics() {
+        return syncStatistics;
+    }
+
+    public boolean isSyncAttributes() {
+        return syncAttributes;
+    }
+
+    public boolean isSyncPermissions() {
+        return syncPermissions;
+    }
+
+    public boolean isSyncEconomy() {
+        return syncEconomy;
+    }
+
     // Setter methods
     public void setSyncCoordinates(boolean value) {
         this.syncCoordinates = value;
@@ -692,50 +755,50 @@ public class PlayerDataSyncPremium extends JavaPlugin {
         getConfig().set("sync.achievements", value);
         saveConfig();
     }
-    
+
     public void setSyncArmor(boolean value) {
         this.syncArmor = value;
         getConfig().set("sync.armor", value);
         saveConfig();
     }
-    
+
     public void setSyncOffhand(boolean value) {
         this.syncOffhand = value;
         getConfig().set("sync.offhand", value);
         saveConfig();
     }
-    
+
     public void setSyncEffects(boolean value) {
         this.syncEffects = value;
         getConfig().set("sync.effects", value);
         saveConfig();
     }
-    
+
     public void setSyncStatistics(boolean value) {
         this.syncStatistics = value;
         getConfig().set("sync.statistics", value);
         saveConfig();
     }
-    
+
     public void setSyncAttributes(boolean value) {
         this.syncAttributes = value;
         getConfig().set("sync.attributes", value);
         saveConfig();
     }
-    
+
     public void setSyncPermissions(boolean value) {
         this.syncPermissions = value;
         getConfig().set("sync.permissions", value);
         saveConfig();
     }
-    
+
     public void setSyncEconomy(boolean value) {
         this.syncEconomy = value;
         getConfig().set("sync.economy", value);
         configureEconomyIntegration();
         saveConfig();
     }
-    
+
     public void reloadPlugin() {
         reloadConfig();
 
@@ -778,7 +841,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             }
         } else if (invSeeIntegration || openInvIntegration) {
             inventoryViewerIntegrationManager = new InventoryViewerIntegrationManager(this, databaseManager,
-                invSeeIntegration, openInvIntegration);
+                    invSeeIntegration, openInvIntegration);
         }
 
         if (advancementSyncManager != null) {
@@ -798,24 +861,25 @@ public class PlayerDataSyncPremium extends JavaPlugin {
                     try {
                         int savedCount = 0;
                         long startTime = System.currentTimeMillis();
-                        
+
                         for (Player player : Bukkit.getOnlinePlayers()) {
                             try {
                                 if (databaseManager.savePlayer(player)) {
                                     savedCount++;
                                 } else {
                                     getLogger().warning("Failed to autosave data for " + player.getName()
-                                        + ": See previous log entries for details.");
+                                            + ": See previous log entries for details.");
                                 }
                             } catch (Exception e) {
-                                getLogger().warning("Failed to autosave data for " + player.getName() + ": " + e.getMessage());
+                                getLogger().warning(
+                                        "Failed to autosave data for " + player.getName() + ": " + e.getMessage());
                             }
                         }
-                        
+
                         long endTime = System.currentTimeMillis();
                         if (savedCount > 0 && isPerformanceLoggingEnabled()) {
                             getLogger().info("Autosaved data for " + savedCount + " players in " +
-                                (endTime - startTime) + "ms");
+                                    (endTime - startTime) + "ms");
                         }
                     } catch (Exception e) {
                         getLogger().severe("Error during autosave: " + e.getMessage());
@@ -825,28 +889,28 @@ public class PlayerDataSyncPremium extends JavaPlugin {
             }
         }
     }
-    
+
     public void triggerEconomySync(Player player) {
         if (!syncEconomy) {
             logDebug("Economy sync disabled, skipping manual trigger for " + player.getName());
             return;
         }
-        
+
         logDebug("Manual economy sync triggered for " + player.getName());
-        
+
         try {
             long startTime = System.currentTimeMillis();
             databaseManager.savePlayer(player);
             long endTime = System.currentTimeMillis();
-            
-            logDebug("Manual economy sync completed for " + player.getName() + 
-                " in " + (endTime - startTime) + "ms");
-            
+
+            logDebug("Manual economy sync completed for " + player.getName() +
+                    " in " + (endTime - startTime) + "ms");
+
         } catch (Exception e) {
             getLogger().severe("Failed to manually sync economy for " + player.getName() + ": " + e.getMessage());
         }
     }
-    
+
     public void syncPlayerEconomy(Player player) {
         triggerEconomySync(player);
     }
@@ -854,7 +918,7 @@ public class PlayerDataSyncPremium extends JavaPlugin {
     public void connectPlayerToServer(Player player, String targetServer) {
         if (!bungeecordIntegrationEnabled) {
             getLogger().warning("Attempted to send player " + player.getName()
-                + " to server '" + targetServer + "' while BungeeCord integration is disabled.");
+                    + " to server '" + targetServer + "' while BungeeCord integration is disabled.");
             return;
         }
 
@@ -875,25 +939,57 @@ public class PlayerDataSyncPremium extends JavaPlugin {
                 player.sendPluginMessage(this, "BungeeCord", out.toByteArray());
                 getLogger().info("Sent player " + player.getName() + " to server '" + targetServer + "'.");
             } catch (Exception e) {
-                getLogger().severe("Failed to send player " + player.getName() + " to server '" + targetServer + "': " + e.getMessage());
+                getLogger().severe("Failed to send player " + player.getName() + " to server '" + targetServer + "': "
+                        + e.getMessage());
             }
         });
     }
-    
-    public ConfigManager getConfigManager() { return configManager; }
-    public String getTablePrefix() { return tablePrefix != null ? tablePrefix : "player_data_premium"; }
-    public DatabaseManager getDatabaseManager() { return databaseManager; }
-    public AdvancementSyncManager getAdvancementSyncManager() { return advancementSyncManager; }
-    public BackupManager getBackupManager() { return backupManager; }
-    public ConnectionPool getConnectionPool() { return connectionPool; }
-    public MessageManager getMessageManager() { return messageManager; }
-    public Economy getEconomyProvider() { return economyProvider; }
-    public boolean isBungeecordIntegrationEnabled() { return bungeecordIntegrationEnabled; }
-    
+
+    public ConfigManager getConfigManager() {
+        return configManager;
+    }
+
+    public String getTablePrefix() {
+        return tablePrefix != null ? tablePrefix : "player_data_premium";
+    }
+
+    public DatabaseManager getDatabaseManager() {
+        return databaseManager;
+    }
+
+    public AdvancementSyncManager getAdvancementSyncManager() {
+        return advancementSyncManager;
+    }
+
+    public BackupManager getBackupManager() {
+        return backupManager;
+    }
+
+    public ConnectionPool getConnectionPool() {
+        return connectionPool;
+    }
+
+    public MessageManager getMessageManager() {
+        return messageManager;
+    }
+
+    public Economy getEconomyProvider() {
+        return economyProvider;
+    }
+
+    public boolean isBungeecordIntegrationEnabled() {
+        return bungeecordIntegrationEnabled;
+    }
+
     // Premium getters
-    public LicenseManager getLicenseManager() { return licenseManager; }
-    public PremiumUpdateChecker getUpdateChecker() { return updateChecker; }
-    
+    public LicenseManager getLicenseManager() {
+        return licenseManager;
+    }
+
+    public PremiumUpdateChecker getUpdateChecker() {
+        return updateChecker;
+    }
+
     public void logDebug(String message) {
         if (configManager != null && configManager.isDebugMode()) {
             getLogger().log(Level.FINE, message);
