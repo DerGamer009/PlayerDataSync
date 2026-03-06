@@ -134,7 +134,6 @@ messages:
   enabled: true
   show_sync_messages: true
   language: en
-  prefix: "&8[&bPDS&8]"
   colors: true
 
 logging:

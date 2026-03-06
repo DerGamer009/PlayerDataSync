@@ -99,7 +99,7 @@ public class MessageManager {
         if (messages == null)
             return key;
         String raw = messages.getString(key, key);
-        return ChatColor.translateAlternateColorCodes('&', raw);
+        return formatColors(raw);
     }
 
     /**
@@ -128,6 +128,27 @@ public class MessageManager {
                     .replace("{error}", params[0]);
         }
 
-        return ChatColor.translateAlternateColorCodes('&', raw);
+        return formatColors(raw);
+    }
+
+    /**
+     * Translates standard color codes and hex color codes (&#RRGGBB).
+     */
+    private String formatColors(String message) {
+        if (message == null)
+            return null;
+        java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("&#([A-Fa-f0-9]{6})");
+        java.util.regex.Matcher matcher = pattern.matcher(message);
+        StringBuffer buffer = new StringBuffer();
+        while (matcher.find()) {
+            String hex = matcher.group(1);
+            StringBuilder replacement = new StringBuilder("&x");
+            for (char c : hex.toCharArray()) {
+                replacement.append('&').append(c);
+            }
+            matcher.appendReplacement(buffer, replacement.toString());
+        }
+        matcher.appendTail(buffer);
+        return org.bukkit.ChatColor.translateAlternateColorCodes('&', buffer.toString());
     }
 }

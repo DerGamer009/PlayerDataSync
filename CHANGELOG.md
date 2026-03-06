@@ -5,6 +5,11 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [PlayerDataSync-26.3-RELEASE] - 2026-03-04
+
+### 🔧 Fixed
+- **MongoDB**: Fixed MongoDB errors / MongoDB-Fehler behoben.
+
 ## [PlayerDataSync-26.2-RELEASE] - 2026-02-18
 
 ### 🛠 XP Sync Fixes
