@@ -1,5 +1,6 @@
 package com.example.playerdatasync.commands;
 
+import com.example.playerdatasync.api.UpdateChecker;
 import com.example.playerdatasync.core.PlayerDataSync;
 import com.example.playerdatasync.managers.AdvancementSyncManager;
 import com.example.playerdatasync.managers.BackupManager;
@@ -34,7 +35,7 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
     );
 
     private static final List<String> SUB_COMMANDS = Arrays.asList(
-            "reload", "status", "save", "help", "cache", "validate", "backup", "restore", "achievements"
+            "reload", "status", "save", "help", "cache", "validate", "backup", "restore", "achievements", "checkupdate", "maintenance", "menu", "profile"
     );
 
     public SyncCommand(PlayerDataSync plugin) {
@@ -57,6 +58,10 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
             case "backup": return handleBackup(sender, args);
             case "restore": return handleRestore(sender, args);
             case "achievements": return handleAchievements(sender, args);
+            case "checkupdate": return handleCheckUpdate(sender);
+            case "maintenance": return handleMaintenance(sender, args);
+            case "menu": return handleMenu(sender);
+            case "profile": return handleProfile(sender, args);
             default:
                 if (args.length == 2) return handleSyncOption(sender, args[0], args[1]);
                 else return showHelp(sender);
@@ -274,6 +279,53 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
         return true;
     }
 
+    private boolean handleCheckUpdate(CommandSender sender) {
+        if (!hasPermission(sender, "playerdatasync.admin.update")) return true;
+        new UpdateChecker(plugin, messageManager).check(sender, true);
+        return true;
+    }
+
+    private boolean handleMaintenance(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "playerdatasync.admin.maintenance")) return true;
+
+        if (args.length < 2) {
+            sender.sendMessage(messageManager.get("prefix") + " §7Maintenance Mode: " +
+                    (plugin.isMaintenanceMode() ? "§cEnabled" : "§aDisabled"));
+            sender.sendMessage(messageManager.get("prefix") + " §7Use §f/sync maintenance <on|off> §7to toggle.");
+            return true;
+        }
+
+        boolean enable = args[1].equalsIgnoreCase("on") || args[1].equalsIgnoreCase("true");
+        plugin.setMaintenanceMode(enable);
+
+        String status = enable ? "§cENABLED" : "§aDISABLED";
+        sender.sendMessage(messageManager.get("prefix") + " §7Maintenance Mode has been " + status + ".");
+        return true;
+    }
+
+    private boolean handleMenu(CommandSender sender) {
+        if (!hasPermission(sender, "playerdatasync.admin")) return true;
+        if (!(sender instanceof Player)) {
+            sender.sendMessage(messageManager.get("prefix") + " §cThis command can only be used by players.");
+            return true;
+        }
+        plugin.getMenuManager().openMenu((Player) sender);
+        return true;
+    }
+
+    private boolean handleProfile(CommandSender sender, String[] args) {
+        if (!hasPermission(sender, "playerdatasync.admin.profile")) return true;
+
+        if (args.length > 1 && args[1].equalsIgnoreCase("reset")) {
+            plugin.getProfileManager().reset();
+            sender.sendMessage(messageManager.get("prefix") + " §7Performance profile data reset.");
+            return true;
+        }
+
+        plugin.getProfileManager().showProfile(sender);
+        return true;
+    }
+
     private boolean handleSyncOption(CommandSender sender, String option, String value) {
         if (!hasPermission(sender, "playerdatasync.admin." + option)) return true;
         if (!SYNC_OPTIONS.contains(option.toLowerCase())) {
@@ -305,6 +357,10 @@ public class SyncCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§b/sync validate §8- §7Validate data integrity");
         sender.sendMessage("§b/sync backup [type] §8- §7Create manual backup");
         sender.sendMessage("§b/sync restore [backup] §8- §7Restore from backup");
+        sender.sendMessage("§b/sync checkupdate §8- §7Manually check for updates");
+        sender.sendMessage("§b/sync maintenance <on/off> §8- §7Toggle Maintenance Mode");
+        sender.sendMessage("§b/sync menu §8- §7Open management GUI");
+        sender.sendMessage("§b/sync profile [reset] §8- §7Show performance profiling");
         sender.sendMessage("§b/sync help §8- §7Show this help");
         sender.sendMessage(messageManager.get("help_footer"));
         return true;

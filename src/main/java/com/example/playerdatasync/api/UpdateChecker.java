@@ -21,9 +21,14 @@ import java.util.regex.Pattern;
  */
 public class UpdateChecker {
 
-    private static final String API_BASE_URL = "https://craftingstudiopro.de/api";
+    private static final String API_BASE_URL = "https://api.craftingstudiopro.de/v1"; 
     private static final String PLUGIN_SLUG = "playerdatasync";
+    private static final String API_KEY = "csp_264cc3dad0ece1292cff8429e3ba55b725b60bdd5209b5b4d599153610336b12"; // Hardcoded for streamlined authentication
     private static final Pattern VERSION_TOKEN_PATTERN = Pattern.compile("(\\d+)");
+    
+    private static long lastCheckTimestamp = 0;
+    private static String cachedLatestVersion = null;
+    private static final long CACHE_DURATION = 3600000; // 1 hour in milliseconds
 
     private final JavaPlugin plugin;
     private final MessageManager messageManager;
@@ -34,10 +39,25 @@ public class UpdateChecker {
     }
 
     public void check() {
-        if (!plugin.getConfig().getBoolean("update_checker.enabled", true)) {
-            plugin.getLogger().info(messageManager.get("update_check_disabled"));
+        check(null, false);
+    }
+
+    public void check(org.bukkit.command.CommandSender sender, boolean force) {
+        if (!plugin.getConfig().getBoolean("update_checker.enabled", true) && !force) {
+            if (sender != null) sender.sendMessage(messageManager.get("update_check_disabled"));
+            else plugin.getLogger().info(messageManager.get("update_check_disabled"));
             return;
         }
+
+        // Check cache unless forced
+        long now = System.currentTimeMillis();
+        if (!force && cachedLatestVersion != null && (now - lastCheckTimestamp) < CACHE_DURATION) {
+            if (sender == null) plugin.getLogger().fine("Using cached update information.");
+            handleResponse(null, cachedLatestVersion, sender); // Use cached version
+            return;
+        }
+
+        if (sender != null) sender.sendMessage(messageManager.get("prefix") + " §7Checking for updates...");
 
         SchedulerUtils.runTaskAsync(plugin, () -> {
             HttpURLConnection connection = null;
@@ -51,6 +71,7 @@ public class UpdateChecker {
                 connection.setRequestMethod("GET");
                 connection.setRequestProperty("User-Agent", "PlayerDataSync/" + plugin.getDescription().getVersion());
                 connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("X-API-Key", API_KEY); // Simplified authentication
 
                 int responseCode = connection.getResponseCode();
 
@@ -73,7 +94,8 @@ public class UpdateChecker {
                         response.append(line);
                     }
 
-                    handleResponse(response.toString());
+                    handleResponse(response.toString(), null, sender);
+                    lastCheckTimestamp = System.currentTimeMillis();
                 }
 
             } catch (java.net.UnknownHostException e) {
@@ -91,41 +113,62 @@ public class UpdateChecker {
         });
     }
 
-    private void handleResponse(String jsonResponse) {
-        if (jsonResponse == null || jsonResponse.trim().isEmpty()) {
-            plugin.getLogger().warning(messageManager.get("update_check_failed", "Empty response"));
-            return;
-        }
+    private void handleResponse(String jsonResponse, String manualVersion, org.bukkit.command.CommandSender sender) {
+        String latestVersion;
+        String downloadUrl = API_BASE_URL + "/plugins/" + PLUGIN_SLUG;
 
-        JsonObject jsonObject;
-        try {
-            jsonObject = JsonParser.parseString(jsonResponse).getAsJsonObject();
-        } catch (Exception e) {
-            plugin.getLogger().warning(messageManager.get("update_check_failed", "Invalid JSON response: " + e.getMessage()));
-            return;
-        }
+        if (manualVersion != null) {
+            latestVersion = manualVersion;
+        } else {
+            if (jsonResponse == null || jsonResponse.trim().isEmpty()) {
+                String error = "Empty response";
+                if (sender != null) sender.sendMessage(messageManager.get("prefix") + " §cUpdate check failed: " + error);
+                else plugin.getLogger().warning(messageManager.get("update_check_failed", error));
+                return;
+            }
 
-        if (!jsonObject.has("version")) {
-            plugin.getLogger().warning(messageManager.get("update_check_failed", "Invalid response format: missing version field"));
-            return;
-        }
+            JsonObject jsonObject;
+            try {
+                jsonObject = JsonParser.parseString(jsonResponse).getAsJsonObject();
+            } catch (Exception e) {
+                String error = "Invalid JSON response: " + e.getMessage();
+                if (sender != null) sender.sendMessage(messageManager.get("prefix") + " §cUpdate check failed: " + error);
+                else plugin.getLogger().warning(messageManager.get("update_check_failed", error));
+                return;
+            }
 
-        String latestVersion = jsonObject.get("version").getAsString();
-        String downloadUrl = jsonObject.has("downloadUrl") && !jsonObject.get("downloadUrl").isJsonNull()
-                ? jsonObject.get("downloadUrl").getAsString()
-                : API_BASE_URL + "/plugins/" + PLUGIN_SLUG;
+            if (!jsonObject.has("version")) {
+                String error = "Invalid response format: missing version field";
+                if (sender != null) sender.sendMessage(messageManager.get("prefix") + " §cUpdate check failed: " + error);
+                else plugin.getLogger().warning(messageManager.get("update_check_failed", error));
+                return;
+            }
+
+            latestVersion = jsonObject.get("version").getAsString();
+            cachedLatestVersion = latestVersion; // Update cache
+            
+            if (jsonObject.has("downloadUrl") && !jsonObject.get("downloadUrl").isJsonNull()) {
+                downloadUrl = jsonObject.get("downloadUrl").getAsString();
+            }
+        }
 
         String currentVersion = plugin.getDescription().getVersion();
-
         int comparison = compareVersions(currentVersion, latestVersion);
 
         if (comparison >= 0) {
-            if (plugin.getConfig().getBoolean("update_checker.notify_ops", true)) {
+            if (sender != null) {
+                sender.sendMessage(messageManager.get("prefix") + " §a" + messageManager.get("update_current"));
+            } else if (plugin.getConfig().getBoolean("update_checker.notify_ops", true)) {
                 plugin.getLogger().info(messageManager.get("update_current"));
             }
         } else {
-            plugin.getLogger().info(messageManager.get("update_available", latestVersion));
-            plugin.getLogger().info(messageManager.get("update_download_url", downloadUrl));
+            if (sender != null) {
+                sender.sendMessage(messageManager.get("prefix") + " §e" + messageManager.get("update_available", latestVersion));
+                sender.sendMessage(messageManager.get("prefix") + " §e" + messageManager.get("update_download_url", downloadUrl));
+            } else {
+                plugin.getLogger().info(messageManager.get("update_available", latestVersion));
+                plugin.getLogger().info(messageManager.get("update_download_url", downloadUrl));
+            }
         }
     }
 

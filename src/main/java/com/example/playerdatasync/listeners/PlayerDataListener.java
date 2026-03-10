@@ -41,6 +41,10 @@ public class PlayerDataListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
+        if (plugin.isMaintenanceMode()) {
+            event.getPlayer().sendMessage("§c§l[!] §cMaintenance Mode is active. Your data will not be loaded.");
+            return;
+        }
         Player player = event.getPlayer();
         if (plugin.getConfigManager() != null && plugin.getConfigManager().shouldShowSyncMessages() 
             && player.hasPermission("playerdatasync.message.show.loading")) {
@@ -50,7 +54,10 @@ public class PlayerDataListener implements Listener {
         // Load data almost immediately after join to minimize empty inventories during server switches
         SchedulerUtils.runTaskLaterAsync(plugin, () -> {
             try {
+                long start = System.currentTimeMillis();
                 dbManager.loadPlayer(player);
+                plugin.getProfileManager().record("PlayerJoin-Load", System.currentTimeMillis() - start);
+                
                 if (player.isOnline() && plugin.getConfigManager() != null 
                     && plugin.getConfigManager().shouldShowSyncMessages() 
                     && player.hasPermission("playerdatasync.message.show.loaded")) {
@@ -75,6 +82,7 @@ public class PlayerDataListener implements Listener {
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
+        if (plugin.isMaintenanceMode()) return;
         Player player = event.getPlayer();
         lastXpSaveTime.remove(player.getUniqueId());
         
@@ -86,6 +94,7 @@ public class PlayerDataListener implements Listener {
             long startTime = System.currentTimeMillis();
             boolean saved = dbManager.savePlayer(player);
             long endTime = System.currentTimeMillis();
+            plugin.getProfileManager().record("PlayerQuit-Save", endTime - startTime);
 
             // Log slow saves for performance monitoring
             if (saved && endTime - startTime > 1000) { // More than 1 second

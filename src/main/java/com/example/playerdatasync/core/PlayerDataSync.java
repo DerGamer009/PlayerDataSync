@@ -1,5 +1,6 @@
 package com.example.playerdatasync.core;
 
+import com.example.playerdatasync.managers.*;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -13,10 +14,6 @@ import com.example.playerdatasync.database.DatabaseManager;
 import com.example.playerdatasync.integration.InventoryViewerIntegrationManager;
 import com.example.playerdatasync.listeners.PlayerDataListener;
 import com.example.playerdatasync.listeners.ServerSwitchListener;
-import com.example.playerdatasync.managers.AdvancementSyncManager;
-import com.example.playerdatasync.managers.BackupManager;
-import com.example.playerdatasync.managers.ConfigManager;
-import com.example.playerdatasync.managers.MessageManager;
 import com.example.playerdatasync.commands.SyncCommand;
 import com.example.playerdatasync.api.UpdateChecker;
 import com.example.playerdatasync.utils.VersionCompatibility;
@@ -65,11 +62,14 @@ public class PlayerDataSync extends JavaPlugin {
     private Economy economyProvider;
 
     private boolean bungeecordIntegrationEnabled;
+    private boolean maintenanceMode = false;
 
     private DatabaseManager databaseManager;
     private AdvancementSyncManager advancementSyncManager;
     private ConfigManager configManager;
     private BackupManager backupManager;
+    private MenuManager menuManager;
+    private ProfileManager profileManager;
     private InventoryViewerIntegrationManager inventoryViewerIntegrationManager;
     private int autosaveIntervalSeconds;
     private BukkitTask autosaveTask;
@@ -225,6 +225,7 @@ public class PlayerDataSync extends JavaPlugin {
         if (autosaveIntervalSeconds > 0) {
             long ticks = autosaveIntervalSeconds * 20L;
             autosaveTask = SchedulerUtils.runTaskTimerAsync(this, () -> {
+                if (maintenanceMode) return;
                 try {
                     int savedCount = 0;
                     long startTime = System.currentTimeMillis();
@@ -277,6 +278,12 @@ public class PlayerDataSync extends JavaPlugin {
         // Initialize backup manager
         backupManager = new BackupManager(this);
         backupManager.startAutomaticBackups();
+
+        // Initialize menu manager
+        menuManager = new MenuManager(this);
+
+        // Initialize profile manager
+        profileManager = new ProfileManager(this);
 
         getServer().getPluginManager().registerEvents(new PlayerDataListener(this, databaseManager), this);
         getServer().getPluginManager().registerEvents(new ServerSwitchListener(this, databaseManager), this);
@@ -795,6 +802,27 @@ public class PlayerDataSync extends JavaPlugin {
         } catch (Exception e) {
             getLogger().severe("Failed to manually sync economy for " + player.getName() + ": " + e.getMessage());
         }
+    }
+
+    public boolean isMaintenanceMode() {
+        return maintenanceMode;
+    }
+
+    public void setMaintenanceMode(boolean maintenanceMode) {
+        this.maintenanceMode = maintenanceMode;
+        if (maintenanceMode) {
+            getLogger().warning("MAINTENANCE MODE ENABLED - All data syncing is paused!");
+        } else {
+            getLogger().info("Maintenance mode disabled - Data syncing resumed.");
+        }
+    }
+
+    public MenuManager getMenuManager() {
+        return menuManager;
+    }
+
+    public ProfileManager getProfileManager() {
+        return profileManager;
     }
 
     // Getter methods for components

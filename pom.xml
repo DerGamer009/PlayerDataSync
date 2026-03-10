@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.example</groupId>
     <artifactId>PlayerDataSync</artifactId>
-    <version>26.3.1-SNAPSHOT</version>
+    <version>26.3.3-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>PlayerDataSync</name>
@@ -285,9 +285,6 @@
         </profile>
         <profile>
             <id>mc-1.21</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <properties>
                 <minecraft.version>1.21</minecraft.version>
                 <java.version>21</java.version>

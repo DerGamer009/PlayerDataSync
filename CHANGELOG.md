@@ -5,6 +5,28 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [PlayerDataSync-26.3.3-SNAPSHOT] - 2026-03-10
+
+### 🚀 New Features
+- **Maintenance Mode**: Pause all data syncing with `/sync maintenance <on|off>`. Useful for database migrations or emergency fixes.
+- **Management GUI**: Use `/sync menu` for a visual way to toggle sync options and manage the plugin.
+- **Performance Profiler**: Use `/sync profile` to track average and maximum save/load times for better performance monitoring.
+
+### 🔧 Fixed
+- **Java Compatibility**: Downgraded default Java target to Java 8 to ensure full compatibility with Minecraft 1.8.8 through 1.16.5 (Purpur) and resolved "Unsupported class file major version 65" errors.
+- **Build Configuration**: Removed conflicting `activeByDefault` profile to prevent accidental Java 21 builds.
+
+### 🔄 Update Checker
+- **Hardcoded API Key**: Added a hardcoded API key (`CSP-PDS-...`) for streamlined server-to-API authentication.
+- **Improved Caching**: Implemented a 1-hour cache for update metadata to reduce unnecessary API requests.
+- **Manual Check Command**: Added `/sync checkupdate` command to manually trigger an update check (bypasses cache).
+- **Silent Reloading**: Added simplified version check handling that can be called asynchronously without blocking the main thread.
+
+## [PlayerDataSync-26.3.2-SNAPSHOT] - 2026-03-07
+
+### 🔧 Fixed
+- **MongoDB**: Fixed MongoDB errors / MongoDB-Fehler behoben.
+
 ## [PlayerDataSync-26.3-RELEASE] - 2026-03-04
 
 ### 🔧 Fixed

@@ -1,6 +1,6 @@
 # PlayerDataSync
 
-A comprehensive Bukkit/Spigot plugin for Minecraft **1.8 to 26.2** that synchronizes player data across multiple servers using MySQL, SQLite, or PostgreSQL databases. Perfect for multi-server networks with BungeeCord or Velocity.
+A comprehensive Bukkit/Spigot plugin for Minecraft **1.8 to 26.3** that synchronizes player data across multiple servers using MySQL, SQLite, or PostgreSQL databases. Perfect for multi-server networks with BungeeCord or Velocity.
 
 Player inventories, experience, health, achievements, economy balance, and more are stored in a shared database whenever they leave a server and restored when they join again.
 
@@ -13,11 +13,14 @@ Player inventories, experience, health, achievements, economy balance, and more 
 - **Respawn to Lobby**: Automatically send players to lobby server after death/respawn
 - **Version Compatibility**: Supports Minecraft 1.8 - 26.2 with automatic feature detection
 - **Performance Optimized**: Async operations, connection pooling, batch processing
+- **Management GUI**: Interactive menu for toggling sync options (`/sync menu`)
+- **Maintenance Mode**: Globally pause syncing for safe maintenance (`/sync maintenance`)
+- **Performance Profiling**: Detailed tracking of save/load times (`/sync profile`)
 - **Database Support**: MySQL, SQLite, PostgreSQL
 
 ## 📋 Supported Versions
 
-This plugin supports Minecraft versions **1.8 to 26.2**. Some features are automatically disabled on older versions:
+This plugin supports Minecraft versions **1.8 to 26.3**. Some features are automatically disabled on older versions:
 - **Offhand sync**: Requires 1.9+
 - **Attribute sync**: Requires 1.9+
 - **Advancement sync**: Requires 1.12+
@@ -147,7 +150,7 @@ mvn clean package -Pmc-1.9    # Minecraft 1.9-1.16 (Java 8)
 mvn clean package -Pmc-1.17   # Minecraft 1.17 (Java 16)
 mvn clean package -Pmc-1.18   # Minecraft 1.18-1.20 (Java 17)
 mvn clean package -Pmc-1.21   # Minecraft 1.21+ (Java 21)
-mvn clean package -Pmc-26.2   # Minecraft 26.2 (Java 25)
+mvn clean package -Pmc-26.3   # Minecraft 26.3 (Java 25)
 ```
 
 The resulting jar file will be in the `target/` directory.
@@ -246,9 +249,9 @@ sync:
 ## 📝 Version Compatibility
 
 ### Tested Versions
-- ✅ **Minecraft 1.8 - 26.2**: Full compatibility with automatic feature detection
-- ✅ **Paper 1.20.4 - 26.2**: Full compatibility
-- ✅ **Spigot 1.8 - 26.2**: Full compatibility
+- ✅ **Minecraft 1.8 - 26.3**: Full compatibility with automatic feature detection
+- ✅ **Paper 1.20.4 - 26.3**: Full compatibility
+- ✅ **Spigot 1.8 - 26.3**: Full compatibility
 
 ### Compatibility Settings
 
