@@ -5,6 +5,23 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [PlayerDataSync-26.3.4-SNAPSHOT] - 2026-03-11
+
+### 🔧 Fixed & Improved
+- **Legacy Minecraft Support (1.8-1.16)**: Resolved multiple critical issues for older server versions.
+- **Java 8 Compatibility**: Fixed `NoSuchMethodError: String.isBlank()` by replacing it with Java 8 compatible alternatives in `MessageManager`.
+- **FastStats Isolation**: Isolated Java 17-dependent metrics library to prevent `UnsupportedClassVersionError` on Java 8 environments.
+- **JDBC Driver Fixes**:
+    - Implemented explicit driver registration to solve "No suitable driver found" errors in shaded environments (PaperSpigot 1.8.8).
+    - Fixed `AbstractMethodError: Connection.isValid()` by adding safety wrappers for legacy JDBC drivers (SQLite).
+- **Configuration Robustness**:
+    - Fixed an issue where `config.yml` was being stripped of content and comments on older Bukkit versions by reducing unnecessary saves.
+    - Implemented explicit UTF-8 loading for configuration files to prevent character encoding issues on Windows servers.
+    - Enhanced configuration migration and initialization to correctly merge defaults without overwriting existing user settings.
+- **Stability and Performance**:
+    - Fixed a race condition where default configurations were not being saved to disk before being reloaded during the first startup.
+    - Consolidated maintenance mode and version checking logs for better readability.
+
 ## [PlayerDataSync-26.3.3-SNAPSHOT] - 2026-03-10
 
 ### 🚀 New Features

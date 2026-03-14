@@ -276,11 +276,16 @@ The plugin uses the following permissions:
 
 ## 📊 Metrics
 
-The plugin uses [bStats](https://bstats.org/) to collect anonymous usage statistics. You can disable this in the config:
+The plugin uses [bStats](https://bstats.org/) and **FastStats** to collect anonymous usage statistics. This helps us understand feature adoption and improve the plugin.
+
+- **Metrics Documentation**: [METRICS.md](METRICS.md)
+
+You can disable metrics in the `config.yml`:
 
 ```yaml
 metrics:
-  bstats: false  # Disable bStats metrics collection
+  bstats: true
+  faststats: true
 ```
 
 ## 🤝 Contributing
