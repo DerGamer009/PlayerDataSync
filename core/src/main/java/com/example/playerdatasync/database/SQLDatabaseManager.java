@@ -339,7 +339,7 @@ public class SQLDatabaseManager implements DatabaseManager {
                     ? InventoryUtils.itemStackArrayToBase64(player.getEnderChest().getContents())
                     : null;
             snapshot.inventoryData = plugin.isSyncInventory()
-                    ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getContents())
+                    ? InventoryUtils.itemStackArrayToBase64(getStorageContents(player))
                     : null;
             snapshot.armorData = plugin.isSyncArmor()
                     ? InventoryUtils.itemStackArrayToBase64(player.getInventory().getArmorContents())
@@ -661,6 +661,20 @@ public class SQLDatabaseManager implements DatabaseManager {
                             if (offhandData != null) {
                                 try {
                                     ItemStack offhand = InventoryUtils.safeItemStackFromBase64(offhandData);
+                                    
+                                    // If offhand is null/AIR but inventory was > 36 slots, try to recover from inventory column
+                                    if ((offhand == null || offhand.getType() == org.bukkit.Material.AIR) && 
+                                        plugin.isSyncInventory()) {
+                                        String invData = rs.getString("inventory");
+                                        if (invData != null) {
+                                            ItemStack[] invItems = InventoryUtils.safeItemStackArrayFromBase64(invData);
+                                            if (invItems.length > 40 && invItems[40] != null && invItems[40].getType() != org.bukkit.Material.AIR) {
+                                                offhand = invItems[40];
+                                                plugin.logDebug("Recovered offhand from inventory column for " + player.getName());
+                                            }
+                                        }
+                                    }
+
                                     final ItemStack finalOffhand = offhand;
                                     SchedulerUtils.runTask(plugin, player, () -> {
                                         try {
@@ -1475,6 +1489,22 @@ public class SQLDatabaseManager implements DatabaseManager {
         combined[39] = normalizedArmor[3];
         combined[40] = offhand;
         return combined;
+    }
+
+    private ItemStack[] getStorageContents(Player player) {
+        try {
+            // Try to use getStorageContents() which was added in 1.9 and excludes armor/offhand
+            return (ItemStack[]) player.getInventory().getClass().getMethod("getStorageContents").invoke(player.getInventory());
+        } catch (Exception e) {
+            // Fallback for 1.8: getContents() is just the 36 storage slots
+            ItemStack[] contents = player.getInventory().getContents();
+            if (contents.length > 36) {
+                ItemStack[] storage = new ItemStack[36];
+                System.arraycopy(contents, 0, storage, 0, 36);
+                return storage;
+            }
+            return contents;
+        }
     }
 
     private static class PlayerSnapshot {

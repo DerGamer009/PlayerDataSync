@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.example</groupId>
     <artifactId>PlayerDataSync-Parent</artifactId>
-    <version>26.3.4-SNAPSHOT</version>
+    <version>26.3.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>PlayerDataSync Parent</name>
