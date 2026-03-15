@@ -1,0 +1,12 @@
+  - name: Check pull request title
+  # You may pin to the exact commit or the version.
+  # uses: Slashgear/action-check-pr-title@161cede0311ec624ae3ee76a2c27522f7b6fa2d8
+  uses: Slashgear/action-check-pr-title@v5.0.1
+  with:
+    # Regexp (as String) to validate the pull request title
+    regexp: # optional, default is .+
+    # Regexp flags of the object.
+    flags: # optional, default is 
+    # Help message displayed in the action execution logs to help the user understand how to correct the title of the Pull Request.
+    helpMessage: # optional, default is 
+          
