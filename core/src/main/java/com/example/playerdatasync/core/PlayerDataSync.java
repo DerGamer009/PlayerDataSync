@@ -627,21 +627,11 @@ public class PlayerDataSync extends JavaPlugin {
         syncEffects = getConfig().getBoolean("sync.effects", true);
         syncStatistics = getConfig().getBoolean("sync.statistics", true);
 
-        // Attributes require 1.9+
-        syncAttributes = VersionCompatibility.isAttributesSupported() &&
-                getConfig().getBoolean("sync.attributes", true);
-        if (!VersionCompatibility.isAttributesSupported() && getConfig().getBoolean("sync.attributes", true)) {
-            getLogger().info("Attribute sync disabled - requires Minecraft 1.9+");
-            getConfig().set("sync.attributes", false);
-        }
+        // Attributes now supported on all versions via reflection and 1.8 fallback
+        syncAttributes = getConfig().getBoolean("sync.attributes", true);
 
-        // Advancements require 1.12+
-        syncAchievements = VersionCompatibility.isAdvancementsSupported() &&
-                getConfig().getBoolean("sync.achievements", true);
-        if (!VersionCompatibility.isAdvancementsSupported() && getConfig().getBoolean("sync.achievements", true)) {
-            getLogger().info("Advancement sync disabled - requires Minecraft 1.12+");
-            getConfig().set("sync.achievements", false);
-        }
+        // Advancements/Achievements now supported on all versions via reflection and 1.8 fallback
+        syncAchievements = getConfig().getBoolean("sync.achievements", true);
 
         syncPermissions = getConfig().getBoolean("sync.permissions", false);
         syncEconomy = getConfig().getBoolean("sync.economy", false);

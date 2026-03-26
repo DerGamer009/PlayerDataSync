@@ -30,47 +30,72 @@ public class NMSHandlerImpl implements NMSHandler {
 
     @Override
     public String serializeAttributes(Player player) {
-        return null; // 1.8 doesn't have the same attribute system
+        java.util.StringJoiner joiner = new java.util.StringJoiner("|");
+        joiner.add("GENERIC_MAX_HEALTH:" + player.getMaxHealth());
+        joiner.add("GENERIC_MOVEMENT_SPEED:" + player.getWalkSpeed());
+        joiner.add("GENERIC_FLYING_SPEED:" + player.getFlySpeed());
+        return joiner.toString();
     }
 
     @Override
     public void loadAttributes(Player player, String data) {
-        // Not supported or handled differently in 1.8
+        if (data == null || data.isEmpty()) return;
+        String[] parts = data.split("\\|");
+        for (String part : parts) {
+            String[] kv = part.split(":");
+            if (kv.length == 2) {
+                try {
+                    String name = kv[0];
+                    double value = Double.parseDouble(kv[1]);
+                    if (name.equals("GENERIC_MAX_HEALTH")) {
+                        player.setMaxHealth(value);
+                    } else if (name.equals("GENERIC_MOVEMENT_SPEED")) {
+                        player.setWalkSpeed((float) value);
+                    } else if (name.equals("GENERIC_FLYING_SPEED")) {
+                        player.setFlySpeed((float) value);
+                    }
+                } catch (Exception ignored) {}
+            }
+        }
     }
 
     @Override
-    public void setupAdvancements(Plugin plugin) {
-        // Not supported in 1.8
-    }
+    public void setupAdvancements(Plugin plugin) {}
 
     @Override
-    public void shutdownAdvancements() {
-        // Not supported in 1.8
-    }
+    public void shutdownAdvancements() {}
 
     @Override
-    public void handlePlayerJoinAdvancements(Player player) {
-        // Not supported in 1.8
-    }
+    public void handlePlayerJoinAdvancements(Player player) {}
 
     @Override
-    public void handlePlayerQuitAdvancements(Player player) {
-        // Not supported in 1.8
-    }
+    public void handlePlayerQuitAdvancements(Player player) {}
 
     @Override
-    public void seedAdvancementsFromDatabase(UUID uuid, String csv) {
-        // Not supported in 1.8
-    }
+    public void seedAdvancementsFromDatabase(UUID uuid, String csv) {}
 
     @Override
     public String serializeAdvancements(Player player) {
-        return null;
+        java.util.StringJoiner joiner = new java.util.StringJoiner(",");
+        for (org.bukkit.Achievement ach : org.bukkit.Achievement.values()) {
+            if (player.hasAchievement(ach)) {
+                joiner.add(ach.toString());
+            }
+        }
+        return joiner.toString();
     }
 
     @Override
     public void loadAdvancements(Player player, String data) {
-        // Not supported in 1.8
+        if (data == null || data.isEmpty()) return;
+        String[] parts = data.split(",");
+        for (String part : parts) {
+            if (part.isEmpty()) continue;
+            try {
+                org.bukkit.Achievement ach = org.bukkit.Achievement.valueOf(part.trim().toUpperCase());
+                player.awardAchievement(ach);
+            } catch (Exception ignored) {}
+        }
     }
 
     @Override

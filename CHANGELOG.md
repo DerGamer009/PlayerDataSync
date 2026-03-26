@@ -5,6 +5,12 @@ All notable changes to PlayerDataSync will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [PlayerDataSync-26.3.6-SNAPSHOT] - 2026-03-26
+
+### 🚀 Improved
+- **Universal Synchronization Support**: Fully implemented cross-version synchronization for Attributes (Max Health, Movement/Flying Speed) and Advancements, replacing the hard version lockouts that previously prevented this on older server clusters.
+- **Improved 1.8 Fallback Handlers**: Added a robust compatibility bridge via `FallbackNMSHandler` matching identical generic NBT-states to make jumping between 1.8 and 1.21 flawlessly synchronize identical player attributes and older "Achievements".
+
 ## [PlayerDataSync-26.3.5-SNAPSHOT] - 2026-03-14
 
 ### 🔧 Fixed & Improved
